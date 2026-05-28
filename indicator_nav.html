@@ -234,7 +234,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-05-28.2';
+  var VERSION = '2026-05-28.3';
 
   // ─── DEFAULTS ─────────────────────────────────────────────────────────────
   var DEFAULTS = {
@@ -323,7 +323,7 @@
 
       Promise.all(promises).then(function() {
         if (CONFIG.targetDashboard) {
-          _dashboard.activateSheetAsync(CONFIG.targetDashboard).catch(function(e) {
+          tableau.extensions.workbook.activateSheetAsync(CONFIG.targetDashboard).catch(function(e) {
             console.warn('Navigation failed:', e);
           });
         }
