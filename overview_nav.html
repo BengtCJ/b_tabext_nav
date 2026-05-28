@@ -243,7 +243,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-05-28.3';
+  var VERSION = '2026-05-28.4';
 
   // ─── DEFAULTS ─────────────────────────────────────────────────────────────
   var DEFAULTS = {
@@ -319,15 +319,12 @@
         ? subcatParam.changeValueAsync(row.subcategory_id)
         : Promise.resolve();
 
-      promise.then(function() {
-        if (CONFIG.targetDashboard) {
-          tableau.extensions.workbook.activateSheetAsync(CONFIG.targetDashboard).catch(function(e) {
-            console.warn('Navigation failed:', e);
-          });
-        }
-      }).catch(function(e) {
+      promise.catch(function(e) {
         console.warn('Parameter set failed:', e);
       });
+      // Navigation to target dashboard must be handled by a Tableau
+      // "Go to Dashboard" action — Extensions API 1.x has no public
+      // activateSheetAsync on the workbook object.
     });
   }
 
