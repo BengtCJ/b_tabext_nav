@@ -2245,7 +2245,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-29.2';
+  const VERSION = '2026-05-29.3';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
@@ -2423,7 +2423,20 @@
   let _indicators         = [];         // parsed { id, name, source } list
   let _view               = 'table';
   let _selectedIndicatorId = null;
+  var _subgroup           = null;   // resolved subgroup id for this dashboard instance
   // _selectedBrand, _chartOverrides, _viewMode are declared by charts.js
+
+  // ─── SUBGROUP RESOLUTION ─────────────────────────────────────────────────
+  // Single function, documented precedence — adding a branch later is additive.
+  // Normalises to trim + lowercase so a stray space or case difference in a tab
+  // name doesn't silently break resolution.
+  function resolveSubgroup() {
+    // Branch 1: in-extension selection (future) — not wired
+    // Branch 2: parameter (future) — not wired
+    // Branch 3: dashboard.name (live) — tab must be named with the subcategory_id
+    var name = _dashboard && _dashboard.name ? _dashboard.name : null;
+    return name ? name.trim().toLowerCase() : null;
+  }
 
   // ─── HTML / ATTR ESCAPING ─────────────────────────────────────────────────
   function escHtml(s) {
@@ -2878,11 +2891,25 @@
     _view = 'table';
     document.getElementById('table-view').style.display  = 'flex';
     document.getElementById('chart-shell').style.display = 'none';
-    renderTable(
-      _indicators.length ? _indicators : SAMPLE_INDICATORS,
-      switchToChart,
-      null
-    );
+    var list = _indicators.length ? _indicators : null;
+    if (!list) {
+      if (typeof tableau === 'undefined') {
+        // Preview mode — filter SAMPLE_INDICATORS by ?subgroup if provided
+        var urlSub = new URLSearchParams(location.search).get('subgroup');
+        if (urlSub) { urlSub = urlSub.trim().toLowerCase(); }
+        var filtered = urlSub
+          ? SAMPLE_INDICATORS.filter(function(d) { return d.subcategory_id === urlSub; })
+          : SAMPLE_INDICATORS;
+        list = filtered.length ? filtered : SAMPLE_INDICATORS;
+      } else {
+        // Tableau mode — dashboard tab name didn't match any subgroup
+        document.getElementById('table-view').innerHTML =
+          '<p style="padding:16px;font-family:\'Tableau Light\',sans-serif;color:#666;">' +
+          'Name this dashboard tab with a subgroup ID to display its indicators.</p>';
+        return;
+      }
+    }
+    renderTable(list, switchToChart, null);
   }
 
   function switchToChart(indicatorId) {
@@ -2909,10 +2936,10 @@
 
   // ─── PREVIEW-MODE SAMPLE INDICATORS ───────────────────────────────────────
   const SAMPLE_INDICATORS = [
-    { id: 'cagr', name: 'Compound Annual Growth Rate (CAGR)', source: '+snowflake' },
-    { id: 'mcon', name: 'Market Concentration',               source: '+snowflake' },
-    { id: 'svt',  name: 'Search Volume and Trends',           source: '+snowflake' },
-    { id: 'tam',  name: 'Total Addressable Market (TAM)',     source: '+snowflake' },
+    { id: 'cagr', name: 'Compound Annual Growth Rate (CAGR)', source: '+snowflake', subcategory_id: 'cmoaf' },
+    { id: 'mcon', name: 'Market Concentration',               source: '+snowflake', subcategory_id: 'cmoaf' },
+    { id: 'svt',  name: 'Search Volume and Trends',           source: '+snowflake', subcategory_id: 'sbr'   },
+    { id: 'tam',  name: 'Total Addressable Market (TAM)',     source: '+snowflake', subcategory_id: 'sbr'   },
   ];
 
   // ─── FETCH WORKSHEET ONCE, CACHE _rawData + _indicators ───────────────────
@@ -2969,8 +2996,6 @@
           _subcat:   subcatIdx !== -1 ? (row[subcatIdx].value || row[subcatIdx].formattedValue || '') : '',
         };
       }).filter(function(d) { return d.value !== null && d.name !== 'coffee_general'; });
-      var _dbg = {}; _rawData.forEach(function(d){ if (d._subcat) _dbg[d._subcat] = true; });
-      console.log('[0001-B] distinct _subcat values:', Object.keys(_dbg).sort());
 
       // Dedupe by indicator_id to build the table
       var seen = {};
@@ -2986,6 +3011,13 @@
         });
       });
       _indicators.sort(function(a, b) { return a.name.localeCompare(b.name); });
+      _subgroup = resolveSubgroup();
+      _indicators = _subgroup
+        ? _indicators.filter(function(d) {
+            var sc = d.subcategory_id ? d.subcategory_id.trim().toLowerCase() : '';
+            return sc === _subgroup;
+          })
+        : [];
 
       switchToTable();
     } catch (err) {
@@ -3212,7 +3244,6 @@
       configure: function() { showSettings(); },
     }).then(async function() {
       _dashboard = tableau.extensions.dashboardContent.dashboard;
-      console.log('[0001-A] dashboard.name:', _dashboard.name);
 
       // Load persisted settings
       var settings = tableau.extensions.settings;

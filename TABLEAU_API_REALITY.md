@@ -148,7 +148,7 @@ both confirmed working or already in use.
 
 ## To verify (open questions)
 
-- `dashboard.name` (via `dashboardContent.dashboard`) — **resolved**: returns the tab name as a string. Moved to Confirmed. Open design question: current tab name is human-readable (e.g. `"Growth"`), not a subcategory_id — resolve naming convention or add a subgroupMap before implementing resolution.
+- `dashboard.name` (via `dashboardContent.dashboard`) — **resolved and moved to Confirmed**. Decision: detail dashboard tabs are named with their subcategory_id (e.g. `cmoaf`) so the mapping is identity (no subgroupMap needed for now).
 - Setting a parameter value from the extension — confirmed working in practice; record
   the exact call/signature here for reference. `[tested]` your finding; signature TBD.
 - Whether `getSummaryDataAsync` row/column limits or formatting options matter for the
