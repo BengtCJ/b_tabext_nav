@@ -1789,10 +1789,6 @@
     '  font-size:13px;color:#E6E6E6;'                                       +
     '  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'          +
     '}'                                                                     +
-    // Brand names in matrix header use Tableau Light (Label role, brands variant)
-    '.sc-cell-hdr .ind-name {'                                              +
-    "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;"      +
-    '}'                                                                     +
     // Caption role (11px, Tableau Light)
     '.ind-source {'                                                         +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;"      +
@@ -1802,7 +1798,7 @@
     '  display:flex;flex-direction:column;align-items:center;gap:4px;'      +
     '  flex-shrink:0;margin-left:12px;'                                     +
     '}'                                                                     +
-    '.ind-jump svg { width:18px;height:18px;opacity:0.5; }'                 +
+    '.ind-jump svg { width:17px;height:17px;opacity:0.5; }'                 +
     '.ind-jump-label {'                                                     +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;"      +
     '  font-size:11px;color:#808080;letter-spacing:0.04em;'                 +
@@ -1814,20 +1810,41 @@
     '  color:#4D4D4D;padding:16px;text-align:center;'                       +
     '}' +
     // ── Scorecard matrix ──
-    '.sc-wrap{flex:1;overflow-y:auto;min-height:0;padding-bottom:4px;}' +
-    '.sc-meta{padding:8px 12px 4px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;}' +
+    '.sc-wrap{flex:1;display:flex;flex-direction:column;min-height:0;}' +
+    '.sc-frame{flex:1;display:flex;flex-direction:column;' +
+    '  background:#0d0d0d;border:1px solid #262626;border-radius:16px;' +
+    '  padding:8px;gap:4px;overflow:hidden;}' +
+    '.sc-meta{padding:4px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;}' +
     '.sc-title{text-transform:uppercase;}' +
-    '.sc-row-header{display:flex;flex-shrink:0;border-bottom:2px solid #4D4D4D;}' +
-    '.sc-row{display:flex;flex-shrink:0;border-bottom:1px solid #2A2828;' +
+    '.sc-grid-scroll{flex:1;overflow-y:auto;min-height:0;}' +
+    '.sc-grid{display:grid;gap:2px;}' +
+    '.sc-cell-hdr-comp{padding:8px 4px;display:flex;flex-direction:column;' +
+    '  align-items:center;justify-content:center;}' +
+    '.sc-cell-hdr-client{padding:8px 4px;background:#e994a2;border-radius:8px;' +
+    '  display:flex;flex-direction:column;align-items:center;justify-content:center;}' +
+    '.sc-brand-name{' +
+    "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
+    '  font-size:13px;color:#bfbfbf;}' +
+    '.sc-cell-hdr-client .sc-brand-name{color:#ffffff;}' +
+    '.sc-cell-label{background:#181818;border-radius:8px;padding:8px 12px;' +
+    '  display:flex;flex-direction:row;align-items:center;gap:8px;' +
     '  cursor:pointer;user-select:none;transition:background 0.12s;}' +
-    '.sc-row:hover{background:#363232;}' +
-    '.sc-row:active{opacity:0.85;}' +
-    '.sc-cell-left{flex:1 1 0;min-width:0;padding:8px 12px;display:flex;flex-direction:column;gap:4px;}' +
-    '.sc-cell-left .ind-jump{margin-left:0;}' +
-    '.sc-cell-left-hdr{flex:1 1 0;min-width:0;padding:8px 12px;}' +
-    '.sc-cell,.sc-cell-hdr{flex:0 0 56px;padding:8px 4px;text-align:center;' +
-    '  display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-    '  gap:4px;overflow:hidden;}';
+    '.sc-cell-label:hover{background:#222222;}' +
+    '.sc-cell-label .ind-heading{font-size:14px;color:#ededed;}' +
+    '.sc-cell-label-inner{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;}' +
+    '.sc-cell-label .ind-jump{margin-left:0;}' +
+    '.sc-cell-comp{background:#242424;border-radius:8px;padding:8px 4px;' +
+    '  display:flex;align-items:center;justify-content:center;}' +
+    '.sc-cell-client{background:#3a3a3a;border-radius:8px;padding:8px 4px;' +
+    '  display:flex;align-items:center;justify-content:center;}' +
+    '.sc-score{' +
+    "  font-family:'Baskervville','Baskerville',Georgia,serif;" +
+    '  font-size:21px;font-style:italic;font-weight:400;}' +
+    '.sc-score-suffix{font-size:0.5em;font-style:italic;color:#7c7c7c;}' +
+    '.sc-empty-msg{display:flex;align-items:center;justify-content:center;' +
+    '  height:100%;font-size:11px;' +
+    "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
+    '  color:#4D4D4D;padding:16px;text-align:center;}';
 
   function injectCSS() {
     if (document.getElementById(STYLE_ID)) return;
@@ -1845,19 +1862,21 @@
       .replace(/"/g, '&quot;');
   }
 
-  var JUMP_SVG =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-      'stroke-width="1.5" color="#808080">' +
-      '<circle cx="12" cy="12" r="10"/>' +
-      '<polyline points="8 12 12 16 16 12"/>' +
-      '<line x1="12" y1="8" x2="12" y2="16"/>' +
+  var CHART_SVG =
+    '<svg viewBox="0 0 24 24" fill="currentColor" ' +
+      'width="17" height="17" color="#808080">' +
+      '<rect x="3" y="12" width="4" height="9" rx="1"/>' +
+      '<rect x="10" y="7" width="4" height="14" rx="1"/>' +
+      '<rect x="17" y="3" width="4" height="18" rx="1"/>' +
     '</svg>';
 
   function renderMatrix(root, model, meta, onSelect) {
-    var wrap = document.createElement('div');
-    wrap.className = 'sc-wrap';
+    var N = model.brands.length;
 
-    // Title + question block
+    var frame = document.createElement('div');
+    frame.className = 'sc-frame';
+
+    // Optional meta block (title + question)
     if (meta && (meta.title || meta.question)) {
       var metaDiv = document.createElement('div');
       metaDiv.className = 'sc-meta';
@@ -1873,91 +1892,109 @@
         qEl.textContent = meta.question;
         metaDiv.appendChild(qEl);
       }
-      wrap.appendChild(metaDiv);
+      frame.appendChild(metaDiv);
     }
 
     if (!model.rows.length) {
       var empty = document.createElement('div');
-      empty.className = 'tbl-empty-msg';
+      empty.className = 'sc-empty-msg';
       empty.textContent = 'No indicators found';
-      wrap.appendChild(empty);
-      root.appendChild(wrap);
+      frame.appendChild(empty);
+      var wrapE = document.createElement('div');
+      wrapE.className = 'sc-wrap';
+      wrapE.appendChild(frame);
+      root.appendChild(wrapE);
       return;
     }
 
-    var brands = model.brands;
+    var scroll = document.createElement('div');
+    scroll.className = 'sc-grid-scroll';
 
-    // Header row
-    var hdrRow = document.createElement('div');
-    hdrRow.className = 'sc-row-header';
-    var leftHdr = document.createElement('div');
-    leftHdr.className = 'sc-cell-left-hdr';
-    hdrRow.appendChild(leftHdr);
-    brands.forEach(function(brandKey, i) {
+    var grid = document.createElement('div');
+    grid.className = 'sc-grid';
+    grid.style.gridTemplateColumns = 'minmax(232px,1.66fr) repeat(' + N + ',1fr)';
+
+    // ── Header row ──
+    var corner = document.createElement('div');
+    grid.appendChild(corner);
+
+    model.brands.forEach(function(brandKey, i) {
+      var isClient = i === 0;
       var cell = document.createElement('div');
-      cell.className = 'sc-cell-hdr';
+      cell.className = isClient ? 'sc-cell-hdr-client' : 'sc-cell-hdr-comp';
       var nameEl = document.createElement('div');
-      nameEl.className = 'ind-name';
+      nameEl.className = 'sc-brand-name';
       nameEl.textContent = (typeof BRAND_DISPLAY_MAP !== 'undefined' && BRAND_DISPLAY_MAP[brandKey])
         ? BRAND_DISPLAY_MAP[brandKey] : brandKey;
-      if (i === 0) { nameEl.style.color = 'var(--primary-500, var(--grey-100))'; }
       cell.appendChild(nameEl);
-      hdrRow.appendChild(cell);
+      grid.appendChild(cell);
     });
-    wrap.appendChild(hdrRow);
 
-    // Body rows
+    // ── Body rows ──
     model.rows.forEach(function(row) {
-      var tr = document.createElement('div');
-      tr.className = 'sc-row';
+      // Label cell
+      var labelCell = document.createElement('div');
+      labelCell.className = 'sc-cell-label';
+      labelCell.addEventListener('click', (function(id) {
+        return function() { if (typeof onSelect === 'function') onSelect(id); };
+      })(row.id));
 
-      // Left cell: name + source + jump arrow
-      var leftCell = document.createElement('div');
-      leftCell.className = 'sc-cell-left';
+      var inner = document.createElement('div');
+      inner.className = 'sc-cell-label-inner';
+
       var nameEl = document.createElement('div');
       nameEl.className = 'ind-heading';
       nameEl.textContent = row.name;
-      leftCell.appendChild(nameEl);
+      inner.appendChild(nameEl);
+
       if (row.source) {
         var srcEl = document.createElement('div');
         srcEl.className = 'ind-source';
         srcEl.textContent = row.source;
-        leftCell.appendChild(srcEl);
+        inner.appendChild(srcEl);
       }
+
+      labelCell.appendChild(inner);
+
       var jumpEl = document.createElement('div');
       jumpEl.className = 'ind-jump';
-      jumpEl.innerHTML = JUMP_SVG + '<span class="ind-jump-label">Jump to</span>';
-      leftCell.appendChild(jumpEl);
-      tr.appendChild(leftCell);
+      jumpEl.innerHTML = CHART_SVG + '<span class="ind-jump-label">View chart</span>';
+      labelCell.appendChild(jumpEl);
+
+      grid.appendChild(labelCell);
 
       // Score cells
-      brands.forEach(function(brandKey, i) {
+      model.brands.forEach(function(brandKey, i) {
+        var isClient = i === 0;
         var sc = (row.scores && row.scores[brandKey] !== undefined) ? row.scores[brandKey] : null;
         var cell = document.createElement('div');
-        cell.className = 'sc-cell';
+        cell.className = isClient ? 'sc-cell-client' : 'sc-cell-comp';
+
         if (sc !== null) {
-          var scoreEl = document.createElement('div');
-          scoreEl.className = 'ind-name';
-          scoreEl.textContent = Number(sc).toFixed(1);
-          if (i === 0) {
-            scoreEl.style.color = sc > 4
-              ? 'var(--rag-green, var(--grey-100))'
-              : sc < 2
-                ? 'var(--rag-red, var(--grey-100))'
-                : 'var(--rag-amber, var(--grey-100))';
+          var colour;
+          if (isClient) {
+            colour = sc > 4 ? 'var(--rag-green)' : sc < 2 ? 'var(--rag-red)' : 'var(--rag-amber)';
+          } else {
+            colour = '#d2d2d2';
           }
+          var scoreEl = document.createElement('div');
+          scoreEl.className = 'sc-score';
+          scoreEl.style.color = colour;
+          scoreEl.innerHTML = Number(sc).toFixed(1) +
+            '<span class="sc-score-suffix">/5</span>';
           cell.appendChild(scoreEl);
         }
-        tr.appendChild(cell);
+
+        grid.appendChild(cell);
       });
-
-      tr.addEventListener('click', (function(id) {
-        return function() { if (typeof onSelect === 'function') onSelect(id); };
-      })(row.id));
-
-      wrap.appendChild(tr);
     });
 
+    scroll.appendChild(grid);
+    frame.appendChild(scroll);
+
+    var wrap = document.createElement('div');
+    wrap.className = 'sc-wrap';
+    wrap.appendChild(frame);
     root.appendChild(wrap);
   }
 
@@ -2007,8 +2044,8 @@
             : '') +
         '</div>' +
         '<div class="ind-jump">' +
-          JUMP_SVG +
-          '<span class="ind-jump-label">Jump to</span>' +
+          CHART_SVG +
+          '<span class="ind-jump-label">View chart</span>' +
         '</div>';
 
       row.addEventListener('click', (function (id) {
@@ -2038,6 +2075,9 @@
       --primary-500: #E994A2;
       --primary-700: #E0697D;
       --primary-900: #D73F58;
+      --rag-green:   #57bf6a;
+      --rag-red:     #e0584f;
+      --rag-amber:   #e0992e;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2070,12 +2110,16 @@
       background: none;
       border: none;
       color: var(--grey-500);
-      font-size: 18px;
+      font-size: 11px;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
       cursor: pointer;
       padding: 4px 8px;
       border-radius: 4px;
       line-height: 1;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       transition: color 0.15s, background 0.15s;
     }
     #back-btn:hover { color: var(--grey-100); background: rgba(255,255,255,0.05); }
@@ -2370,7 +2414,7 @@
   <div id="table-view"></div>
   <div id="chart-shell">
     <div id="chart-header">
-      <button id="back-btn" title="Back to indicators">&larr;</button>
+      <button id="back-btn" title="Back to indicators"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span>Back to table</span></button>
       <div id="chart-title"></div>
       <div id="pills-row">
         <div id="period-selector"></div>
@@ -2388,7 +2432,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-29.6';
+  const VERSION = '2026-05-30.1';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
