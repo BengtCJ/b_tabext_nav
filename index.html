@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BP Nav + Charts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Baskervville:ital@0;1&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"
+          onerror="console.warn('Tableau Extensions API not available — running in preview mode')"></script>
+  <script src="charts.js"></script>
+  <script src="table.js"></script>
+  <style>
+    :root {
+      --grey-900: #1A1A1A;
+      --grey-800: #2A2828;
+      --grey-700: #4D4D4D;
+      --grey-500: #808080;
+      --grey-300: #B3B3B3;
+      --grey-100: #E6E6E6;
+      --primary-500: #E994A2;
+      --primary-700: #E0697D;
+      --primary-900: #D73F58;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Layout: table view vs chart shell ── */
+    #table-view {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      gap: 6px;
+      padding: 4px 0;
+      overflow-y: auto;
+    }
+    #chart-shell {
+      display: none;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+    }
+
+    #back-btn {
+      background: none;
+      border: none;
+      color: var(--grey-500);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.15s, background 0.15s;
+    }
+    #back-btn:hover { color: var(--grey-100); background: rgba(255,255,255,0.05); }
+
+    #chart-header {
+      display: none;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px 24px;
+      flex-shrink: 0;
+      gap: 16px;
+    }
+    #chart-title {
+      font-family: 'Baskervville', 'Baskerville', Georgia, serif;
+      font-style: italic;
+      font-size: 26px;
+      color: #e6e6e6;
+      line-height: 1;
+      padding: 0 2px;
+      flex: 1;
+    }
+    #pills-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    #period-selector {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-wrap: wrap;
+    }
+
+    .period-btn {
+      border: none;
+      height: 30px;
+      padding: 0 10px;
+      font-size: 9px;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: transparent;
+      color: #444;
+      border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .period-btn.active {
+      background: #2e2e2e;
+      color: #e6e6e6;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    #chart {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .error {
+      color: #e994a2;
+      font-size: 13px;
+      padding: 16px;
+      font-family: monospace;
+    }
+
+    #settings-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    #settings-dialog {
+      background: #222222;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 20px;
+      width: 680px;
+      max-width: 95vw;
+      color: #e6e6e6;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    #settings-dialog h2 {
+      font-size: 15px;
+      color: #e994a2;
+      margin-bottom: 16px;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    #settings-dialog h2 .version {
+      font-size: 10px;
+      color: #666;
+      letter-spacing: 0.04em;
+      font-style: normal;
+    }
+
+    .fields-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px 16px;
+    }
+
+    .field { margin-bottom: 0; }
+    .field-full { grid-column: 1 / -1; }
+
+    .field label {
+      display: block;
+      font-size: 10px;
+      color: #666666;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 3px;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    .field select,
+    .field input[type="text"] {
+      width: 100%;
+      background: #333333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      color: #e6e6e6;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      outline: none;
+    }
+
+    .field select:focus,
+    .field input:focus { border-color: #e994a2; }
+
+    .field input[type="color"] {
+      width: 100%;
+      height: 30px;
+      padding: 2px;
+      background: #333333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .inline-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .inline-controls input[type="color"] {
+      width: 48px;
+      height: 30px;
+      padding: 2px;
+      background: #333333;
+      border: 1px solid #555;
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .inline-controls input[type="checkbox"] {
+      accent-color: #e994a2;
+      width: 13px;
+      height: 13px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .inline-controls span {
+      font-size: 10px;
+      color: #666;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    .field .hint {
+      font-size: 10px;
+      color: #555;
+      margin-top: 3px;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    details { grid-column: 1 / -1; margin-top: 4px; }
+
+    details summary {
+      font-size: 10px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      user-select: none;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0;
+    }
+
+    details summary::-webkit-details-marker { display: none; }
+    details summary::before { content: '▶'; font-size: 8px; transition: transform 0.15s; }
+    details[open] summary::before { transform: rotate(90deg); }
+
+    .fields-grid-advanced {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px 16px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 6px 16px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-primary { background: #e994a2; color: #222; }
+    .btn-primary:hover { background: #d4778a; }
+    .btn-secondary { background: #333333; color: #e6e6e6; border: 1px solid #555; }
+    .btn-secondary:hover { background: #3a3a3a; }
+
+    #configure-btn {
+      position: fixed;
+      bottom: 6px;
+      right: 6px;
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 10px;
+      cursor: pointer;
+      z-index: 100;
+      opacity: 0.15;
+      transition: opacity 0.2s;
+      padding: 0;
+      line-height: 1;
+    }
+    #configure-btn:hover { opacity: 0.6; }
+
+    #view-toggle {
+      display: block;
+    }
+
+    .pill-wrap {
+      display: flex;
+      align-items: center;
+      background: #111111;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
+    }
+
+    .pill-btn {
+      border: none;
+      height: 30px;
+      padding: 0 14px;
+      font-size: 10px;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: transparent;
+      color: #444;
+      border-radius: 6px;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+
+    .pill-btn.active {
+      background: #2e2e2e;
+      color: #e6e6e6;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+  </style>
+</head>
+<body>
+  <div id="table-view"></div>
+  <div id="chart-shell">
+    <div id="chart-header">
+      <button id="back-btn" title="Back to indicators">&larr;</button>
+      <div id="chart-title"></div>
+      <div id="pills-row">
+        <div id="period-selector"></div>
+        <div id="view-toggle">
+          <div class="pill-wrap">
+            <button class="pill-btn"        id="btn-qtr">Quarters</button>
+            <button class="pill-btn active" id="btn-mo">Months</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="chart"></div>
+  </div>
+  <button id="configure-btn" title="Configure">&#9881;</button>
+
+  <script>
+  // ─── VERSION ──────────────────────────────────────────────────────────────
+  const VERSION = '2026-05-28.5';
+
+  // ─── FONTS ────────────────────────────────────────────────────────────────
+  const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
+  const FONT_BODY  = "'Tableau Regular', 'Helvetica Neue', Arial, sans-serif";
+  const FONT_LIGHT = "'Tableau Light', 'Helvetica Neue', Arial, sans-serif";
+
+  // ─── BASE COLOURS ─────────────────────────────────────────────────────────
+  const COL_WHITE      = '#ffffff';
+  const COL_LIGHT_GREY = '#e6e6e6';
+  const COL_DARK_GREY  = '#666666';
+  const COL_GRID       = '#444444';
+
+  // ─── INDICATOR DISPLAY NAMES ─────────────────────────────────────────────
+  const METRIC_LABELS = {
+    tam:     'Total Addressable Market (TAM)',
+    cagr:    'Compound Annual Growth Rate (CAGR)',
+    svt:     'Search Volume and Trends',
+    cat_pen: 'Category Penetration',
+    mcon:    'Market Concentration',
+    cg_bg:   'Category Growth vs Brand Growth',
+    asp_cat: 'Average Selling Price vs Category Average',
+    sam:     'Serviceable Available Market (SAM)',
+    som:     'Serviceable Obtainable Market (SOM)',
+    lpa:     'Lifestyle & Psychographic Alignment',
+    pmf:     'Product / Market Fit (PMF)',
+    sop:     'Share of Preference',
+    str:     'Sell-Through Rate',
+    cra:     'Conversion Rate Analysis',
+    pgc:     'Portfolio Growth Contribution',
+    pcr:     'Portfolio Cannibalization Rate',
+    clv:     'Customer Lifetime Value (CLV)',
+    pcws:    'Portfolio Coverage & White Space',
+    ic:      'Innovation Contribution',
+    enps:    'Employer Net Promoter Score (ENPS)',
+    eas:     'Employer Brand Attractiveness Score',
+    cpil:    'Company Perceived Innovation & Leadership',
+    aa:      'Aided Awareness',
+    ua:      'Unaided Awareness',
+    bss:     'Branded Search Share',
+    onssp:   'Occasion / Need-State Search Presence',
+    cava:    'Correct Attribution of Visual & Verbal Assets',
+    aus:     'Asset Uniqueness Score',
+    dvtr:    'Distinctive Verbal Tone Recognition',
+    esc:     'Emergent Semiotic Codes',
+    aabc:    'Avg. Attention on Brand Content',
+    sstsr:   'Scroll-Stop / Thumb-Stop Ratio',
+    eqr:     'Engagement Quality Ratio',
+    bslpc:   'Branded Search Lift Post-Campaign',
+    arl:     'Ad Recall Uplift',
+    sv:      'Shelf Velocity',
+    cauat:   'Consistency of Asset Usage Across Touchpoints',
+    pcr_st:  'Perceived Consistency Rate',
+    ema:     'Earned Message Alignment',
+    sov:     'Share of Voice (SOV)',
+    vom:     'Velocity of Mentions',
+    pr:      'Pickup Rate',
+    aot:     'Audience Overlap with Tastemakers',
+    cvm:     'Campaign Virality / Meme-ability',
+    bpbc:    'Brand Presence Beyond Core Category',
+    irer:    'Identity-Reinforcing Engagement Ratio',
+    cbr:     'Cultural Badging Rate',
+    abc:     'Active Brand Communities',
+    fcc:     'Fan Co-Creation',
+    rr:      'Ritualization Rate',
+    rsb:     'Resistance to Switching Brands',
+    consid:  'Consideration',
+    nps:     'Net Promoter Score',
+    ba:      'Brand Affinity',
+    ebl:     'Engagements Beyond Likes',
+    csl:     'Campaign Sales Lift',
+    bt:      'Brand Trust',
+  };
+
+  // ─── INDICATOR UNITS ──────────────────────────────────────────────────────
+  const METRIC_UNITS = {
+    tam:     'USD',
+    cagr:    '%',
+    svt:     '% / index',
+    cat_pen: '%',
+    mcon:    '%',
+    cg_bg:   '%',
+    asp_cat: 'USD',
+    sam:     'USD',
+    som:     'USD',
+    lpa:     '%',
+    pmf:     '%',
+    sop:     '%',
+    str:     '%',
+    cra:     '%',
+    pgc:     '%',
+    pcr:     '%',
+    clv:     'USD',
+    enps:    'pts',
+    eas:     'pts',
+    cpil:    'pts',
+    aa:      '%',
+    ua:      '%',
+    bss:     '%',
+    onssp:   '%',
+    cava:    '%',
+    aus:     '%',
+    dvtr:    '%',
+    esc:     '%',
+    aabc:    'sec / min',
+    sstsr:   '%',
+    eqr:     '%',
+    bslpc:   '% / index',
+    arl:     '%',
+    sv:      '$ / store / wk',
+    cauat:   '%',
+    pcr_st:  '%',
+    ema:     '%',
+    sov:     '%',
+    vom:     '%',
+    pr:      '%',
+    aot:     '%',
+    cvm:     '%',
+    bpbc:    '%',
+    irer:    '%',
+    cbr:     '%',
+    abc:     '#',
+    fcc:     '#',
+    rr:      '%',
+    rsb:     '%',
+    consid:  '%',
+    nps:     '%',
+    ba:      '%',
+    ebl:     '%',
+    csl:     'USD',
+  };
+
+  // ─── TREND-CAPABLE INDICATORS ─────────────────────────────────────────────
+  // Only these show the Qtr/Mo pill toggle.
+  const INDICATOR_TREND = {
+    eqr: true, ebl: true, sstsr: true,
+    sov: true, bss: true,
+    vom: true, svt: true,
+  };
+
+  // ─── MULTI-PERIOD CHART TYPES ─────────────────────────────────────────────
+  const MULTI_PERIOD_CHARTS = [
+    'line-smooth', 'line-straight',
+    'area-100', 'small-multiples', 'stream', 'slope',
+  ];
+
+
+  // ─── DEFAULT CONFIG ───────────────────────────────────────────────────────
+  const DEFAULTS = {
+    worksheet:          '',
+    indicatorIdField:   'indicator_id',
+    nameField:          'Display Name',
+    sourceField:        'Source',
+    subcategoryIdField: 'subcategory_id',
+    brandField:         'Brand Name Upper',
+    valueField:         'SUM(Raw Value)',
+    yearField:          'Year',
+    monthField:         'Month',
+    categoryField:      'category_id',
+    chart:              'hbar',
+    selectedColor:      '#e994a2',
+    neutralColor:       '#7d7d7d',
+    bgColor:            'transparent',
+    showUnits:          'true',
+  };
+
+  // ─── STATE ────────────────────────────────────────────────────────────────
+  let CONFIG              = Object.assign({}, DEFAULTS);
+  let _dashboard          = null;
+  let _lastData           = null;
+  let _lastSelected       = null;
+  let _clientBrand        = null;
+  let _allData            = null;       // chart data for current indicator (post period/mode)
+  let _selectedPeriod     = 'all';
+  let _rawData            = [];         // full cached worksheet rows
+  let _indicators         = [];         // parsed { id, name, source } list
+  let _view               = 'table';
+  let _selectedIndicatorId = null;
+  // _selectedBrand, _chartOverrides, _viewMode are declared by charts.js
+
+  // ─── HTML / ATTR ESCAPING ─────────────────────────────────────────────────
+  function escHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function escAttr(s) {
+    return String(s == null ? '' : s).replace(/"/g, '&quot;');
+  }
+
+  // ─── BACKGROUND ───────────────────────────────────────────────────────────
+  // ─── APPLY BACKGROUND ─────────────────────────────────────────────────────
+  function applyBackground() {
+    document.body.style.background = CONFIG.bgColor;
+    document.documentElement.style.background = CONFIG.bgColor;
+  }
+
+  // ─── SHARED HELPERS ───────────────────────────────────────────────────────
+  // ─── SHARED HELPERS ───────────────────────────────────────────────────────
+  function sortWithPrimaryLast(data, primary) {
+    return [
+      ...data.filter(d => d.name !== primary),
+      ...data.filter(d => d.name === primary),
+    ];
+  }
+
+  function showTooSmall(el) {
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;' +
+      'height:100%;font-size:11px;font-family:\'Tableau Light\',Arial,sans-serif;' +
+      'color:var(--grey-700)">Container too small</div>';
+  }
+
+  function showEmpty(el) {
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;' +
+      'height:100%;font-size:11px;font-family:\'Tableau Light\',Arial,sans-serif;' +
+      'color:var(--grey-700)">No data available</div>';
+  }
+
+  function applySelectionOpacity(containerEl, selected) {
+    d3.select(containerEl).selectAll('[data-brand]')
+      .transition().duration(300).ease(d3.easeCubicOut)
+      .style('opacity', function() {
+        if (!selected) return 1;
+        return this.getAttribute('data-brand') === selected ? 1 : 0.2;
+      });
+  }
+
+  // ─── PERIOD HELPERS ───────────────────────────────────────────────────────
+  // ─── PERIOD HELPERS ───────────────────────────────────────────────────────
+  function toYearMonth(year, month) {
+    return Math.round(year) + '-' + String(Math.round(month)).padStart(2, '0');
+  }
+
+  function toYearQuarter(yearmonth) {
+    var parts = yearmonth.split('-');
+    var y = parseInt(parts[0]);
+    var m = parseInt(parts[1]);
+    return y + '-Q' + Math.ceil(m / 3);
+  }
+
+  // Returns the three yearmonth strings belonging to a given year+quarter.
+  function quarterMonths(year, quarter) {
+    var startMonth = (quarter - 1) * 3 + 1;
+    var result = [];
+    for (var i = 0; i < 3; i++) {
+      result.push(toYearMonth(year, startMonth + i));
+    }
+    return result;
+  }
+
+  function sortByPeriod(data) {
+    return data.slice().sort(function(a, b) {
+      return (a.period || '').localeCompare(b.period || '');
+    });
+  }
+
+  // ─── QUARTERLY AGGREGATION ────────────────────────────────────────────────
+  // ─── QUARTERLY AGGREGATION ────────────────────────────────────────────────
+  function aggregateByQuarter(data, metricId) {
+    var aggRule = INDICATOR_AGGREGATION[metricId] || 'avg';
+
+    // Group by brand + yearquarter
+    var grouped = {};
+    data.forEach(function(d) {
+      if (!d.period) return;
+      var yq  = toYearQuarter(d.period);
+      var key = d.name + '||' + yq;
+      if (!grouped[key]) grouped[key] = { name: d.name, period: yq, values: [], months: [] };
+      grouped[key].values.push(d.value);
+      grouped[key].months.push(d.period);
+    });
+
+    // Only keep complete quarters (all 3 months present for this brand)
+    var result = [];
+    Object.keys(grouped).forEach(function(key) {
+      var g = grouped[key];
+      var qparts = g.period.split('-Q');
+      var year    = parseInt(qparts[0]);
+      var quarter = parseInt(qparts[1]);
+      var expected = quarterMonths(year, quarter);
+      var complete = expected.every(function(ym) { return g.months.indexOf(ym) !== -1; });
+      if (!complete) return;
+
+      var value = aggRule === 'sum'
+        ? d3.sum(g.values)
+        : d3.mean(g.values);
+
+      result.push({ name: g.name, period: g.period, value: value });
+    });
+
+    return sortByPeriod(result);
+  }
+
+  // ─── PIVOT LONG → WIDE ────────────────────────────────────────────────────
+  // ─── PIVOT LONG → WIDE ────────────────────────────────────────────────────
+  // Used by chart renderers that expect { period, Brand1: v, Brand2: v, ... }
+  function pivotToWide(data) {
+    var periods = [];
+    var brands  = [];
+    data.forEach(function(d) {
+      if (d.period && periods.indexOf(d.period) === -1) periods.push(d.period);
+      if (d.name   && brands.indexOf(d.name)   === -1) brands.push(d.name);
+    });
+    periods.sort();
+    return periods.map(function(period) {
+      var row = { period: period };
+      brands.forEach(function(brand) {
+        var match = data.find(function(d) { return d.name === brand && d.period === period; });
+        row[brand] = match ? match.value : null;
+      });
+      return row;
+    });
+  }
+
+  // ─── CHART RESOLVER ───────────────────────────────────────────────────────
+  // ─── CHART RESOLVER ───────────────────────────────────────────────────────
+  function resolveChart(metricId) {
+    // 1. User saved a per-indicator override
+    if (_chartOverrides[metricId]) return _chartOverrides[metricId];
+    // 2. Recommended default for this metric
+    var charts = METRIC_CHARTS[metricId];
+    if (charts && charts.length) return charts[0];
+    // 3. Global fallback
+    return CONFIG.chart;
+  }
+
+  // ─── VIEW TOGGLE (refreshViewToggle, refreshPeriodSelector, applyPeriodAndRender)
+  function refreshViewToggle() {
+    var isTrend = INDICATOR_TREND[CONFIG.metricId];
+
+    var titleEl = document.getElementById('chart-title');
+    if (titleEl) {
+      var label = METRIC_LABELS[CONFIG.metricId] || CONFIG.metricId || '';
+      var unit  = CONFIG.showUnits !== 'false' ? METRIC_UNITS[CONFIG.metricId] : null;
+      titleEl.innerHTML = label +
+        (unit ? ' <span style="font-size:18px;color:#808080;">(' + unit + ')</span>' : '');
+    }
+
+    var header = document.getElementById('chart-header');
+    if (header) header.style.display = CONFIG.metricId ? 'flex' : 'none';
+
+    var pillsRow = document.getElementById('pills-row');
+    if (pillsRow) pillsRow.style.display = isTrend ? 'flex' : 'none';
+
+    var qBtn = document.getElementById('btn-qtr');
+    var mBtn = document.getElementById('btn-mo');
+    if (qBtn && mBtn) {
+      if (_viewMode === 'quarterly') {
+        qBtn.className = 'pill-btn active';
+        mBtn.className = 'pill-btn';
+      } else {
+        qBtn.className = 'pill-btn';
+        mBtn.className = 'pill-btn active';
+      }
+    }
+    refreshPeriodSelector();
+  }
+
+  function refreshPeriodSelector() {
+    var el = document.getElementById('period-selector');
+    if (!el) return;
+    el.innerHTML = '';
+    if (!_allData || !INDICATOR_TREND[CONFIG.metricId]) return;
+    var periods = [];
+    _allData.forEach(function(d) {
+      if (d.period && periods.indexOf(d.period) === -1) periods.push(d.period);
+    });
+    periods.sort();
+    if (periods.length <= 1) return;
+
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;background:#111111;border-radius:8px;padding:3px;gap:2px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.6);';
+    ['all'].concat(periods).forEach(function(p) {
+      var isActive = _selectedPeriod === p;
+      var btn = document.createElement('button');
+      var agg = INDICATOR_AGGREGATION[CONFIG.metricId] || 'avg';
+      var allLabel = agg === 'sum' ? 'Total' : (agg === 'avg' ? 'Average' : 'All');
+      btn.textContent = p === 'all' ? allLabel : p;
+      btn.className = 'period-btn' + (isActive ? ' active' : '');
+      btn.onclick = function() {
+        _selectedPeriod = p;
+        applyPeriodAndRender();
+      };
+      wrap.appendChild(btn);
+    });
+    el.appendChild(wrap);
+  }
+
+  function applyPeriodAndRender() {
+    if (!_allData) return;
+    var isMultiPeriod = MULTI_PERIOD_CHARTS.indexOf(CONFIG.chart) !== -1;
+    var data;
+    if (_selectedPeriod !== 'all') {
+      data = _allData.filter(function(d) { return d.period === _selectedPeriod; });
+      if (!data.length) { _selectedPeriod = 'all'; data = null; }
+    }
+    if (!data) {
+      if (isMultiPeriod) {
+        data = _allData;
+      } else {
+        var aggRule = INDICATOR_AGGREGATION[CONFIG.metricId] || 'avg';
+        if (aggRule === 'none') {
+          // No meaningful aggregation — use last period only
+          var allPs = [];
+          _allData.forEach(function(d) { if (d.period && allPs.indexOf(d.period) === -1) allPs.push(d.period); });
+          allPs.sort();
+          data = allPs.length > 1 ? _allData.filter(function(d) { return d.period === allPs[allPs.length - 1]; }) : _allData;
+        } else {
+          // Aggregate all periods per brand (sum or average)
+          var grouped = {};
+          _allData.forEach(function(d) {
+            if (!grouped[d.name]) grouped[d.name] = [];
+            grouped[d.name].push(d.value);
+          });
+          data = Object.keys(grouped).map(function(name) {
+            var vals = grouped[name];
+            return { name: name, value: aggRule === 'sum' ? d3.sum(vals) : d3.mean(vals) };
+          });
+        }
+      }
+    }
+    refreshPeriodSelector();
+    renderChart(data, _clientBrand, _dashboard);
+  }
+
+  // ─── SET VIEW MODE (Qtr/Mo) — re-process current indicator ────────────────
+  function setViewMode(mode) {
+    _viewMode = mode;
+    _selectedPeriod = 'all';
+    refreshViewToggle();
+    if (_selectedIndicatorId) {
+      if (_dashboard) {
+        processIndicator(_selectedIndicatorId);
+      } else {
+        renderChart(getSampleData(CONFIG.chart), _lastSelected, null);
+      }
+    }
+  }
+
+  // ─── DATA GUARDS ─────────────────────────────────────────────────────────
+  // ─── DATA GUARDS ─────────────────────────────────────────────────────────
+  function guardStarbucksPresent(data, metricId) {
+    if (!data.some(function(d) { return d.name === 'Starbucks'; }))
+      console.warn('[' + metricId + '] Starbucks missing from dataset.');
+  }
+
+  function guardNpsRecalculated(data) {
+    if (data && data.illy && data.illy.nps > 5) return true;
+    console.warn('[nps] Values appear to be Likert means, not true NPS. Arc blocked.');
+    return false;
+  }
+
+  function guardBaAttributes(data) {
+    if (!data[0] || !data[0].Trust) {
+      console.warn('[ba] Attribute columns missing (need Trust, Innovation, Value, Style, Heritage).');
+      return false;
+    }
+    return true;
+  }
+
+  // ─── SAMPLE DATA (preview mode only) ──────────────────────────────────────
+  // ─── SAMPLE DATA ─────────────────────────────────────────────────────────
+  function getSampleData(chart) {
+    var WIDE_PERIODS = [
+      { period:'2025-01','Illy Coffee':0.57,Starbucks:82,Nespresso:10.7,Lavazza:3.9,"Peet's Coffee":2.83 },
+      { period:'2025-02','Illy Coffee':0.55,Starbucks:81,Nespresso:11.1,Lavazza:4.1,"Peet's Coffee":3.29 },
+      { period:'2025-03','Illy Coffee':0.59,Starbucks:83,Nespresso:10.4,Lavazza:3.7,"Peet's Coffee":2.31 },
+      { period:'2025-04','Illy Coffee':0.61,Starbucks:82,Nespresso:10.9,Lavazza:3.8,"Peet's Coffee":2.69 },
+      { period:'2025-05','Illy Coffee':0.64,Starbucks:80,Nespresso:11.5,Lavazza:4.2,"Peet's Coffee":3.66 },
+      { period:'2025-06','Illy Coffee':0.62,Starbucks:81,Nespresso:11.2,Lavazza:4.0,"Peet's Coffee":3.18 },
+    ];
+
+    if (chart === 'line') {
+      return [
+        { name:'Starbucks',   period:'2025-Q1', value:6.2 },
+        { name:'Starbucks',   period:'2025-Q2', value:6.8 },
+        { name:'Starbucks',   period:'2025-Q3', value:7.1 },
+        { name:'Starbucks',   period:'2025-Q4', value:6.9 },
+        { name:'Nespresso',   period:'2025-Q1', value:4.8 },
+        { name:'Nespresso',   period:'2025-Q2', value:5.1 },
+        { name:'Nespresso',   period:'2025-Q3', value:5.4 },
+        { name:'Nespresso',   period:'2025-Q4', value:5.2 },
+        { name:'Illy Coffee', period:'2025-Q1', value:3.9 },
+        { name:'Illy Coffee', period:'2025-Q2', value:4.0 },
+        { name:'Illy Coffee', period:'2025-Q3', value:4.2 },
+        { name:'Illy Coffee', period:'2025-Q4', value:4.5 },
+      ];
+    }
+    if (chart === 'line-straight' || chart === 'line-smooth') return WIDE_PERIODS;
+    if (chart === 'area-100' || chart === 'stream' || chart === 'small-multiples') return WIDE_PERIODS;
+    if (chart === 'slope') return [
+      { name:'Illy Coffee',   v1:0.57, v2:0.64 },
+      { name:'Starbucks',     v1:82.0, v2:80.0 },
+      { name:'Nespresso',     v1:10.7, v2:11.5 },
+      { name:'Lavazza',       v1:3.9,  v2:4.2  },
+      { name:"Peet's Coffee", v1:2.83, v2:3.66 },
+    ];
+    if (chart === 'waffle' || chart === 'dot-matrix') return [
+      { name:'Illy Coffee',   promoterFraction:0.45, passiveFraction:0.30, detractorFraction:0.25 },
+      { name:'Starbucks',     promoterFraction:0.52, passiveFraction:0.28, detractorFraction:0.20 },
+      { name:'Nespresso',     promoterFraction:0.38, passiveFraction:0.35, detractorFraction:0.27 },
+      { name:'Lavazza',       promoterFraction:0.31, passiveFraction:0.39, detractorFraction:0.30 },
+      { name:"Peet's Coffee", promoterFraction:0.29, passiveFraction:0.41, detractorFraction:0.30 },
+    ];
+    if (chart === 'vbar-stacked') return [
+      { name:'Illy Coffee',   active:0.082, passive:0.918 },
+      { name:'Starbucks',     active:0.134, passive:0.866 },
+      { name:'Nespresso',     active:0.097, passive:0.903 },
+      { name:'Lavazza',       active:0.071, passive:0.929 },
+      { name:"Peet's Coffee", active:0.058, passive:0.942 },
+    ];
+    if (chart === 'multiscale') return [
+      { name:'Illy Coffee',   Trust:3.8, Innovation:3.2, Value:2.9, Style:4.1, Heritage:4.4 },
+      { name:'Starbucks',     Trust:4.2, Innovation:4.0, Value:3.5, Style:3.8, Heritage:3.1 },
+      { name:'Nespresso',     Trust:3.9, Innovation:4.1, Value:3.2, Style:4.3, Heritage:3.6 },
+      { name:'Lavazza',       Trust:3.5, Innovation:2.9, Value:3.8, Style:3.4, Heritage:4.1 },
+      { name:"Peet's Coffee", Trust:3.2, Innovation:3.1, Value:4.0, Style:2.9, Heritage:3.3 },
+    ];
+    if (chart === 'arc') return {
+      illy: { nps:24 },
+      competitors: [
+        { name:"Peet's Coffee", nps:18 },
+        { name:'Lavazza',       nps:14 },
+        { name:'Starbucks',     nps:12 },
+        { name:'Nespresso',     nps:8  },
+      ],
+    };
+    return [
+      { name:'Starbucks',     value:6.8 },
+      { name:'Nespresso',     value:5.4 },
+      { name:'Illy Coffee',   value:4.2 },
+      { name:'Lavazza',       value:3.9 },
+      { name:"Peet's Coffee", value:3.1 },
+    ];
+  }
+
+  // ─── ROUTER ───────────────────────────────────────────────────────────────
+  // ─── ROUTER ───────────────────────────────────────────────────────────────
+  function renderChart(data, selectedBrand, dashboard) {
+    _lastData     = data;
+    _lastSelected = selectedBrand;
+
+    var el = document.getElementById('chart');
+    el.innerHTML = '';
+    el.removeAttribute('style');
+
+    var D = buildDesign();
+
+    // Charts that need wide-format data
+    var needsWide = ['line-straight','line-smooth','area-100','stream','small-multiples'];
+    var chartData = (needsWide.indexOf(CONFIG.chart) !== -1 && Array.isArray(data) && data[0] && data[0].name)
+      ? pivotToWide(data)
+      : data;
+
+    switch (CONFIG.chart) {
+      case 'donut':          renderDonut(el, data, selectedBrand, dashboard, D.donut);           break;
+      case 'bar':            renderBar(el, data, selectedBrand, dashboard, D.bar);               break;
+      case 'line':           renderLine(el, data, selectedBrand, dashboard, D.line);             break;
+      case 'ban':            renderBAN(el, data, selectedBrand, D.ban);                          break;
+      case 'bans':           renderBANs(el, data, selectedBrand, D.bans);                        break;
+      case 'line-straight':  renderLineChart(el, chartData, selectedBrand, true);                break;
+      case 'line-smooth':    renderLineChart(el, chartData, selectedBrand, false);               break;
+      case 'slope':          renderSlope(el, data, selectedBrand, D.slope);                      break;
+      case 'area-100':       renderArea100(el, chartData, selectedBrand, D.area100);             break;
+      case 'stream':         renderStream(el, chartData, selectedBrand, D.stream);               break;
+      case 'treemap':        renderTreemap(el, data, selectedBrand, D.treemap);                  break;
+      case 'treemap-bar':    renderTreemapBar(el, data, selectedBrand, D.treemapBar);            break;
+      case 'bubbles':        renderBubbles(el, data, selectedBrand, D.bubbles);                  break;
+      case 'inset-bubble':   renderInsetBubble(el, data, selectedBrand, D.insetBubble);          break;
+      case 'progress-ring':  renderProgressRing(el, data, selectedBrand, D.progressRing);        break;
+      case 'waffle':         renderWaffle(el, data, selectedBrand, D.waffle);                    break;
+      case 'hbar':           renderHBar(el, data, selectedBrand, dashboard, D.hbar);             break;
+      case 'vbar-stacked':   renderVBarStacked(el, data, selectedBrand, D.vbarStacked);          break;
+      case 'scale-figma':    renderScaleFigma(el, data, selectedBrand, D.scaleFigma);            break;
+      case 'multiscale':     renderMultiScale(el, data, selectedBrand, D.multiscale);            break;
+      case 'dot-matrix':     renderDotMatrix(el, data, selectedBrand, D.dotMatrix);              break;
+      case 'small-multiples':renderSmallMultiples(el, chartData, selectedBrand, D.smallMultiples);break;
+      case 'arc':            renderArc(el, data, selectedBrand, D.arc);                          break;
+      default: showError('Unknown chart type: "' + CONFIG.chart + '"');
+    }
+
+    refreshViewToggle();
+
+    // Restore highlight after entrance animations settle
+    if (_selectedBrand) {
+      var _captureEl = el;
+      setTimeout(function() { applySelectionOpacity(_captureEl, _selectedBrand); }, 850);
+    }
+  }
+
+  // ─── MARK SELECTOR ───────────────────────────────────────────────────────
+  // ─── MARK SELECTOR ───────────────────────────────────────────────────────
+  async function selectBrand(name, dashboard) {
+    // Toggle: clicking the same brand deselects
+    _selectedBrand = (_selectedBrand === name) ? null : name;
+    applySelectionOpacity(document.getElementById('chart'), _selectedBrand);
+    if (!dashboard) return;
+    if (_selectedBrand) {
+      var criteria = [{ fieldName: CONFIG.brandField, value: _selectedBrand }];
+      await Promise.allSettled(
+        dashboard.worksheets
+          .filter(function(ws) { return ws.name !== CONFIG.worksheet; })
+          .map(function(ws) {
+            return ws.selectMarksByValueAsync(criteria, tableau.SelectionUpdateType.Replace);
+          })
+      );
+    } else {
+      await Promise.allSettled(
+        dashboard.worksheets
+          .filter(function(ws) { return ws.name !== CONFIG.worksheet; })
+          .map(function(ws) { return ws.clearSelectedMarksAsync(); })
+      );
+    }
+  }
+
+  // ─── HELPERS ─────────────────────────────────────────────────────────────
+  // ─── HELPERS ─────────────────────────────────────────────────────────────
+  function truncLabel(name, containerW) {
+    if (containerW >= 500 || name.length <= 9) return name;
+    return name.slice(0, 8) + '…';
+  }
+
+  // ─── ERROR ────────────────────────────────────────────────────────────────
+  // ─── ERROR ────────────────────────────────────────────────────────────────
+  function showError(msg) {
+    document.getElementById('chart').innerHTML = '<div class="error">⚠ ' + msg + '</div>';
+  }
+
+  // ─── VIEW SWITCHING ───────────────────────────────────────────────────────
+  function switchToTable() {
+    _view = 'table';
+    document.getElementById('table-view').style.display  = 'flex';
+    document.getElementById('chart-shell').style.display = 'none';
+    renderTable(
+      _indicators.length ? _indicators : SAMPLE_INDICATORS,
+      switchToChart,
+      null
+    );
+  }
+
+  function switchToChart(indicatorId) {
+    _view = 'chart';
+    _selectedIndicatorId = indicatorId;
+    document.getElementById('table-view').style.display  = 'none';
+    document.getElementById('chart-shell').style.display = 'flex';
+    if (_dashboard) {
+      processIndicator(indicatorId);
+    } else {
+      CONFIG.metricId = indicatorId;
+      CONFIG.chart    = resolveChart(indicatorId);
+      _allData        = null;
+      _clientBrand    = null;
+      _selectedBrand  = null;
+      refreshViewToggle();
+      renderChart(getSampleData(CONFIG.chart), null, null);
+    }
+  }
+
+  // ─── PREVIEW-MODE SAMPLE INDICATORS ───────────────────────────────────────
+  const SAMPLE_INDICATORS = [
+    { id: 'cagr', name: 'Compound Annual Growth Rate (CAGR)', source: '+snowflake' },
+    { id: 'mcon', name: 'Market Concentration',               source: '+snowflake' },
+    { id: 'svt',  name: 'Search Volume and Trends',           source: '+snowflake' },
+    { id: 'tam',  name: 'Total Addressable Market (TAM)',     source: '+snowflake' },
+  ];
+
+  // ─── FETCH WORKSHEET ONCE, CACHE _rawData + _indicators ───────────────────
+  async function fetchAndCacheData() {
+    if (!_dashboard || !CONFIG.worksheet) return;
+    var ws = _dashboard.worksheets.find(function(w) { return w.name === CONFIG.worksheet; });
+    if (!ws) {
+      console.warn('Worksheet not found:', CONFIG.worksheet);
+      return;
+    }
+    try {
+      var dt   = await ws.getSummaryDataAsync({ maxRows: 5000 });
+      var cols = dt.columns;
+      var rows = dt.data;
+
+      function colIdx(name) {
+        var norm = name.toLowerCase().replace(/[\s_]+/g, '');
+        return cols.findIndex(function(c) {
+          return c.fieldName.toLowerCase().replace(/[\s_]+/g, '') === norm;
+        });
+      }
+
+      var brandIdx  = colIdx(CONFIG.brandField);
+      var valueIdx  = colIdx(CONFIG.valueField);
+      var yearIdx   = colIdx(CONFIG.yearField);
+      var monthIdx  = colIdx(CONFIG.monthField);
+      var catIdx    = colIdx(CONFIG.categoryField);
+      var indIdx    = colIdx(CONFIG.indicatorIdField);
+      var nameIdx   = colIdx(CONFIG.nameField);
+      var sourceIdx = colIdx(CONFIG.sourceField);
+      var subcatIdx = colIdx(CONFIG.subcategoryIdField);
+
+      if (brandIdx === -1 || valueIdx === -1 || indIdx === -1) {
+        var available = cols.map(function(c) { return c.fieldName; }).join(', ');
+        console.warn('Required fields missing. Available: ' + available);
+        showError('Required fields missing. Available: ' + available);
+        return;
+      }
+
+      _rawData = rows.map(function(row) {
+        var rawVal = parseFloat(row[valueIdx].value);
+        var year   = yearIdx  !== -1 ? parseFloat(row[yearIdx].value)  : null;
+        var month  = monthIdx !== -1 ? parseFloat(row[monthIdx].value) : null;
+        var period = (year && month && !isNaN(year) && !isNaN(month))
+          ? toYearMonth(year, month) : null;
+        return {
+          name:      row[brandIdx].formattedValue || row[brandIdx].value,
+          value:     isNaN(rawVal) ? null : rawVal,
+          indicator: indIdx    !== -1 ? (row[indIdx].value    || '') : null,
+          category:  catIdx    !== -1 ? (row[catIdx].value    || '') : null,
+          period:    period,
+          _indName:  nameIdx   !== -1 ? (row[nameIdx].formattedValue   || row[nameIdx].value   || '') : '',
+          _source:   sourceIdx !== -1 ? (row[sourceIdx].formattedValue || row[sourceIdx].value || '') : '',
+          _subcat:   subcatIdx !== -1 ? (row[subcatIdx].value || row[subcatIdx].formattedValue || '') : '',
+        };
+      }).filter(function(d) { return d.value !== null && d.name !== 'coffee_general'; });
+
+      // Dedupe by indicator_id to build the table
+      var seen = {};
+      _indicators = [];
+      _rawData.forEach(function(d) {
+        if (!d.indicator || seen[d.indicator]) return;
+        seen[d.indicator] = true;
+        _indicators.push({
+          id:             d.indicator,
+          name:           d._indName || METRIC_LABELS[d.indicator] || d.indicator,
+          source:         d._source,
+          subcategory_id: d._subcat,
+        });
+      });
+      _indicators.sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+      switchToTable();
+    } catch (err) {
+      console.error('Data error:', err);
+      showError('Data error: ' + err.message);
+    }
+  }
+
+  // ─── PROCESS DATA FOR A SELECTED INDICATOR ────────────────────────────────
+  function processIndicator(indicatorId) {
+    CONFIG.metricId = indicatorId;
+    CONFIG.chart    = resolveChart(indicatorId);
+
+    var data    = _rawData.filter(function(d) { return d.indicator === indicatorId; });
+    var isTrend = INDICATOR_TREND[indicatorId];
+
+    if (isTrend) {
+      if (_viewMode === 'quarterly') {
+        data = aggregateByQuarter(data, indicatorId);
+      } else {
+        data = sortByPeriod(data.filter(function(d) { return d.period; }));
+      }
+    } else {
+      var periods = [];
+      data.forEach(function(d) {
+        if (d.period && periods.indexOf(d.period) === -1) periods.push(d.period);
+      });
+      periods.sort();
+      if (periods.length > 1) {
+        var latest = periods[periods.length - 1];
+        data = data.filter(function(d) { return d.period === latest; });
+      }
+    }
+
+    if (!data.length) { showError('No data for indicator: ' + indicatorId); return; }
+
+    _allData        = data;
+    _selectedPeriod = 'all';
+    _clientBrand    = null;
+    _selectedBrand  = null;
+
+    refreshViewToggle();
+    applyPeriodAndRender();
+  }
+
+  // ─── COLUMN DISCOVERY (for settings autocomplete) ─────────────────────────
+  async function loadColumnOptions(worksheetName) {
+    if (!_dashboard || !worksheetName) return [];
+    var ws = _dashboard.worksheets.find(function(w) { return w.name === worksheetName; });
+    if (!ws) return [];
+    try {
+      var dt = await ws.getSummaryDataAsync({ maxRows: 1 });
+      return dt.columns.map(function(c) { return c.fieldName; });
+    } catch(e) { return []; }
+  }
+
+  // ─── SETTINGS DIALOG ──────────────────────────────────────────────────────
+  async function showSettings() {
+    var existing = document.getElementById('settings-overlay');
+    if (existing) existing.remove();
+
+    var worksheets = _dashboard ? _dashboard.worksheets.map(function(ws) { return ws.name; }) : [];
+    var columns    = await loadColumnOptions(CONFIG.worksheet);
+
+    var wsOptions = worksheets.length
+      ? worksheets.map(function(w) {
+          return '<option value="' + escAttr(w) + '"' + (w === CONFIG.worksheet ? ' selected' : '') + '>' + escHtml(w) + '</option>';
+        }).join('')
+      : '';
+    var colOptions = columns.map(function(c) { return '<option value="' + escAttr(c) + '">'; }).join('');
+
+    var isTransparent = CONFIG.bgColor === 'transparent';
+    var bgValue       = isTransparent ? '#333333' : CONFIG.bgColor;
+
+    var overlay = document.createElement('div');
+    overlay.id = 'settings-overlay';
+    overlay.innerHTML =
+      '<div id="settings-dialog">' +
+        '<h2>BP Nav + Charts <span class="version">v' + VERSION + '</span></h2>' +
+        '<datalist id="s-columns">' + colOptions + '</datalist>' +
+        '<div class="fields-grid">' +
+
+          '<div class="field field-full"><label>Worksheet</label>' +
+            '<select id="s-worksheet"><option value="">— select —</option>' + wsOptions + '</select>' +
+          '</div>' +
+
+          '<div class="field"><label>indicator_id field</label>' +
+            '<input type="text" id="s-indicatorIdField" value="' + escAttr(CONFIG.indicatorIdField) + '" list="s-columns">' +
+          '</div>' +
+          '<div class="field"><label>Display Name field</label>' +
+            '<input type="text" id="s-nameField" value="' + escAttr(CONFIG.nameField) + '" list="s-columns">' +
+          '</div>' +
+          '<div class="field"><label>Source field</label>' +
+            '<input type="text" id="s-sourceField" value="' + escAttr(CONFIG.sourceField) + '" list="s-columns">' +
+          '</div>' +
+
+          '<div class="field"><label>subcategory_id field</label>' +
+            '<input type="text" id="s-subcategoryIdField" value="' + escAttr(CONFIG.subcategoryIdField) + '" list="s-columns">' +
+          '</div>' +
+          '<div class="field"><label>Brand field</label>' +
+            '<input type="text" id="s-brandField" value="' + escAttr(CONFIG.brandField) + '" list="s-columns">' +
+          '</div>' +
+          '<div class="field"><label>Value field</label>' +
+            '<input type="text" id="s-valueField" value="' + escAttr(CONFIG.valueField) + '" list="s-columns">' +
+          '</div>' +
+
+          '<div class="field"><label>Year field</label>' +
+            '<input type="text" id="s-yearField" value="' + escAttr(CONFIG.yearField) + '" list="s-columns">' +
+          '</div>' +
+          '<div class="field"><label>Month field</label>' +
+            '<input type="text" id="s-monthField" value="' + escAttr(CONFIG.monthField) + '" list="s-columns">' +
+          '</div>' +
+          '<div class="field"><label>Category field</label>' +
+            '<input type="text" id="s-categoryField" value="' + escAttr(CONFIG.categoryField) + '" list="s-columns">' +
+          '</div>' +
+
+          '<div class="field"><label>Primary color</label>' +
+            '<input type="color" id="s-selectedColor" value="' + escAttr(CONFIG.selectedColor) + '">' +
+          '</div>' +
+          '<div class="field"><label>Neutral color</label>' +
+            '<input type="color" id="s-neutralColor" value="' + escAttr(CONFIG.neutralColor) + '">' +
+          '</div>' +
+          '<div class="field"><label>Background</label>' +
+            '<div class="inline-controls">' +
+              '<input type="color" id="s-bgColor" value="' + escAttr(bgValue) + '"' + (isTransparent ? ' disabled style="opacity:0.4"' : '') + '>' +
+              '<input type="checkbox" id="s-transparent"' + (isTransparent ? ' checked' : '') + '>' +
+              '<span>Transparent</span>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="field field-full">' +
+            '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;text-transform:none;color:#999;">' +
+              '<input type="checkbox" id="s-showUnits"' + (CONFIG.showUnits !== 'false' ? ' checked' : '') + '>' +
+              'Show units in indicator title' +
+            '</label>' +
+          '</div>' +
+
+          '<div></div>' +
+          '<button class="btn btn-secondary" id="s-cancel">Cancel</button>' +
+          '<button class="btn btn-primary"   id="s-save">Save</button>' +
+
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    // Reload column datalist when worksheet changes
+    document.getElementById('s-worksheet').addEventListener('change', async function() {
+      var cols = await loadColumnOptions(this.value);
+      document.getElementById('s-columns').innerHTML =
+        cols.map(function(c) { return '<option value="' + escAttr(c) + '">'; }).join('');
+    });
+
+    var bgInput  = document.getElementById('s-bgColor');
+    var bgCheck  = document.getElementById('s-transparent');
+    bgCheck.addEventListener('change', function() {
+      bgInput.disabled      = bgCheck.checked;
+      bgInput.style.opacity = bgCheck.checked ? '0.4' : '1';
+    });
+
+    document.getElementById('s-cancel').onclick = function() { overlay.remove(); };
+
+    document.getElementById('s-save').onclick = async function() {
+      CONFIG.worksheet          = document.getElementById('s-worksheet').value;
+      CONFIG.indicatorIdField   = document.getElementById('s-indicatorIdField').value.trim();
+      CONFIG.nameField          = document.getElementById('s-nameField').value.trim();
+      CONFIG.sourceField        = document.getElementById('s-sourceField').value.trim();
+      CONFIG.subcategoryIdField = document.getElementById('s-subcategoryIdField').value.trim();
+      CONFIG.brandField         = document.getElementById('s-brandField').value.trim();
+      CONFIG.valueField         = document.getElementById('s-valueField').value.trim();
+      CONFIG.yearField          = document.getElementById('s-yearField').value.trim();
+      CONFIG.monthField         = document.getElementById('s-monthField').value.trim();
+      CONFIG.categoryField      = document.getElementById('s-categoryField').value.trim();
+      CONFIG.selectedColor      = document.getElementById('s-selectedColor').value;
+      CONFIG.neutralColor       = document.getElementById('s-neutralColor').value;
+      CONFIG.bgColor            = bgCheck.checked ? 'transparent' : bgInput.value;
+      CONFIG.showUnits          = document.getElementById('s-showUnits').checked ? 'true' : 'false';
+
+      if (_dashboard) {
+        try {
+          var settings = tableau.extensions.settings;
+          Object.keys(DEFAULTS).forEach(function(k) { settings.set(k, String(CONFIG[k])); });
+          settings.set('chartOverrides', JSON.stringify(_chartOverrides));
+          await settings.saveAsync();
+        } catch(e) { console.warn('Settings save failed:', e); }
+      }
+
+      applyBackground();
+      overlay.remove();
+
+      if (CONFIG.worksheet && _dashboard) {
+        await fetchAndCacheData();
+      } else {
+        switchToTable();
+      }
+    };
+  }
+
+  // ─── EVENT WIRING ─────────────────────────────────────────────────────────
+  document.getElementById('back-btn').onclick      = function() { switchToTable(); };
+  document.getElementById('btn-qtr').onclick       = function() { setViewMode('quarterly'); };
+  document.getElementById('btn-mo').onclick        = function() { setViewMode('monthly');   };
+  document.getElementById('configure-btn').onclick = function() { showSettings(); };
+
+  // ─── RESIZE OBSERVER ─────────────────────────────────────────────────────
+  var _resizeTimer;
+  var resizeObserver = new ResizeObserver(function() {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(function() {
+      if (_view === 'chart' && _lastData) renderChart(_lastData, _lastSelected, _dashboard);
+    }, 150);
+  });
+  resizeObserver.observe(document.getElementById('chart'));
+
+  // ─── TABLEAU INIT ─────────────────────────────────────────────────────────
+  applyBackground();
+
+  if (typeof tableau === 'undefined') {
+    // Preview mode: sample indicators, no Tableau
+    switchToTable();
+    showSettings();
+  } else {
+    tableau.extensions.initializeAsync({
+      configure: function() { showSettings(); },
+    }).then(async function() {
+      _dashboard = tableau.extensions.dashboardContent.dashboard;
+
+      // Load persisted settings
+      var settings = tableau.extensions.settings;
+      Object.keys(DEFAULTS).forEach(function(k) {
+        var val = settings.get(k);
+        if (val) CONFIG[k] = val;
+      });
+      var storedOverrides = settings.get('chartOverrides');
+      if (storedOverrides) {
+        try { _chartOverrides = JSON.parse(storedOverrides); } catch(e) {}
+      }
+
+      applyBackground();
+
+      if (!CONFIG.worksheet) {
+        switchToTable();
+        showSettings();
+        return;
+      }
+      await fetchAndCacheData();
+    }).catch(function(err) {
+      console.error('initializeAsync failed:', err);
+      switchToTable();
+      showSettings();
+    });
+  }
+  </script>
+</body>
+</html>
