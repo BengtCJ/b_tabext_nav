@@ -2245,7 +2245,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-29.1';
+  const VERSION = '2026-05-29.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
@@ -2969,6 +2969,8 @@
           _subcat:   subcatIdx !== -1 ? (row[subcatIdx].value || row[subcatIdx].formattedValue || '') : '',
         };
       }).filter(function(d) { return d.value !== null && d.name !== 'coffee_general'; });
+      var _dbg = {}; _rawData.forEach(function(d){ if (d._subcat) _dbg[d._subcat] = true; });
+      console.log('[0001-B] distinct _subcat values:', Object.keys(_dbg).sort());
 
       // Dedupe by indicator_id to build the table
       var seen = {};
@@ -3210,6 +3212,7 @@
       configure: function() { showSettings(); },
     }).then(async function() {
       _dashboard = tableau.extensions.dashboardContent.dashboard;
+      console.log('[0001-A] dashboard.name:', _dashboard.name);
 
       // Load persisted settings
       var settings = tableau.extensions.settings;
