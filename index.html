@@ -372,7 +372,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-28.5';
+  const VERSION = '2026-05-28.6';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
@@ -1017,15 +1017,19 @@
     _selectedIndicatorId = indicatorId;
     document.getElementById('table-view').style.display  = 'none';
     document.getElementById('chart-shell').style.display = 'flex';
+
+    // Set metric + show header (with back button) before branching, so the
+    // user can always return to the table even if data processing fails.
+    CONFIG.metricId = indicatorId;
+    CONFIG.chart    = resolveChart(indicatorId);
+    refreshViewToggle();
+
     if (_dashboard) {
       processIndicator(indicatorId);
     } else {
-      CONFIG.metricId = indicatorId;
-      CONFIG.chart    = resolveChart(indicatorId);
       _allData        = null;
       _clientBrand    = null;
       _selectedBrand  = null;
-      refreshViewToggle();
       renderChart(getSampleData(CONFIG.chart), null, null);
     }
   }
