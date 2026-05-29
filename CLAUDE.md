@@ -61,7 +61,7 @@ overview cards itself (Pattern B), becoming the app. Keep subgroup resolution an
 - No `??` (use `||`), no `?.` (use `&&` / ternary) — the embedded browser is pre-ES2020.
 - Single HTML file per extension. Keep it that way.
 - Size from `offsetWidth` / `offsetHeight`, never `vw` / `vh` (breaks in the iframe).
-- Brand names always `text-transform: uppercase` + Tableau Light.
+- Chart brand labels always `text-transform: uppercase` + Tableau Light; the indicator-table header uses title-case display names (see `STYLE_SPEC.md` → Brand display map).
 
 ## Deploy & test
 - Open the live URL with `?chart=...` to fall back to sample data (no Tableau needed).

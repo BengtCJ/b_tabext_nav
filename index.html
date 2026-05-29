@@ -1890,13 +1890,6 @@
         ? BRAND_DISPLAY_MAP[brandKey] : brandKey;
       if (i === 0) { nameEl.style.color = 'var(--primary-500, var(--grey-100))'; }
       cell.appendChild(nameEl);
-      var sc = model.header[brandKey];
-      if (sc !== null && sc !== undefined) {
-        var hScore = document.createElement('div');
-        hScore.className = 'ind-source';
-        hScore.textContent = Number(sc).toFixed(1);
-        cell.appendChild(hScore);
-      }
       hdrRow.appendChild(cell);
     });
     wrap.appendChild(hdrRow);
@@ -2383,7 +2376,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-29.4';
+  const VERSION = '2026-05-29.5';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
@@ -3123,38 +3116,16 @@
   };
 
   // Long-format score rows for offline preview (?subgroup=cmoaf).
-  // All rows carry subcategory_id:'cmoaf'. Brand keys match CONFIG.brandField (UPPERCASE).
+  // Metric-level rows only. Q3 = last populated quarter for svt.
+  // svt Q4 scores are the unpopulated-pipeline gap (guardSvtZeros) — do not add them.
+  // cagr/mcon/tam are market-level headline numbers, not per-brand scores for cmoaf.
   var SAMPLE_SCORES = [
-    // overall (header row)
-    { brand:'ILLY',      indicator_id:'overall', name:'Overall', source:'', subcategory_id:'cmoaf', score:3.3 },
-    { brand:'NESPRESSO', indicator_id:'overall', name:'Overall', source:'', subcategory_id:'cmoaf', score:3.2 },
-    { brand:'STARBUCKS', indicator_id:'overall', name:'Overall', source:'', subcategory_id:'cmoaf', score:3.9 },
-    { brand:'PEETS',     indicator_id:'overall', name:'Overall', source:'', subcategory_id:'cmoaf', score:2.9 },
-    { brand:'LAVAZZA',   indicator_id:'overall', name:'Overall', source:'', subcategory_id:'cmoaf', score:4.3 },
-    // cagr
-    { brand:'ILLY',      indicator_id:'cagr', name:'Compound Annual Growth Rate (CAGR)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'NESPRESSO', indicator_id:'cagr', name:'Compound Annual Growth Rate (CAGR)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'STARBUCKS', indicator_id:'cagr', name:'Compound Annual Growth Rate (CAGR)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'PEETS',     indicator_id:'cagr', name:'Compound Annual Growth Rate (CAGR)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'LAVAZZA',   indicator_id:'cagr', name:'Compound Annual Growth Rate (CAGR)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    // mcon
-    { brand:'ILLY',      indicator_id:'mcon', name:'Market Concentration', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'NESPRESSO', indicator_id:'mcon', name:'Market Concentration', source:'+snowflake', subcategory_id:'cmoaf', score:3.3 },
-    { brand:'STARBUCKS', indicator_id:'mcon', name:'Market Concentration', source:'+snowflake', subcategory_id:'cmoaf', score:3.9 },
-    { brand:'PEETS',     indicator_id:'mcon', name:'Market Concentration', source:'+snowflake', subcategory_id:'cmoaf', score:2.3 },
-    { brand:'LAVAZZA',   indicator_id:'mcon', name:'Market Concentration', source:'+snowflake', subcategory_id:'cmoaf', score:1.9 },
-    // svt
-    { brand:'ILLY',      indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:2.5 },
-    { brand:'NESPRESSO', indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'STARBUCKS', indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'PEETS',     indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'LAVAZZA',   indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    // tam
-    { brand:'ILLY',      indicator_id:'tam', name:'Total Addressable Market (TAM)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'NESPRESSO', indicator_id:'tam', name:'Total Addressable Market (TAM)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'STARBUCKS', indicator_id:'tam', name:'Total Addressable Market (TAM)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'PEETS',     indicator_id:'tam', name:'Total Addressable Market (TAM)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
-    { brand:'LAVAZZA',   indicator_id:'tam', name:'Total Addressable Market (TAM)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    // svt — Q3 scores (Snowflake source)
+    { brand:'ILLY',      indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:1.25 },
+    { brand:'NESPRESSO', indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:0.00 },
+    { brand:'STARBUCKS', indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:0.13 },
+    { brand:'PEETS',     indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:1.70 },
+    { brand:'LAVAZZA',   indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:5.00 },
   ];
 
   // ─── BUILD SCORE MODEL ────────────────────────────────────────────────────
@@ -3169,18 +3140,12 @@
              (r.category_id !== 'coffee_general') &&
              r.score !== null && r.score !== undefined && !isNaN(r.score);
     });
-    var headerRows = rawRows.filter(function(r) {
-      var sc = r.subcategory_id ? r.subcategory_id.trim().toLowerCase() : '';
-      return (!sub || sc === sub) && r.indicator_id === 'overall' &&
-             r.score !== null && r.score !== undefined && !isNaN(r.score);
-    });
 
-    if (!rows.length && !headerRows.length) return null;
+    if (!rows.length) return null;
 
-    // Collect all brand keys seen across both sets
+    // Collect brand keys from metric rows only
     var brandSet = {};
     rows.forEach(function(r) { brandSet[r.brand] = true; });
-    headerRows.forEach(function(r) { brandSet[r.brand] = true; });
     var allBrandKeys = Object.keys(brandSet);
 
     // Brand order: client first, then COMPETITOR_ORDER, then any remaining
@@ -3193,10 +3158,6 @@
     allBrandKeys.forEach(function(k) {
       if (ordered.indexOf(k) === -1) ordered.push(k);
     });
-
-    // Build header {brandKey: score}
-    var header = {};
-    headerRows.forEach(function(r) { header[r.brand] = r.score; });
 
     // Build rows: group by indicator_id
     var indMap = {};
@@ -3211,7 +3172,7 @@
     var indRows = indOrder.map(function(id) { return indMap[id]; });
 
     if (!indRows.length) return null;
-    return { brands: ordered, header: header, rows: indRows };
+    return { brands: ordered, rows: indRows };
   }
 
   // ─── FETCH SCORE DATA ─────────────────────────────────────────────────────
@@ -3255,6 +3216,10 @@
       var subcatIdx = colIdx(CONFIG.subcategoryIdField);
       var scoreIdx  = colIdx(CONFIG.scoreField);
       var catIdx    = colIdx(CONFIG.categoryField);
+      var levelIdx  = colIdx('level');
+      if (levelIdx === -1) {
+        console.warn('[scoreWorksheet] no "level" column — treating all rows as metric-level');
+      }
 
       if (brandIdx === -1 || indIdx === -1 || scoreIdx === -1) {
         console.warn('[scoreWorksheet] required columns missing. Available:',
@@ -3271,9 +3236,10 @@
           source:         sourceIdx !== -1 ? (row[sourceIdx].formattedValue || row[sourceIdx].value || '') : '',
           subcategory_id: subcatIdx !== -1 ? (row[subcatIdx].value || row[subcatIdx].formattedValue || '') : '',
           category_id:    catIdx    !== -1 ? (row[catIdx].value    || '') : '',
+          level:          levelIdx  !== -1 ? String(row[levelIdx].value || '').toLowerCase() : 'metric',
           score:          isNaN(sc) ? null : sc,
         };
-      });
+      }).filter(function(r) { return r.level === 'metric'; });
 
       return buildScoreModel(normalised, CONFIG.clientBrand, _subgroup);
     } catch (e) {

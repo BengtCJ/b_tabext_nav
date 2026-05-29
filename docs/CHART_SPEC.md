@@ -63,6 +63,14 @@ get month + quarter options; annual / point-in-time indicators (`tam`, `cagr`, `
 - **Sanity:** the client and expected competitor set (e.g. Starbucks) should be present;
   warn if missing. (`guardStarbucksPresent`)
 
+## Table data shape (scorecard matrix)
+
+- **Subgroup:** Opportunity Pathway = `cmoaf`.
+- **Columns:** brands, client first (`COMPETITOR_ORDER`: Nespresso, Starbucks, Peet's, Lavazza).
+- **Rows:** metric-level only (`level = metric`); no aggregate/subgroup header score row.
+- **RAG:** client column only — score > 4 → `--rag-green`; score < 2 → `--rag-red`; else `--rag-amber`. Competitor scores stay neutral text.
+- **`cmoaf` metric membership at metric level (confirmed):** `svt` only (Q3 populated quarter). `cagr`/`mcon`/`tam` are market-level headline numbers, not per-brand scores — they do not appear in the matrix.
+
 ## Open items to resolve (known data/spec mismatches)
 - The data (`Raw Values`) contains `ba` and `cra` rows, but the combined `METRIC_CHARTS`
   may not map them — confirm whether they're intended, and if so add them to a class
