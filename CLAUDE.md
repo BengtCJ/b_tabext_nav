@@ -5,8 +5,8 @@ Two lightweight Tableau navigation extensions for the BP Diagnostic Tool.
 No build step. Deploy = `git push` to GitHub Pages.
 
 ## Live URLs
-- https://bengtcj.github.io/bp-indicator-nav/overview_nav.html
-- https://bengtcj.github.io/bp-indicator-nav/indicator_nav.html
+- https://bengtcj.github.io/b_tabext_nav/overview_nav.html
+- https://bengtcj.github.io/b_tabext_nav/index.html
 
 ## Test in browser
 Open either URL directly — falls back to settings dialog and sample data (no Tableau needed).
