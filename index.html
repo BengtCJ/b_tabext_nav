@@ -18,6 +18,9 @@
 // Source: https://raw.githubusercontent.com/BengtCJ/b_tableau_extensions_2/main/index.html
 
   // ─── METRIC → CHART MAPPING ───────────────────────────────────────────────
+  // First entry = default. All entries = structurally compatible.
+  // Snapshot charts: data reduced to latest period before rendering.
+  // Trend charts: all periods passed through (monthly or quarterly per _viewMode).
   const METRIC_CHARTS = {
     tam:   ['ban'],
     cagr:  ['ban'],
@@ -64,6 +67,7 @@
   };
 
   // ─── AGGREGATION RULES ────────────────────────────────────────────────────
+  // Applied when collapsing monthly rows to quarterly view.
   const INDICATOR_AGGREGATION = {
     sov:   'sum',
     bss:   'sum',
@@ -2241,7 +2245,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-28.9';
+  const VERSION = '2026-05-29.1';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
