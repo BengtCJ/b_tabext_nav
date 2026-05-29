@@ -153,6 +153,12 @@ both confirmed working or already in use.
   the exact call/signature here for reference. `[tested]` your finding; signature TBD.
 - Whether `getSummaryDataAsync` row/column limits or formatting options matter for the
   largest worksheets in use. `[docs]` / `[tested]` needed.
+- **`getSummaryDataAsync` on a second (scoreWorksheet) in the same extension** — not yet
+  `[tested]`. The `fetchScoreData()` function in `index.html` runs an isolation probe
+  (`maxRows: 1`) before building the pivot. After the first Tableau connect with a score
+  worksheet configured, confirm the console shows `[scoreWorksheet probe] OK`; if it
+  instead shows `[scoreWorksheet probe FAILED]`, record the error here and move this entry
+  to Dead ends. On success, move to Confirmed with `[tested]` tag.
 - Library-loading + `min-api-version` items above.
 
 ## Dead ends — do not retry

@@ -43,6 +43,16 @@ that read as inconsistent. Validate at the real Tableau container pixel sizes.
 - Neutral (other brands): grey per existing palette.
 - Status pills on the overview: STRONG = green, NEUTRAL = amber (match existing).
 
+### RAG tokens (scorecard client column) — WO-2 must fill
+The scorecard matrix references these CSS custom properties. They are **not yet defined**
+in `:root`; until WO-2 fills them the code falls back to `var(--grey-100)` (neutral).
+
+| Token | Use | Value |
+|---|---|---|
+| `--rag-green` | score > 4 | `‹hex›` |
+| `--rag-amber` | 2 ≤ score ≤ 4 | `‹hex›` |
+| `--rag-red`   | score < 2 | `‹hex›` |
+
 ## Enforcement (what the harness / lint checks)
 - No `font-size` value that isn't one of the four roles (hero override excepted).
 - No font size computed from element geometry.
