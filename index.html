@@ -1800,7 +1800,22 @@
     '  height:100%;font-size:11px;'                                         +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;"      +
     '  color:#4D4D4D;padding:16px;text-align:center;'                       +
-    '}';
+    '}' +
+    // ── Scorecard matrix (WO-1) ──
+    '.sc-wrap{flex:1;overflow-y:auto;min-height:0;padding-bottom:4px;}' +
+    '.sc-meta{padding:8px 12px 4px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;}' +
+    '.sc-title{text-transform:uppercase;}' +
+    '.sc-row-header{display:flex;flex-shrink:0;border-bottom:2px solid #4D4D4D;}' +
+    '.sc-row{display:flex;flex-shrink:0;border-bottom:1px solid #2A2828;' +
+    '  cursor:pointer;user-select:none;transition:background 0.12s;}' +
+    '.sc-row:hover{background:#363232;}' +
+    '.sc-row:active{opacity:0.85;}' +
+    '.sc-cell-left{flex:1 1 0;min-width:0;padding:8px 12px;display:flex;flex-direction:column;gap:3px;}' +
+    '.sc-cell-left .ind-jump{margin-left:0;}' +
+    '.sc-cell-left-hdr{flex:1 1 0;min-width:0;padding:8px 12px;}' +
+    '.sc-cell,.sc-cell-hdr{flex:0 0 56px;padding:8px 4px;text-align:center;' +
+    '  display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+    '  gap:2px;overflow:hidden;}';
 
   function injectCSS() {
     if (document.getElementById(STYLE_ID)) return;
@@ -1818,7 +1833,130 @@
       .replace(/"/g, '&quot;');
   }
 
-  function renderTable(indicators, onIndicatorSelected, onBack) {
+  var JUMP_SVG =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.5" color="#808080">' +
+      '<circle cx="12" cy="12" r="10"/>' +
+      '<polyline points="8 12 12 16 16 12"/>' +
+      '<line x1="12" y1="8" x2="12" y2="16"/>' +
+    '</svg>';
+
+  function renderMatrix(root, model, meta, onSelect) {
+    var wrap = document.createElement('div');
+    wrap.className = 'sc-wrap';
+
+    // Title + question block
+    if (meta && (meta.title || meta.question)) {
+      var metaDiv = document.createElement('div');
+      metaDiv.className = 'sc-meta';
+      if (meta.title) {
+        var titleEl = document.createElement('div');
+        titleEl.className = 'ind-name sc-title';
+        titleEl.textContent = meta.title;
+        metaDiv.appendChild(titleEl);
+      }
+      if (meta.question) {
+        var qEl = document.createElement('div');
+        qEl.className = 'ind-source';
+        qEl.textContent = meta.question;
+        metaDiv.appendChild(qEl);
+      }
+      wrap.appendChild(metaDiv);
+    }
+
+    if (!model.rows.length) {
+      var empty = document.createElement('div');
+      empty.className = 'tbl-empty-msg';
+      empty.textContent = 'No indicators found';
+      wrap.appendChild(empty);
+      root.appendChild(wrap);
+      return;
+    }
+
+    var brands = model.brands;
+
+    // Header row
+    var hdrRow = document.createElement('div');
+    hdrRow.className = 'sc-row-header';
+    var leftHdr = document.createElement('div');
+    leftHdr.className = 'sc-cell-left-hdr';
+    hdrRow.appendChild(leftHdr);
+    brands.forEach(function(brandKey, i) {
+      var cell = document.createElement('div');
+      cell.className = 'sc-cell-hdr';
+      var nameEl = document.createElement('div');
+      nameEl.className = 'ind-name';
+      nameEl.textContent = (typeof BRAND_DISPLAY_MAP !== 'undefined' && BRAND_DISPLAY_MAP[brandKey])
+        ? BRAND_DISPLAY_MAP[brandKey] : brandKey;
+      if (i === 0) { nameEl.style.color = 'var(--primary-500, var(--grey-100))'; }
+      cell.appendChild(nameEl);
+      var sc = model.header[brandKey];
+      if (sc !== null && sc !== undefined) {
+        var hScore = document.createElement('div');
+        hScore.className = 'ind-source';
+        hScore.textContent = Number(sc).toFixed(1);
+        cell.appendChild(hScore);
+      }
+      hdrRow.appendChild(cell);
+    });
+    wrap.appendChild(hdrRow);
+
+    // Body rows
+    model.rows.forEach(function(row) {
+      var tr = document.createElement('div');
+      tr.className = 'sc-row';
+
+      // Left cell: name + source + jump arrow
+      var leftCell = document.createElement('div');
+      leftCell.className = 'sc-cell-left';
+      var nameEl = document.createElement('div');
+      nameEl.className = 'ind-name';
+      nameEl.textContent = row.name;
+      leftCell.appendChild(nameEl);
+      if (row.source) {
+        var srcEl = document.createElement('div');
+        srcEl.className = 'ind-source';
+        srcEl.textContent = row.source;
+        leftCell.appendChild(srcEl);
+      }
+      var jumpEl = document.createElement('div');
+      jumpEl.className = 'ind-jump';
+      jumpEl.innerHTML = JUMP_SVG + '<span class="ind-jump-label">Jump to</span>';
+      leftCell.appendChild(jumpEl);
+      tr.appendChild(leftCell);
+
+      // Score cells
+      brands.forEach(function(brandKey, i) {
+        var sc = (row.scores && row.scores[brandKey] !== undefined) ? row.scores[brandKey] : null;
+        var cell = document.createElement('div');
+        cell.className = 'sc-cell';
+        if (sc !== null) {
+          var scoreEl = document.createElement('div');
+          scoreEl.className = 'ind-name';
+          scoreEl.textContent = Number(sc).toFixed(1);
+          if (i === 0) {
+            scoreEl.style.color = sc > 4
+              ? 'var(--rag-green, var(--grey-100))'
+              : sc < 2
+                ? 'var(--rag-red, var(--grey-100))'
+                : 'var(--rag-amber, var(--grey-100))';
+          }
+          cell.appendChild(scoreEl);
+        }
+        tr.appendChild(cell);
+      });
+
+      tr.addEventListener('click', (function(id) {
+        return function() { if (typeof onSelect === 'function') onSelect(id); };
+      })(row.id));
+
+      wrap.appendChild(tr);
+    });
+
+    root.appendChild(wrap);
+  }
+
+  function renderTable(indicators, onIndicatorSelected, onBack, matrixModel, subgroupMeta) {
     injectCSS();
 
     var root = document.getElementById('table-view');
@@ -1840,6 +1978,11 @@
       root.appendChild(backRow);
     }
 
+    if (matrixModel) {
+      renderMatrix(root, matrixModel, subgroupMeta, onIndicatorSelected);
+      return;
+    }
+
     if (!indicators || !indicators.length) {
       var msg = document.createElement('div');
       msg.className = 'tbl-empty-msg';
@@ -1859,13 +2002,8 @@
             : '') +
         '</div>' +
         '<div class="ind-jump">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-            'stroke-width="1.5" color="#808080">' +
-            '<circle cx="12" cy="12" r="10"/>' +
-            '<polyline points="8 12 12 16 16 12"/>' +
-            '<line x1="12" y1="8" x2="12" y2="16"/>' +
-          '</svg>' +
-          '<span class="ind-jump-label">View</span>' +
+          JUMP_SVG +
+          '<span class="ind-jump-label">Jump to</span>' +
         '</div>';
 
       row.addEventListener('click', (function (id) {
@@ -2245,7 +2383,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-29.3';
+  const VERSION = '2026-05-29.4';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
@@ -2395,6 +2533,9 @@
   // ─── DEFAULT CONFIG ───────────────────────────────────────────────────────
   const DEFAULTS = {
     worksheet:          '',
+    scoreWorksheet:     '',
+    scoreField:         'Score',
+    clientBrand:        'ILLY',
     indicatorIdField:   'indicator_id',
     nameField:          'Display Name',
     sourceField:        'Source',
@@ -2421,6 +2562,7 @@
   let _selectedPeriod     = 'all';
   let _rawData            = [];         // full cached worksheet rows
   let _indicators         = [];         // parsed { id, name, source } list
+  let _scoreModel         = null;       // { brands, header, rows } from scores worksheet; null when unavailable
   let _view               = 'table';
   let _selectedIndicatorId = null;
   var _subgroup           = null;   // resolved subgroup id for this dashboard instance
@@ -2891,25 +3033,45 @@
     _view = 'table';
     document.getElementById('table-view').style.display  = 'flex';
     document.getElementById('chart-shell').style.display = 'none';
-    var list = _indicators.length ? _indicators : null;
-    if (!list) {
-      if (typeof tableau === 'undefined') {
-        // Preview mode — filter SAMPLE_INDICATORS by ?subgroup if provided
-        var urlSub = new URLSearchParams(location.search).get('subgroup');
-        if (urlSub) { urlSub = urlSub.trim().toLowerCase(); }
-        var filtered = urlSub
-          ? SAMPLE_INDICATORS.filter(function(d) { return d.subcategory_id === urlSub; })
+
+    var matrixModel  = null;
+    var subgroupMeta = null;
+    var list         = _indicators.length ? _indicators : null;
+
+    if (!_dashboard) {
+      // No live Tableau connection — use sample data (preview / dev mode)
+      var urlSub = new URLSearchParams(location.search).get('subgroup');
+      if (urlSub) { urlSub = urlSub.trim().toLowerCase(); }
+      var urlSubgroup = urlSub || null;
+
+      var filteredScores = urlSubgroup
+        ? SAMPLE_SCORES.filter(function(d) { return d.subcategory_id === urlSubgroup; })
+        : SAMPLE_SCORES;
+      if (filteredScores.length) {
+        matrixModel = buildScoreModel(filteredScores, 'ILLY', urlSubgroup || '');
+      }
+      subgroupMeta = (urlSubgroup && SUBGROUP_META[urlSubgroup]) ? SUBGROUP_META[urlSubgroup] : null;
+
+      if (!list) {
+        var filtered = urlSubgroup
+          ? SAMPLE_INDICATORS.filter(function(d) { return d.subcategory_id === urlSubgroup; })
           : SAMPLE_INDICATORS;
         list = filtered.length ? filtered : SAMPLE_INDICATORS;
-      } else {
-        // Tableau mode — dashboard tab name didn't match any subgroup
+      }
+    } else {
+      // Tableau mode
+      matrixModel  = _scoreModel;
+      subgroupMeta = (_subgroup && SUBGROUP_META[_subgroup]) ? SUBGROUP_META[_subgroup] : null;
+
+      if (!list && !matrixModel) {
         document.getElementById('table-view').innerHTML =
           '<p style="padding:16px;font-family:\'Tableau Light\',sans-serif;color:#666;">' +
           'Name this dashboard tab with a subgroup ID to display its indicators.</p>';
         return;
       }
     }
-    renderTable(list, switchToChart, null);
+
+    renderTable(list, switchToChart, null, matrixModel, subgroupMeta);
   }
 
   function switchToChart(indicatorId) {
@@ -2941,6 +3103,184 @@
     { id: 'svt',  name: 'Search Volume and Trends',           source: '+snowflake', subcategory_id: 'sbr'   },
     { id: 'tam',  name: 'Total Addressable Market (TAM)',     source: '+snowflake', subcategory_id: 'sbr'   },
   ];
+
+  // ─── SCORECARD CONSTANTS ──────────────────────────────────────────────────
+  var BRAND_DISPLAY_MAP = {
+    'ILLY':      'Illycaffè',
+    'NESPRESSO': 'Nespresso',
+    'STARBUCKS': 'Starbucks',
+    'PEETS':     "Peet's Coffee",
+    'LAVAZZA':   'Lavazza',
+  };
+
+  var COMPETITOR_ORDER = ['NESPRESSO', 'STARBUCKS', 'PEETS', 'LAVAZZA'];
+
+  var SUBGROUP_META = {
+    'cmoaf': {
+      title:    'OPPORTUNITY PATHWAY',
+      question: 'Is there a clear market opportunity for Illy Coffee and a clear demand for the product/service?',
+    },
+  };
+
+  // Long-format score rows for offline preview (?subgroup=cmoaf).
+  // All rows carry subcategory_id:'cmoaf'. Brand keys match CONFIG.brandField (UPPERCASE).
+  var SAMPLE_SCORES = [
+    // overall (header row)
+    { brand:'ILLY',      indicator_id:'overall', name:'Overall', source:'', subcategory_id:'cmoaf', score:3.3 },
+    { brand:'NESPRESSO', indicator_id:'overall', name:'Overall', source:'', subcategory_id:'cmoaf', score:3.2 },
+    { brand:'STARBUCKS', indicator_id:'overall', name:'Overall', source:'', subcategory_id:'cmoaf', score:3.9 },
+    { brand:'PEETS',     indicator_id:'overall', name:'Overall', source:'', subcategory_id:'cmoaf', score:2.9 },
+    { brand:'LAVAZZA',   indicator_id:'overall', name:'Overall', source:'', subcategory_id:'cmoaf', score:4.3 },
+    // cagr
+    { brand:'ILLY',      indicator_id:'cagr', name:'Compound Annual Growth Rate (CAGR)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'NESPRESSO', indicator_id:'cagr', name:'Compound Annual Growth Rate (CAGR)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'STARBUCKS', indicator_id:'cagr', name:'Compound Annual Growth Rate (CAGR)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'PEETS',     indicator_id:'cagr', name:'Compound Annual Growth Rate (CAGR)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'LAVAZZA',   indicator_id:'cagr', name:'Compound Annual Growth Rate (CAGR)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    // mcon
+    { brand:'ILLY',      indicator_id:'mcon', name:'Market Concentration', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'NESPRESSO', indicator_id:'mcon', name:'Market Concentration', source:'+snowflake', subcategory_id:'cmoaf', score:3.3 },
+    { brand:'STARBUCKS', indicator_id:'mcon', name:'Market Concentration', source:'+snowflake', subcategory_id:'cmoaf', score:3.9 },
+    { brand:'PEETS',     indicator_id:'mcon', name:'Market Concentration', source:'+snowflake', subcategory_id:'cmoaf', score:2.3 },
+    { brand:'LAVAZZA',   indicator_id:'mcon', name:'Market Concentration', source:'+snowflake', subcategory_id:'cmoaf', score:1.9 },
+    // svt
+    { brand:'ILLY',      indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:2.5 },
+    { brand:'NESPRESSO', indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'STARBUCKS', indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'PEETS',     indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'LAVAZZA',   indicator_id:'svt', name:'Search Volume and Trends', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    // tam
+    { brand:'ILLY',      indicator_id:'tam', name:'Total Addressable Market (TAM)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'NESPRESSO', indicator_id:'tam', name:'Total Addressable Market (TAM)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'STARBUCKS', indicator_id:'tam', name:'Total Addressable Market (TAM)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'PEETS',     indicator_id:'tam', name:'Total Addressable Market (TAM)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+    { brand:'LAVAZZA',   indicator_id:'tam', name:'Total Addressable Market (TAM)', source:'+snowflake', subcategory_id:'cmoaf', score:5.0 },
+  ];
+
+  // ─── BUILD SCORE MODEL ────────────────────────────────────────────────────
+  // Pure function. Accepts normalised rows {brand, indicator_id, name, source,
+  // subcategory_id, score} and returns the pivot model for renderTable or null.
+  function buildScoreModel(rawRows, clientBrand, subgroup) {
+    var sub = subgroup ? subgroup.trim().toLowerCase() : '';
+    var rows = rawRows.filter(function(r) {
+      var sc = r.subcategory_id ? r.subcategory_id.trim().toLowerCase() : '';
+      return (!sub || sc === sub) &&
+             r.indicator_id !== 'overall' &&
+             (r.category_id !== 'coffee_general') &&
+             r.score !== null && r.score !== undefined && !isNaN(r.score);
+    });
+    var headerRows = rawRows.filter(function(r) {
+      var sc = r.subcategory_id ? r.subcategory_id.trim().toLowerCase() : '';
+      return (!sub || sc === sub) && r.indicator_id === 'overall' &&
+             r.score !== null && r.score !== undefined && !isNaN(r.score);
+    });
+
+    if (!rows.length && !headerRows.length) return null;
+
+    // Collect all brand keys seen across both sets
+    var brandSet = {};
+    rows.forEach(function(r) { brandSet[r.brand] = true; });
+    headerRows.forEach(function(r) { brandSet[r.brand] = true; });
+    var allBrandKeys = Object.keys(brandSet);
+
+    // Brand order: client first, then COMPETITOR_ORDER, then any remaining
+    var client = clientBrand ? clientBrand.toUpperCase() : '';
+    var ordered = [];
+    if (client && brandSet[client]) ordered.push(client);
+    COMPETITOR_ORDER.forEach(function(k) {
+      if (brandSet[k] && ordered.indexOf(k) === -1) ordered.push(k);
+    });
+    allBrandKeys.forEach(function(k) {
+      if (ordered.indexOf(k) === -1) ordered.push(k);
+    });
+
+    // Build header {brandKey: score}
+    var header = {};
+    headerRows.forEach(function(r) { header[r.brand] = r.score; });
+
+    // Build rows: group by indicator_id
+    var indMap = {};
+    var indOrder = [];
+    rows.forEach(function(r) {
+      if (!indMap[r.indicator_id]) {
+        indMap[r.indicator_id] = { id: r.indicator_id, name: r.name, source: r.source, scores: {} };
+        indOrder.push(r.indicator_id);
+      }
+      indMap[r.indicator_id].scores[r.brand] = r.score;
+    });
+    var indRows = indOrder.map(function(id) { return indMap[id]; });
+
+    if (!indRows.length) return null;
+    return { brands: ordered, header: header, rows: indRows };
+  }
+
+  // ─── FETCH SCORE DATA ─────────────────────────────────────────────────────
+  // Reads scoreWorksheet, runs isolation probe per rule 6, then builds model.
+  async function fetchScoreData() {
+    if (!_dashboard || !CONFIG.scoreWorksheet) return null;
+    var ws = _dashboard.worksheets.find(function(w) { return w.name === CONFIG.scoreWorksheet; });
+    if (!ws) {
+      console.warn('[scoreWorksheet] not found:', CONFIG.scoreWorksheet);
+      return null;
+    }
+
+    // Isolation probe — must succeed before pivot is built (TABLEAU_API_REALITY rule 6)
+    try {
+      var probe = await ws.getSummaryDataAsync({ maxRows: 1 });
+      console.log('[scoreWorksheet probe] OK — cols:',
+        probe.columns.map(function(c) { return c.fieldName; }),
+        'sample rows:', probe.data.length);
+    } catch (e) {
+      console.warn('[scoreWorksheet probe FAILED]', e);
+      return null;
+    }
+
+    // Full read
+    try {
+      var dt   = await ws.getSummaryDataAsync({ maxRows: 5000 });
+      var cols = dt.columns;
+      var dataRows = dt.data;
+
+      function colIdx(name) {
+        var norm = name.toLowerCase().replace(/[\s_]+/g, '');
+        return cols.findIndex(function(c) {
+          return c.fieldName.toLowerCase().replace(/[\s_]+/g, '') === norm;
+        });
+      }
+
+      var brandIdx  = colIdx(CONFIG.brandField);
+      var indIdx    = colIdx(CONFIG.indicatorIdField);
+      var nameIdx   = colIdx(CONFIG.nameField);
+      var sourceIdx = colIdx(CONFIG.sourceField);
+      var subcatIdx = colIdx(CONFIG.subcategoryIdField);
+      var scoreIdx  = colIdx(CONFIG.scoreField);
+      var catIdx    = colIdx(CONFIG.categoryField);
+
+      if (brandIdx === -1 || indIdx === -1 || scoreIdx === -1) {
+        console.warn('[scoreWorksheet] required columns missing. Available:',
+          cols.map(function(c) { return c.fieldName; }).join(', '));
+        return null;
+      }
+
+      var normalised = dataRows.map(function(row) {
+        var sc = parseFloat(row[scoreIdx].value);
+        return {
+          brand:          row[brandIdx].formattedValue || row[brandIdx].value || '',
+          indicator_id:   indIdx    !== -1 ? (row[indIdx].value    || '') : '',
+          name:           nameIdx   !== -1 ? (row[nameIdx].formattedValue   || row[nameIdx].value   || '') : '',
+          source:         sourceIdx !== -1 ? (row[sourceIdx].formattedValue || row[sourceIdx].value || '') : '',
+          subcategory_id: subcatIdx !== -1 ? (row[subcatIdx].value || row[subcatIdx].formattedValue || '') : '',
+          category_id:    catIdx    !== -1 ? (row[catIdx].value    || '') : '',
+          score:          isNaN(sc) ? null : sc,
+        };
+      });
+
+      return buildScoreModel(normalised, CONFIG.clientBrand, _subgroup);
+    } catch (e) {
+      console.error('[scoreWorksheet] read failed:', e);
+      return null;
+    }
+  }
 
   // ─── FETCH WORKSHEET ONCE, CACHE _rawData + _indicators ───────────────────
   async function fetchAndCacheData() {
@@ -3019,6 +3359,12 @@
           })
         : [];
 
+      // Fetch scores before rendering (rule 6: probe runs inside fetchScoreData)
+      _scoreModel = null;
+      if (CONFIG.scoreWorksheet) {
+        _scoreModel = await fetchScoreData();
+      }
+
       switchToTable();
     } catch (err) {
       console.error('Data error:', err);
@@ -3079,15 +3425,22 @@
     var existing = document.getElementById('settings-overlay');
     if (existing) existing.remove();
 
-    var worksheets = _dashboard ? _dashboard.worksheets.map(function(ws) { return ws.name; }) : [];
-    var columns    = await loadColumnOptions(CONFIG.worksheet);
+    var worksheets    = _dashboard ? _dashboard.worksheets.map(function(ws) { return ws.name; }) : [];
+    var columns       = await loadColumnOptions(CONFIG.worksheet);
+    var scoreColumns  = await loadColumnOptions(CONFIG.scoreWorksheet);
 
     var wsOptions = worksheets.length
       ? worksheets.map(function(w) {
           return '<option value="' + escAttr(w) + '"' + (w === CONFIG.worksheet ? ' selected' : '') + '>' + escHtml(w) + '</option>';
         }).join('')
       : '';
-    var colOptions = columns.map(function(c) { return '<option value="' + escAttr(c) + '">'; }).join('');
+    var swsOptions = worksheets.length
+      ? worksheets.map(function(w) {
+          return '<option value="' + escAttr(w) + '"' + (w === CONFIG.scoreWorksheet ? ' selected' : '') + '>' + escHtml(w) + '</option>';
+        }).join('')
+      : '';
+    var colOptions      = columns.map(function(c) { return '<option value="' + escAttr(c) + '">'; }).join('');
+    var scoreColOptions = scoreColumns.map(function(c) { return '<option value="' + escAttr(c) + '">'; }).join('');
 
     var isTransparent = CONFIG.bgColor === 'transparent';
     var bgValue       = isTransparent ? '#333333' : CONFIG.bgColor;
@@ -3098,10 +3451,18 @@
       '<div id="settings-dialog">' +
         '<h2>BP Nav + Charts <span class="version">v' + VERSION + '</span></h2>' +
         '<datalist id="s-columns">' + colOptions + '</datalist>' +
+        '<datalist id="s-score-columns">' + scoreColOptions + '</datalist>' +
         '<div class="fields-grid">' +
 
           '<div class="field field-full"><label>Worksheet</label>' +
             '<select id="s-worksheet"><option value="">— select —</option>' + wsOptions + '</select>' +
+          '</div>' +
+
+          '<div class="field field-full"><label>Score Worksheet</label>' +
+            '<select id="s-scoreWorksheet"><option value="">— none —</option>' + swsOptions + '</select>' +
+          '</div>' +
+          '<div class="field field-full"><label>Score field</label>' +
+            '<input type="text" id="s-scoreField" value="' + escAttr(CONFIG.scoreField) + '" list="s-score-columns">' +
           '</div>' +
 
           '<div class="field"><label>indicator_id field</label>' +
@@ -3170,6 +3531,11 @@
       document.getElementById('s-columns').innerHTML =
         cols.map(function(c) { return '<option value="' + escAttr(c) + '">'; }).join('');
     });
+    document.getElementById('s-scoreWorksheet').addEventListener('change', async function() {
+      var cols = await loadColumnOptions(this.value);
+      document.getElementById('s-score-columns').innerHTML =
+        cols.map(function(c) { return '<option value="' + escAttr(c) + '">'; }).join('');
+    });
 
     var bgInput  = document.getElementById('s-bgColor');
     var bgCheck  = document.getElementById('s-transparent');
@@ -3182,6 +3548,8 @@
 
     document.getElementById('s-save').onclick = async function() {
       CONFIG.worksheet          = document.getElementById('s-worksheet').value;
+      CONFIG.scoreWorksheet     = document.getElementById('s-scoreWorksheet').value;
+      CONFIG.scoreField         = document.getElementById('s-scoreField').value.trim();
       CONFIG.indicatorIdField   = document.getElementById('s-indicatorIdField').value.trim();
       CONFIG.nameField          = document.getElementById('s-nameField').value.trim();
       CONFIG.sourceField        = document.getElementById('s-sourceField').value.trim();
