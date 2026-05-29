@@ -1768,32 +1768,44 @@
     '}'                                                                     +
     '.ind-row {'                                                            +
     '  display:flex;align-items:center;justify-content:space-between;'      +
-    '  padding:10px 14px;background:#2A2828;border-radius:6px;'             +
+    '  padding:8px 16px;background:#2A2828;border-radius:6px;'              +
     '  cursor:pointer;flex-shrink:0;transition:background 0.12s;'           +
     '  user-select:none;'                                                   +
     '}'                                                                     +
     '.ind-row:hover { background:#363232; }'                                +
     '.ind-row:active { opacity:0.85; }'                                     +
     '.ind-left {'                                                           +
-    '  display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;'      +
+    '  display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;'      +
     '}'                                                                     +
-    '.ind-name {'                                                           +
-    "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;"    +
-    '  font-size:13px;font-weight:600;color:#E6E6E6;'                       +
+    // Heading role (16px, Tableau Light) — indicator names in table rows
+    '.ind-heading {'                                                        +
+    "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;"      +
+    '  font-size:16px;color:#E6E6E6;'                                       +
     '  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'          +
     '}'                                                                     +
+    // Label role (13px, Tableau Regular for values / Tableau Light for brand names)
+    '.ind-name {'                                                           +
+    "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;"    +
+    '  font-size:13px;color:#E6E6E6;'                                       +
+    '  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'          +
+    '}'                                                                     +
+    // Brand names in matrix header use Tableau Light (Label role, brands variant)
+    '.sc-cell-hdr .ind-name {'                                              +
+    "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;"      +
+    '}'                                                                     +
+    // Caption role (11px, Tableau Light)
     '.ind-source {'                                                         +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;"      +
     '  font-size:11px;color:#808080;'                                       +
     '}'                                                                     +
     '.ind-jump {'                                                           +
-    '  display:flex;flex-direction:column;align-items:center;gap:2px;'      +
+    '  display:flex;flex-direction:column;align-items:center;gap:4px;'      +
     '  flex-shrink:0;margin-left:12px;'                                     +
     '}'                                                                     +
     '.ind-jump svg { width:18px;height:18px;opacity:0.5; }'                 +
     '.ind-jump-label {'                                                     +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;"      +
-    '  font-size:10px;color:#808080;letter-spacing:0.04em;'                 +
+    '  font-size:11px;color:#808080;letter-spacing:0.04em;'                 +
     '}'                                                                     +
     '.tbl-empty-msg {'                                                      +
     '  display:flex;align-items:center;justify-content:center;'             +
@@ -1801,7 +1813,7 @@
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;"      +
     '  color:#4D4D4D;padding:16px;text-align:center;'                       +
     '}' +
-    // ── Scorecard matrix (WO-1) ──
+    // ── Scorecard matrix ──
     '.sc-wrap{flex:1;overflow-y:auto;min-height:0;padding-bottom:4px;}' +
     '.sc-meta{padding:8px 12px 4px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;}' +
     '.sc-title{text-transform:uppercase;}' +
@@ -1810,12 +1822,12 @@
     '  cursor:pointer;user-select:none;transition:background 0.12s;}' +
     '.sc-row:hover{background:#363232;}' +
     '.sc-row:active{opacity:0.85;}' +
-    '.sc-cell-left{flex:1 1 0;min-width:0;padding:8px 12px;display:flex;flex-direction:column;gap:3px;}' +
+    '.sc-cell-left{flex:1 1 0;min-width:0;padding:8px 12px;display:flex;flex-direction:column;gap:4px;}' +
     '.sc-cell-left .ind-jump{margin-left:0;}' +
     '.sc-cell-left-hdr{flex:1 1 0;min-width:0;padding:8px 12px;}' +
     '.sc-cell,.sc-cell-hdr{flex:0 0 56px;padding:8px 4px;text-align:center;' +
     '  display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-    '  gap:2px;overflow:hidden;}';
+    '  gap:4px;overflow:hidden;}';
 
   function injectCSS() {
     if (document.getElementById(STYLE_ID)) return;
@@ -1851,7 +1863,7 @@
       metaDiv.className = 'sc-meta';
       if (meta.title) {
         var titleEl = document.createElement('div');
-        titleEl.className = 'ind-name sc-title';
+        titleEl.className = 'ind-heading sc-title';
         titleEl.textContent = meta.title;
         metaDiv.appendChild(titleEl);
       }
@@ -1903,7 +1915,7 @@
       var leftCell = document.createElement('div');
       leftCell.className = 'sc-cell-left';
       var nameEl = document.createElement('div');
-      nameEl.className = 'ind-name';
+      nameEl.className = 'ind-heading';
       nameEl.textContent = row.name;
       leftCell.appendChild(nameEl);
       if (row.source) {
@@ -1989,7 +2001,7 @@
       row.className = 'ind-row';
       row.innerHTML =
         '<div class="ind-left">' +
-          '<div class="ind-name">' + escHtml(ind.name) + '</div>' +
+          '<div class="ind-heading">' + escHtml(ind.name) + '</div>' +
           (ind.source
             ? '<div class="ind-source">' + escHtml(ind.source) + '</div>'
             : '') +
@@ -2043,7 +2055,7 @@
       flex-direction: column;
       width: 100%;
       height: 100%;
-      gap: 6px;
+      gap: 8px;
       padding: 4px 0;
       overflow-y: auto;
     }
@@ -2073,7 +2085,7 @@
       flex-direction: row;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 14px 24px;
+      padding: 12px 16px 24px;
       flex-shrink: 0;
       gap: 16px;
     }
@@ -2104,7 +2116,7 @@
       border: none;
       height: 30px;
       padding: 0 10px;
-      font-size: 9px;
+      font-size: 11px;
       font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -2336,7 +2348,7 @@
       border: none;
       height: 30px;
       padding: 0 14px;
-      font-size: 10px;
+      font-size: 11px;
       font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
       letter-spacing: 0.10em;
       text-transform: uppercase;
@@ -2376,7 +2388,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-29.5';
+  const VERSION = '2026-05-29.6';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
@@ -2559,6 +2571,7 @@
   let _view               = 'table';
   let _selectedIndicatorId = null;
   var _subgroup           = null;   // resolved subgroup id for this dashboard instance
+  var _availableGrains    = { monthly: false, quarterly: false }; // data-driven per selected indicator
   // _selectedBrand, _chartOverrides, _viewMode are declared by charts.js
 
   // ─── SUBGROUP RESOLUTION ─────────────────────────────────────────────────
@@ -2721,7 +2734,7 @@
 
   // ─── VIEW TOGGLE (refreshViewToggle, refreshPeriodSelector, applyPeriodAndRender)
   function refreshViewToggle() {
-    var isTrend = INDICATOR_TREND[CONFIG.metricId];
+    var hasTrend = _availableGrains && (_availableGrains.monthly || _availableGrains.quarterly);
 
     var titleEl = document.getElementById('chart-title');
     if (titleEl) {
@@ -2735,11 +2748,14 @@
     if (header) header.style.display = CONFIG.metricId ? 'flex' : 'none';
 
     var pillsRow = document.getElementById('pills-row');
-    if (pillsRow) pillsRow.style.display = isTrend ? 'flex' : 'none';
+    if (pillsRow) pillsRow.style.display = hasTrend ? 'flex' : 'none';
 
     var qBtn = document.getElementById('btn-qtr');
     var mBtn = document.getElementById('btn-mo');
     if (qBtn && mBtn) {
+      // Show only buttons for grains that have data
+      qBtn.style.display = (_availableGrains && _availableGrains.quarterly) ? '' : 'none';
+      mBtn.style.display = (_availableGrains && _availableGrains.monthly)   ? '' : 'none';
       if (_viewMode === 'quarterly') {
         qBtn.className = 'pill-btn active';
         mBtn.className = 'pill-btn';
@@ -2755,7 +2771,7 @@
     var el = document.getElementById('period-selector');
     if (!el) return;
     el.innerHTML = '';
-    if (!_allData || !INDICATOR_TREND[CONFIG.metricId]) return;
+    if (!_allData || !(_availableGrains && _availableGrains.monthly)) return;
     var periods = [];
     _allData.forEach(function(d) {
       if (d.period && periods.indexOf(d.period) === -1) periods.push(d.period);
@@ -3082,9 +3098,15 @@
     if (_dashboard) {
       processIndicator(indicatorId);
     } else {
+      // Preview mode: fall back to static INDICATOR_TREND since _rawData is empty
+      _availableGrains = {
+        monthly:   !!INDICATOR_TREND[indicatorId],
+        quarterly: !!INDICATOR_TREND[indicatorId],
+      };
       _allData        = null;
       _clientBrand    = null;
       _selectedBrand  = null;
+      refreshViewToggle();
       renderChart(getSampleData(CONFIG.chart), null, null);
     }
   }
@@ -3338,13 +3360,41 @@
     }
   }
 
+  // ─── DATA-DRIVEN GRAIN DETECTION ─────────────────────────────────────────
+  // Returns which granularities are non-empty for a given indicator.
+  // monthly: true if the indicator has ≥2 distinct periods.
+  // quarterly: true if aggregateByQuarter would produce ≥2 distinct quarter-periods.
+  function computeAvailableGrains(indicatorId) {
+    var rows = _rawData.filter(function(d) { return d.indicator === indicatorId && d.period; });
+    var periods = [];
+    rows.forEach(function(d) {
+      if (periods.indexOf(d.period) === -1) periods.push(d.period);
+    });
+    if (periods.length < 2) return { monthly: false, quarterly: false };
+
+    var qData = aggregateByQuarter(rows, indicatorId);
+    var qPeriods = [];
+    qData.forEach(function(d) {
+      if (d.period && qPeriods.indexOf(d.period) === -1) qPeriods.push(d.period);
+    });
+    return { monthly: true, quarterly: qPeriods.length >= 2 };
+  }
+
   // ─── PROCESS DATA FOR A SELECTED INDICATOR ────────────────────────────────
   function processIndicator(indicatorId) {
     CONFIG.metricId = indicatorId;
     CONFIG.chart    = resolveChart(indicatorId);
 
+    // Data-driven grain detection — replaces static INDICATOR_TREND check
+    _availableGrains = computeAvailableGrains(indicatorId);
+
+    // Reset viewMode if the current mode has no data at that grain
+    if (_viewMode === 'quarterly' && !_availableGrains.quarterly) {
+      _viewMode = 'monthly';
+    }
+
     var data    = _rawData.filter(function(d) { return d.indicator === indicatorId; });
-    var isTrend = INDICATOR_TREND[indicatorId];
+    var isTrend = _availableGrains.monthly;
 
     if (isTrend) {
       if (_viewMode === 'quarterly') {
