@@ -2561,7 +2561,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-31.9';
+  const VERSION = '2026-05-31.10';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3453,14 +3453,15 @@
         });
       }
 
-      var brandIdx  = colIdx(CONFIG.brandField);
-      var indIdx    = colIdx(CONFIG.indicatorIdField);
-      var nameIdx   = colIdx(CONFIG.nameField);
-      var sourceIdx = colIdx(CONFIG.sourceField);
-      var subcatIdx = colIdx(CONFIG.subcategoryIdField);
-      var scoreIdx  = colIdx(CONFIG.scoreField);
-      var catIdx    = colIdx(CONFIG.categoryField);
-      var levelIdx  = colIdx('level');
+      var brandIdx      = colIdx(CONFIG.brandField);
+      var indIdx        = colIdx(CONFIG.indicatorIdField);
+      var nameIdx       = colIdx(CONFIG.nameField);
+      var sourceIdx     = colIdx(CONFIG.sourceField);
+      var subcatIdx     = colIdx(CONFIG.subcategoryIdField);
+      var subcatNameIdx = colIdx('subcategory_name');
+      var scoreIdx      = colIdx(CONFIG.scoreField);
+      var catIdx        = colIdx(CONFIG.categoryField);
+      var levelIdx      = colIdx('level');
       if (levelIdx === -1) {
         console.warn('[scoreWorksheet] no "level" column — treating all rows as metric-level');
       }
@@ -3485,7 +3486,15 @@
         };
       }).filter(function(r) { return r.level === 'metric'; });
 
-      return buildScoreModel(normalised, CONFIG.clientBrand, _subgroup);
+      var subcategoryName = '';
+      if (subcatNameIdx !== -1) {
+        var nameRow = dataRows.find(function(row) {
+          var sc = subcatIdx !== -1 ? (row[subcatIdx].value || row[subcatIdx].formattedValue || '') : '';
+          return sc.trim().toLowerCase() === (_subgroup || '');
+        });
+        if (nameRow) subcategoryName = nameRow[subcatNameIdx].formattedValue || nameRow[subcatNameIdx].value || '';
+      }
+      return { model: buildScoreModel(normalised, CONFIG.clientBrand, _subgroup), subcategoryName: subcategoryName };
     } catch (e) {
       console.error('[scoreWorksheet] read failed:', e);
       return null;
@@ -3522,7 +3531,6 @@
       var sourceIdx = colIdx(CONFIG.sourceField);
       var subcatIdx     = colIdx(CONFIG.subcategoryIdField);
       var subcatNameIdx = colIdx('subcategory_name');
-      console.log('[subcatName] idx=' + subcatNameIdx + ' cols=' + cols.map(function(c){return c.fieldName;}).join('|'));
 
       if (brandIdx === -1 || valueIdx === -1 || indIdx === -1) {
         var available = cols.map(function(c) { return c.fieldName; }).join(', ');
@@ -3583,7 +3591,9 @@
       // Fetch scores before rendering (rule 6: probe runs inside fetchScoreData)
       _scoreModel = null;
       if (CONFIG.scoreWorksheet) {
-        _scoreModel = await fetchScoreData();
+        var scoreResult = await fetchScoreData();
+        _scoreModel = scoreResult ? scoreResult.model : null;
+        if (scoreResult && scoreResult.subcategoryName) _subcategoryName = scoreResult.subcategoryName;
       }
 
       switchToTable();
