@@ -50,9 +50,16 @@ Learned from the scorecard round, which converged but took too many turns.
    data-shape class + valid charts (CHART_SPEC). Apply them as the prototype's defaults.
    **Never guess a value that's already in the spec** (the scorecard burned a round
    defaulting to Playfair when Baskervville italic was already locked).
-2. **Lead with the reference frame.** Get the Figma frame / screenshot *first*; read
-   composition and the nameable values (radius, gap, fills, format, thresholds, which
-   column is the client) straight off it. Prototype only the gaps the frame doesn't pin.
+2. **Tear down the reference frame, in writing, first.** Before prototyping or speccing,
+   produce a written property inventory read straight off the Figma frame / screenshot — not
+   a loose glance. List, with values: gutters/gaps and whether they're uniform; corner radii
+   and how inner/outer nest (outer = inner + gutter); alignment (where the number sits in its
+   cell — corner, centred?); relative type sizes (which element is largest); fills (which
+   cells are filled vs transparent; which column is the client/emphasised); text format
+   (suffix placement; truncation risk on long values); and contrast of any text on a coloured
+   fill. Reconcile each against the locked tokens. The recurring failure is reading structure
+   ("table, header, commentary") but not these fine properties — most "way off" catches live
+   on this list. Prototype only the gaps the frame doesn't pin.
 3. **Prototype the delta in chat** — static HTML, dummy data, renders inline. Live-tune
    only the "know-it-when-I-see-it" values (proportion, elegance); state the nameable ones
    in one pass rather than discovering them one per turn.

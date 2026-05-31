@@ -214,6 +214,15 @@ by this section.
 - No font size computed from element geometry.
 - No gap/margin off the 4px base unit, except the named overrides (incl. the 2px gutter).
 - Type sizes identical for the same role across all charts.
+- **Visual fidelity (measurable — the harness asserts these so the reviewer doesn't have to):**
+  - Gutter is uniform: cell↔cell, cell↔frame, and table↔commentary are all the same 2px.
+  - Corner radii nest: frame radius = cell radius + gutter (e.g. 8 + 2 = 10); cells and the
+    commentary panel share one radius.
+  - No clipped or ellipsised text: indicator names and labels render in full (wrap, don't truncate).
+  - Text on any coloured fill meets contrast (WCAG AA): e.g. the pink client cell uses dark
+    text, never white.
+  - Value suffix appears only where intended (client column only — never on comparators).
+  - Numerals are inset from the cell edge (padding > 0 — not hugging the corner).
 
 ## TODO before this is final
 - Validate the type scale + spacing at `1421 × 773` (and adjust if the client reacts).
