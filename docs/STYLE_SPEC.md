@@ -129,6 +129,21 @@ colour-coded (white text).
   etc.) — live text, not baked into the wordmark vector. A supplied SVG wordmark renders
   `BULLETPROOF` only; the score-type word is the live subtitle beneath.
 
+**Commentary box (optional — extension-rendered, inside the card)**
+- Placement: inside the card, BELOW the table, full content width. Toggled from the
+  Settings panel (config default lives in CONFIG/DEFAULTS, not here). When off it does NOT
+  render — the card shrinks to fit, no empty gap.
+- Panel: 1px border `#262626`, radius 8px, fill `#181818` (reuses the cell tokens);
+  padding `section` (16px). Gap from the table above: `section` (16px).
+- Verdict (lead sentence): Tableau Regular, 16px, `#ededed`.
+- Reading (paragraph): Tableau Regular, 13px, `#b0b0b0`, line-height ~1.5.
+- Verdict → reading gap: `default` (8px).
+- Content is PLACEHOLDER for now — two slots (verdict, reading) resolved through one
+  function so a real source (sheet column / LLM field) is an additive swap, not a rewrite.
+  Generic and brand-interpolated; the same placeholder shows on every subgroup until sourced.
+- Locked vs review: placement + panel tokens (reused cell border/radius/fill) are locked;
+  text sizes (16/13), colours, padding/gaps and line-height are build-and-review at 1421×773.
+
 ## Detail page header (above the card — extension-rendered)
 The page-level header that sits in the **transparent area above the card**, left-aligned
 to the card edge. **Distinct from** the Scorecard "Title block" (the `BULLETPROOF` SVG
@@ -165,3 +180,5 @@ by this section.
   first breaks, not from the current canvas.
 - Confirm the overview card copy against the design (e.g. "STRATEGIC STRENTH" looks like
   a dropped G).
+- Confirm the Commentary box text sizes (16 / 13), colours, padding/gaps and line-height
+  on the first render.

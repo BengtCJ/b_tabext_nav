@@ -1851,6 +1851,17 @@
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
     '  color:#4D4D4D;padding:16px;text-align:center;}' +
     // ── Detail page header (above the card, in the transparent area) ──
+    // ── Commentary box (inside card, below table) ──
+    '.sc-commentary{' +
+    '  border:1px solid #262626;border-radius:8px;background:#181818;' +
+    '  padding:16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;' +
+    '  margin-top:12px;}' +  // 12px + 4px frame gap = 16px (section) from table
+    '.sc-commentary-verdict{' +
+    "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;" +
+    '  font-size:16px;color:#ededed;line-height:1.4;}' +
+    '.sc-commentary-reading{' +
+    "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;" +
+    '  font-size:13px;color:#b0b0b0;line-height:1.5;}' +
     '.detail-header{display:flex;flex-direction:column;gap:8px;flex-shrink:0;}' +
     '.detail-header-title{' +
     "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;" +
@@ -2033,6 +2044,20 @@
 
     scroll.appendChild(grid);
     frame.appendChild(scroll);
+
+    if (meta && meta.showCommentary && meta.verdict) {
+      var commentary = document.createElement('div');
+      commentary.className = 'sc-commentary';
+      var verdictEl = document.createElement('div');
+      verdictEl.className = 'sc-commentary-verdict';
+      verdictEl.textContent = meta.verdict;
+      commentary.appendChild(verdictEl);
+      var readingEl = document.createElement('div');
+      readingEl.className = 'sc-commentary-reading';
+      readingEl.textContent = meta.reading || '';
+      commentary.appendChild(readingEl);
+      frame.appendChild(commentary);
+    }
 
     var wrap = document.createElement('div');
     wrap.className = 'sc-wrap';
@@ -2491,7 +2516,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-31.1';
+  const VERSION = '2026-05-31.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
@@ -2658,6 +2683,7 @@
     neutralColor:       '#7d7d7d',
     bgColor:            'transparent',
     showUnits:          'true',
+    showCommentary:     'true',
   };
 
   // ─── STATE ────────────────────────────────────────────────────────────────
@@ -3156,6 +3182,8 @@
       : CONFIG.clientBrand;
     var defaultQuestion = 'Is there a clear market opportunity for ' + brandDisplay +
       ' and a clear demand for the product/service?';
+    var commentary = resolveCommentary(brandDisplay);
+    var showCommentary = CONFIG.showCommentary !== 'false';
 
     if (!_dashboard) {
       // No live Tableau connection — use sample data (preview / dev mode)
@@ -3171,11 +3199,14 @@
       }
       var rawMetaU = urlSubgroup ? SUBGROUP_META[urlSubgroup] : null;
       subgroupMeta = urlSubgroup ? {
-        title:     rawMetaU ? rawMetaU.title : null,
-        question:  rawMetaU && rawMetaU.questionTemplate
+        title:          rawMetaU ? rawMetaU.title : null,
+        question:       rawMetaU && rawMetaU.questionTemplate
           ? rawMetaU.questionTemplate.replace('{{client}}', brandDisplay)
           : defaultQuestion,
-        scoreType: rawMetaU ? rawMetaU.scoreType : 'Survey Score',
+        scoreType:      rawMetaU ? rawMetaU.scoreType : 'Survey Score',
+        verdict:        commentary.verdict,
+        reading:        commentary.reading,
+        showCommentary: showCommentary,
       } : null;
 
       if (!list) {
@@ -3189,11 +3220,14 @@
       matrixModel  = _scoreModel;
       var rawMetaS = _subgroup ? SUBGROUP_META[_subgroup] : null;
       subgroupMeta = _subgroup ? {
-        title:     _subcategoryName || (rawMetaS ? rawMetaS.title : null),
-        question:  rawMetaS && rawMetaS.questionTemplate
+        title:          _subcategoryName || (rawMetaS ? rawMetaS.title : null),
+        question:       rawMetaS && rawMetaS.questionTemplate
           ? rawMetaS.questionTemplate.replace('{{client}}', brandDisplay)
           : defaultQuestion,
-        scoreType: rawMetaS ? rawMetaS.scoreType : 'Survey Score',
+        scoreType:      rawMetaS ? rawMetaS.scoreType : 'Survey Score',
+        verdict:        commentary.verdict,
+        reading:        commentary.reading,
+        showCommentary: showCommentary,
       } : null;
 
       if (!list && !matrixModel) {
@@ -3253,6 +3287,18 @@
   };
 
   var COMPETITOR_ORDER = ['NESPRESSO', 'STARBUCKS', 'PEETS', 'LAVAZZA'];
+
+  // One function so swapping in a real source (sheet column / LLM field) is additive.
+  function resolveCommentary(brand) {
+    return {
+      verdict: "Taken together, the indicators above set out the case for " + brand +
+        " in this area — and what it implies for the decision ahead.",
+      reading: "They point to how solid " + brand +
+        "’s current position is, where the real room to grow sits," +
+        " and how contested that ground is to take. That’s the read this view is built" +
+        " to inform — final wording will be generated per subcategory and brand.",
+    };
+  }
 
   var SUBGROUP_META = {
     'cmoaf': {
@@ -3667,6 +3713,13 @@
             '</label>' +
           '</div>' +
 
+          '<div class="field field-full">' +
+            '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;text-transform:none;color:#999;">' +
+              '<input type="checkbox" id="s-showCommentary"' + (CONFIG.showCommentary !== 'false' ? ' checked' : '') + '>' +
+              'Show commentary' +
+            '</label>' +
+          '</div>' +
+
           '<div></div>' +
           '<button class="btn btn-secondary" id="s-cancel">Cancel</button>' +
           '<button class="btn btn-primary"   id="s-save">Save</button>' +
@@ -3714,6 +3767,7 @@
       CONFIG.neutralColor       = document.getElementById('s-neutralColor').value;
       CONFIG.bgColor            = bgCheck.checked ? 'transparent' : bgInput.value;
       CONFIG.showUnits          = document.getElementById('s-showUnits').checked ? 'true' : 'false';
+      CONFIG.showCommentary     = document.getElementById('s-showCommentary').checked ? 'true' : 'false';
 
       if (_dashboard) {
         try {
