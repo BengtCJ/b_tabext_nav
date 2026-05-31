@@ -2561,7 +2561,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-31.8';
+  const VERSION = '2026-05-31.9';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3522,6 +3522,7 @@
       var sourceIdx = colIdx(CONFIG.sourceField);
       var subcatIdx     = colIdx(CONFIG.subcategoryIdField);
       var subcatNameIdx = colIdx('subcategory_name');
+      console.log('[subcatName] idx=' + subcatNameIdx + ' cols=' + cols.map(function(c){return c.fieldName;}).join('|'));
 
       if (brandIdx === -1 || valueIdx === -1 || indIdx === -1) {
         var available = cols.map(function(c) { return c.fieldName; }).join(', ');
