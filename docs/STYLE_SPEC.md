@@ -47,25 +47,120 @@ wanted; validate at the container size before final sign-off.
   14/19/20 snap into these (14→16, 19/20→16 or 24 by role); H-vs-V differences are
   regularised away unless one is genuinely intentional.
 - A short, **named** list of overrides for the few places that genuinely need them — each
-  documented here so it reads as intentional, not drift.
-
-  | Override | Element | Value | Reason |
-  |---|---|---|---|
-  | Chart-shell title | `#chart-title` | 26px, Baskervville italic | Display header for the indicator name in chart view; sized as a Hero-adjacent focal element. Revisit in task 0003 alongside BAN Hero sizing. |
+  documented here so it reads as intentional, not drift:
+  - **Scorecard cell gutter = 2px** — the gap between scorecard cells, deliberately off the
+    4px grid so the dark frame shows through as a hairline; 4px reads clunky here.
 
 ## Colour (codify existing — not a friction point)
-- Primary / client highlight: `#e994a2`.
+- Primary / client highlight: `#e994a2` (pink). Used wherever the client brand is marked —
+  charts and the scorecard client header cell alike (one constant, so it stays consistent).
+  **Future:** this may be driven by a parameter for per-client theming — keep it read from
+  one constant so that becomes an additive change, not a rewrite. Deliberate treatment.
 - Neutral (other brands): grey per existing palette.
 - Status pills on the overview: STRONG = green, NEUTRAL = amber (match existing).
+- Scorecard-table cell fills and the client-column score RAG live in the Scorecard section
+  below.
+
+## Detail page header (above the card, in the transparent area)
+
+Fixed tokens. Renders outside the `sc-frame` card, left-aligned to the card edge.
+The transparent body/root shows through beneath it.
+
+**Title** — Tableau Regular, 116px, `#ededed`, `line-height:1`, `text-transform:uppercase`
+- Text = `subcategory_name` for the current subgroup (from worksheet; falls back to `SUBGROUP_META.title`).
+
+**Question** — Tableau Light, 19px, `#888`, `line-height:1.3`
+- A single hardcoded sentence (interim) with the client brand interpolated from `CONFIG.clientBrand`.
+  Template lives in `SUBGROUP_META[subgroup].questionTemplate` with `{{client}}` placeholder;
+  resolved in `switchToTable()` so it re-interpolates on ParameterChanged.
+- Shows on every subgroup until sourced per-subgroup from data. Accepted as interim.
+
+**Spacing** — title and question separated by `8px` (`default` gap); parent flex gap to card is `8px`.
+
+## Scorecard table (locked from prototype review — BULLETPROOF Survey Score frame)
+Fixed tokens. Render from these; do not re-derive. Where this conflicts with the generic
+roles above, this section wins **for the scorecard table**.
+
+**Numerals (scores & values)** — `'Baskervville','Baskerville',Georgia,serif`, italic 400
+- Header brand score: 31px · Body value: 21px (uniform across client and comparator cells)
+- Suffix always `/5` (these tables): `font-size:0.5em`, italic, muted `#7c7c7c`, inline
+  immediately after the value, baseline-aligned. Values to 1 decimal (`5.0/5`, `3.3/5`).
+
+**Labels / text** — Tableau Light / Regular (NOT a different sans)
+- Indicator name: 14px, `#ededed`, normal case (not uppercase)
+- Source subtitle: 11px, `#777`, prefixed `+` (e.g. `+snowflake`)
+- Brand name (header): 13px, `#bfbfbf` (white on the pink client cell)
+- Drill / back affordance label: 11px, `#888`
+
+**Affordances** (the in-extension view-swap — no Tableau navigation)
+- To chart: a **chart-view icon** (bar/line-chart glyph) 17px + label **"View chart"**,
+  inside the label column, right-aligned. (Replaces the old `circle-arrow-down` / "Jump to".)
+- Back from chart: a **back icon** (left-arrow / "back to table" glyph) 17px + matching
+  label, same 11px `#888` treatment, mirroring "View chart". Returns to the table view.
+
+**Layout**
+- Columns: `minmax(232px, 1.66fr)` label, then `repeat(N, 1fr)` brand columns where **N =
+  the comparator count from the data** — do NOT hardcode 5; it can move by one or two.
+- Gap: 2px (named override above; frame shows through). Cell radius 8px.
+- Drill affordance lives INSIDE the label column (right-aligned), not its own column.
+- Frame: `#0d0d0d`, 1px border `#262626`, radius 16px, 8px padding. The frame is a
+  **contained card** sized to the scorecard, NOT a full-window fill. The extension's
+  root/body behind it is **transparent** so the host dashboard background shows through —
+  the `#0d0d0d` belongs to the card element only, never the window.
+
+**Cell fills**
+| Cell | Fill | Notes |
+|---|---|---|
+| Header band (comparators) | transparent | brand name + score on dark frame |
+| Header — client cell | `#e994a2` (pink) | client brand only; see Colour + future param |
+| Label cells (body) | `#181818` | |
+| Client value cells (body) | `#3a3a3a` (light grey) | client = 2nd column, full height |
+| Comparator value cells (body) | `#242424` | calm text `#d2d2d2` |
+
+No brand colours anywhere except the pink client header cell.
+
+**Score colour rule — CLIENT COLUMN body values only**, on the `/5` scale:
+`value < 2 → red #e0584f` · `2 ≤ value ≤ 4 → orange #e0992e` · `value > 4 → green #57bf6a`.
+Comparator values are never colour-coded (`#d2d2d2`); the header overall score is not
+colour-coded (white text).
+
+**Title block**
+- `BULLETPROOF` wordmark + subtitle. Subtitle is DYNAMIC per score type (`Survey Score`,
+  etc.) — live text, not baked into the wordmark vector. A supplied SVG wordmark renders
+  `BULLETPROOF` only; the score-type word is the live subtitle beneath.
+
+## Detail page header (above the card — extension-rendered)
+The page-level header that sits in the **transparent area above the card**, left-aligned
+to the card edge. **Distinct from** the Scorecard "Title block" (the `BULLETPROOF` SVG
+wordmark + live Survey Score subtitle), which stays **inside** the card and is unchanged
+by this section.
+
+- **Title** = the subgroup display name = `subcategory_name` (read from the source sheet,
+  same rows as `subcategory_id`), uppercased. **Tableau Regular**, `text-transform:
+  uppercase`, **116px**, `#ededed`.
+  - 116 is the nearest modular-scale step to the Figma cross-check of ~110 — on-scale,
+    not transcribed (97 / 116 are the steps either side; ~110 → 116).
+- **Question** = subtitle sentence; **hardcoded for now** with the client brand
+  interpolated (re-interpolates on `ParameterChanged`). **Tableau Light**, normal case,
+  19px, `#888`.
+  - Interim: a single hardcoded sentence shows on **every** subgroup until it is sourced
+    per-subgroup. Accepted as interim.
+- **Spacing:** title → question = `default` (8px); header block → card = `loose` (24px).
+- **Locked vs review:** **116px is locked.** Question 19px and the two gaps are
+  build-and-review values — confirm on the first render at `1421 × 773`, don't re-derive
+  from the Figma.
 
 ## Enforcement (what the harness / lint checks)
-- No `font-size` value that isn't one of the four roles (hero override excepted).
+- No `font-size` value that isn't one of the four roles or a Scorecard-section locked size
+  (hero override excepted).
 - No font size computed from element geometry.
-- No gap/margin that isn't a multiple of the 4px base unit, except the named overrides.
+- No gap/margin off the 4px base unit, except the named overrides (incl. the 2px gutter).
 - Type sizes identical for the same role across all charts.
 
 ## TODO before this is final
 - Validate the type scale + spacing at `1421 × 773` (and adjust if the client reacts).
+- Confirm the Detail page header question size (19px) and gaps (8 / 24) on the first
+  render — only the 116px title is hard-locked.
 - Set the **minimum container size** (the "too small" floor) — derive from where a chart
   first breaks, not from the current canvas.
 - Confirm the overview card copy against the design (e.g. "STRATEGIC STRENTH" looks like

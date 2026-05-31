@@ -1821,8 +1821,6 @@
     '.sc-score-type{' +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
     '  font-size:11px;color:#555;letter-spacing:0.10em;text-transform:uppercase;margin-top:2px;}' +
-    '.sc-meta{padding:4px;display:flex;flex-direction:column;gap:4px;flex-shrink:0;}' +
-    '.sc-title{text-transform:uppercase;}' +
     '.sc-grid-scroll{overflow-y:auto;}' +
     '.sc-grid{display:grid;gap:2px;}' +
     '.sc-cell-hdr-comp{padding:8px 4px;display:flex;flex-direction:column;' +
@@ -1851,7 +1849,15 @@
     '.sc-empty-msg{display:flex;align-items:center;justify-content:center;' +
     '  height:100%;font-size:11px;' +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
-    '  color:#4D4D4D;padding:16px;text-align:center;}';
+    '  color:#4D4D4D;padding:16px;text-align:center;}' +
+    // ── Detail page header (above the card, in the transparent area) ──
+    '.detail-header{display:flex;flex-direction:column;gap:8px;flex-shrink:0;}' +
+    '.detail-header-title{' +
+    "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;" +
+    '  font-size:116px;color:#ededed;line-height:1;text-transform:uppercase;}' +
+    '.detail-header-question{' +
+    "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
+    '  font-size:19px;color:#888;line-height:1.3;}';
 
   function injectCSS() {
     if (document.getElementById(STYLE_ID)) return;
@@ -1930,25 +1936,6 @@
     stEl.textContent = (meta && meta.scoreType) ? meta.scoreType : 'Survey Score';
     wmBlock.appendChild(stEl);
     frame.appendChild(wmBlock);
-
-    // ── Optional meta block (subgroup title + question) ──
-    if (meta && (meta.title || meta.question)) {
-      var metaDiv = document.createElement('div');
-      metaDiv.className = 'sc-meta';
-      if (meta.title) {
-        var titleEl = document.createElement('div');
-        titleEl.className = 'ind-heading sc-title';
-        titleEl.textContent = meta.title;
-        metaDiv.appendChild(titleEl);
-      }
-      if (meta.question) {
-        var qEl = document.createElement('div');
-        qEl.className = 'ind-source';
-        qEl.textContent = meta.question;
-        metaDiv.appendChild(qEl);
-      }
-      frame.appendChild(metaDiv);
-    }
 
     if (!model.rows.length) {
       var empty = document.createElement('div');
@@ -2076,6 +2063,23 @@
     }
 
     if (matrixModel) {
+      if (subgroupMeta && (subgroupMeta.title || subgroupMeta.question)) {
+        var hdr = document.createElement('div');
+        hdr.className = 'detail-header';
+        if (subgroupMeta.title) {
+          var hdrTitle = document.createElement('div');
+          hdrTitle.className = 'detail-header-title';
+          hdrTitle.textContent = subgroupMeta.title;
+          hdr.appendChild(hdrTitle);
+        }
+        if (subgroupMeta.question) {
+          var hdrQ = document.createElement('div');
+          hdrQ.className = 'detail-header-question';
+          hdrQ.textContent = subgroupMeta.question;
+          hdr.appendChild(hdrQ);
+        }
+        root.appendChild(hdr);
+      }
       renderMatrix(root, matrixModel, subgroupMeta, onIndicatorSelected);
       return;
     }
@@ -2487,7 +2491,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-30.3';
+  const VERSION = '2026-05-31.1';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
@@ -2670,6 +2674,7 @@
   let _view               = 'table';
   let _selectedIndicatorId = null;
   var _subgroup           = null;   // resolved subgroup id for this dashboard instance
+  var _subcategoryName    = null;   // display name from worksheet or SUBGROUP_META.title fallback
   var _availableGrains    = { monthly: false, quarterly: false }; // data-driven per selected indicator
   // _selectedBrand, _chartOverrides, _viewMode are declared by charts.js
 
@@ -3146,6 +3151,12 @@
     var subgroupMeta = null;
     var list         = _indicators.length ? _indicators : null;
 
+    var brandDisplay = (BRAND_DISPLAY_MAP && BRAND_DISPLAY_MAP[CONFIG.clientBrand])
+      ? BRAND_DISPLAY_MAP[CONFIG.clientBrand]
+      : CONFIG.clientBrand;
+    var defaultQuestion = 'Is there a clear market opportunity for ' + brandDisplay +
+      ' and a clear demand for the product/service?';
+
     if (!_dashboard) {
       // No live Tableau connection — use sample data (preview / dev mode)
       var urlSub = new URLSearchParams(location.search).get('subgroup');
@@ -3158,7 +3169,14 @@
       if (filteredScores.length) {
         matrixModel = buildScoreModel(filteredScores, 'ILLY', urlSubgroup || '');
       }
-      subgroupMeta = (urlSubgroup && SUBGROUP_META[urlSubgroup]) ? SUBGROUP_META[urlSubgroup] : null;
+      var rawMetaU = urlSubgroup ? SUBGROUP_META[urlSubgroup] : null;
+      subgroupMeta = urlSubgroup ? {
+        title:     rawMetaU ? rawMetaU.title : null,
+        question:  rawMetaU && rawMetaU.questionTemplate
+          ? rawMetaU.questionTemplate.replace('{{client}}', brandDisplay)
+          : defaultQuestion,
+        scoreType: rawMetaU ? rawMetaU.scoreType : 'Survey Score',
+      } : null;
 
       if (!list) {
         var filtered = urlSubgroup
@@ -3169,7 +3187,14 @@
     } else {
       // Tableau mode
       matrixModel  = _scoreModel;
-      subgroupMeta = (_subgroup && SUBGROUP_META[_subgroup]) ? SUBGROUP_META[_subgroup] : null;
+      var rawMetaS = _subgroup ? SUBGROUP_META[_subgroup] : null;
+      subgroupMeta = _subgroup ? {
+        title:     _subcategoryName || (rawMetaS ? rawMetaS.title : null),
+        question:  rawMetaS && rawMetaS.questionTemplate
+          ? rawMetaS.questionTemplate.replace('{{client}}', brandDisplay)
+          : defaultQuestion,
+        scoreType: rawMetaS ? rawMetaS.scoreType : 'Survey Score',
+      } : null;
 
       if (!list && !matrixModel) {
         document.getElementById('table-view').innerHTML =
@@ -3231,9 +3256,9 @@
 
   var SUBGROUP_META = {
     'cmoaf': {
-      title:     'OPPORTUNITY PATHWAY',
-      question:  'Is there a clear market opportunity for Illy Coffee and a clear demand for the product/service?',
-      scoreType: 'Survey Score',
+      title:            'OPPORTUNITY PATHWAY',
+      questionTemplate: 'Is there a clear market opportunity for {{client}} and a clear demand for the product/service?',
+      scoreType:        'Survey Score',
     },
   };
 
@@ -3398,7 +3423,8 @@
       var indIdx    = colIdx(CONFIG.indicatorIdField);
       var nameIdx   = colIdx(CONFIG.nameField);
       var sourceIdx = colIdx(CONFIG.sourceField);
-      var subcatIdx = colIdx(CONFIG.subcategoryIdField);
+      var subcatIdx     = colIdx(CONFIG.subcategoryIdField);
+      var subcatNameIdx = colIdx('subcategory_name');
 
       if (brandIdx === -1 || valueIdx === -1 || indIdx === -1) {
         var available = cols.map(function(c) { return c.fieldName; }).join(', ');
@@ -3421,7 +3447,8 @@
           period:    period,
           _indName:  nameIdx   !== -1 ? (row[nameIdx].formattedValue   || row[nameIdx].value   || '') : '',
           _source:   sourceIdx !== -1 ? (row[sourceIdx].formattedValue || row[sourceIdx].value || '') : '',
-          _subcat:   subcatIdx !== -1 ? (row[subcatIdx].value || row[subcatIdx].formattedValue || '') : '',
+          _subcat:     subcatIdx     !== -1 ? (row[subcatIdx].value     || row[subcatIdx].formattedValue     || '') : '',
+          _subcatName: subcatNameIdx !== -1 ? (row[subcatNameIdx].formattedValue || row[subcatNameIdx].value || '') : '',
         };
       }).filter(function(d) { return d.value !== null && d.name !== 'coffee_general'; });
 
@@ -3440,6 +3467,14 @@
       });
       _indicators.sort(function(a, b) { return a.name.localeCompare(b.name); });
       _subgroup = resolveSubgroup();
+      var subcatRow = _rawData.find(function(d) {
+        var sc = d._subcat ? d._subcat.trim().toLowerCase() : '';
+        return _subgroup ? sc === _subgroup : false;
+      });
+      _subcategoryName = (subcatRow && subcatRow._subcatName)
+        ? subcatRow._subcatName
+        : (SUBGROUP_META[_subgroup] && SUBGROUP_META[_subgroup].title ? SUBGROUP_META[_subgroup].title : null);
+
       _indicators = _subgroup
         ? _indicators.filter(function(d) {
             var sc = d.subcategory_id ? d.subcategory_id.trim().toLowerCase() : '';
@@ -3748,6 +3783,16 @@
         return;
       }
       await fetchAndCacheData();
+
+      // Re-render question text when any parameter changes (e.g. client brand)
+      try {
+        var params = await _dashboard.workbook.getParametersAsync();
+        params.forEach(function(p) {
+          p.addEventListener(tableau.TableauEventType.ParameterChanged, function() {
+            if (_view === 'table') switchToTable();
+          });
+        });
+      } catch(e) { console.warn('[param listener]', e); }
     }).catch(function(err) {
       console.error('initializeAsync failed:', err);
       switchToTable();
