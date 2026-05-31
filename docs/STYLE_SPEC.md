@@ -82,16 +82,21 @@ Fixed tokens. Render from these; do not re-derive. Where this conflicts with the
 roles above, this section wins **for the scorecard table**.
 
 **Numerals (scores & values)** — `'Baskervville','Baskerville',Georgia,serif`, italic 400
-- Header brand score: 31px · Body value: 21px (uniform across client and comparator cells)
-- Suffix always `/5` (these tables): `font-size:0.5em`, italic, muted `#7c7c7c`, inline
-  immediately after the value, baseline-aligned. Values to 1 decimal (`5.0/5`, `3.3/5`).
-- **Cell alignment:** value numerals sit **bottom-left** within the cell (not centred);
-  brand-name header labels are left-aligned to match the column.
+- Header brand score: 31px · Body value: **comparator 21px, client column ~28px** (the client
+  is the emphasised column; size build-and-review)
+- Suffix `/5`: **client column only** (comparators show the bare number, per the Figma — header
+  and body alike); `font-size:0.5em`, italic, muted `#7c7c7c`, inline after the value,
+  baseline-aligned. Values to 1 decimal (client `5.0/5`; comparator `5.0`).
+- **Cell alignment:** value numerals sit **bottom-left**, clearly **inset** by the cell padding —
+  at typical row counts (≤5) padding is at the generous (~20px) end so the numeral reads off the
+  corner, tightening only near the row-count max. Brand-name header labels left-aligned to match.
 
 **Labels / text** — Tableau Light / Regular (NOT a different sans)
-- Indicator name: 14px, `#ededed`, normal case (not uppercase)
+- Indicator name: 14px, `#ededed`, normal case; **wraps to 2 lines, never truncates/ellipsis**
+  (label column widened to suit — see Layout)
 - Source subtitle: 11px, `#777`, prefixed `+` (e.g. `+snowflake`)
-- Brand name (header): 13px, `#bfbfbf` (white on the pink client cell)
+- Brand name (header): 13px, `#bfbfbf`; on the **pink client cell use dark text `#4b1528`**
+  (pink-family) for contrast — white fails WCAG on the light pink.
 - Drill / back affordance label: 11px, `#888`
 
 **Affordances** (the in-extension view-swap — no Tableau navigation)
@@ -101,8 +106,9 @@ roles above, this section wins **for the scorecard table**.
   label, same 11px `#888` treatment, mirroring "View chart". Returns to the table view.
 
 **Layout**
-- Columns: `minmax(232px, 1.66fr)` label, then `repeat(N, 1fr)` brand columns where **N =
-  the comparator count from the data** — do NOT hardcode 5; it can move by one or two.
+- Columns: **`minmax(320px, 2.2fr)` label** (wider so long names show — they wrap, never
+  truncate), then a **slightly wider client column (~1.3fr)** and `repeat(N−1, 1fr)` comparator
+  columns, where **N = the comparator count from the data** — do NOT hardcode 5. Widths build-and-review.
 - Gap: 2px (named override above; frame shows through). Cell radius 8px. Cell padding flexes
   ~10–20px with row height (see Detail page header → Vertical layout → Row height & padding).
 - Drill affordance lives INSIDE the label column (right-aligned), not its own column.
@@ -132,9 +138,10 @@ colour-coded (white text).
 - The header is the table's **first row**, full height — not a strip above the table.
 - **Label cell** (transparent): the `BULLETPROOF` SVG wordmark + the subtitle **`Score`**
   beneath it (live text under the wordmark vector; was "Survey Score").
-- **Brand cells:** brand name (13px) above an **overall score** (31px, white — not
-  RAG-coloured), `/5`. Overall = the **mean of that brand's visible indicator scores**
-  (interim — additive swap if a dedicated field appears).
+- **Brand cells:** brand name (13px) above an **overall score** (31px, not RAG-coloured); `/5`
+  on the **client column only** (comparators bare). Overall = the **mean of that brand's visible
+  indicator scores** (interim). Text white on comparator cells; **dark `#4b1528` on the pink
+  client cell** for contrast.
 - Fills per Cell fills below: client cell pink, comparator header cells transparent (names +
   scores sit on the dark frame).
 

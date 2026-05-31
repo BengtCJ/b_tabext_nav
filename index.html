@@ -1823,10 +1823,11 @@
     // Header label cell (wordmark + Score — transparent, left-aligned, bottom-weighted)
     '.sc-cell-hdr-label{background:transparent;border-radius:8px;padding:8px 12px;' +
     '  display:flex;flex-direction:column;justify-content:flex-end;}' +
-    // 31px header overall score — white, not RAG-coloured
+    // 31px header overall score — white on comparators, #4b1528 on client cell
     '.sc-hdr-score{' +
     "  font-family:'Baskervville','Baskerville',Georgia,serif;" +
     '  font-size:31px;font-style:italic;font-weight:400;color:#ffffff;line-height:1;}' +
+    '.sc-cell-hdr-client .sc-hdr-score{color:#4b1528;}' +
     '.sc-grid-scroll{overflow-y:auto;}' +
     '.sc-grid{display:grid;gap:2px;}' +
     '.sc-cell-hdr-comp{padding:8px 4px;display:flex;flex-direction:column;' +
@@ -1836,12 +1837,12 @@
     '.sc-brand-name{' +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
     '  font-size:13px;color:#bfbfbf;}' +
-    '.sc-cell-hdr-client .sc-brand-name{color:#ffffff;}' +
+    '.sc-cell-hdr-client .sc-brand-name{color:#4b1528;}' +
     '.sc-cell-label{background:#181818;border-radius:8px;padding:8px 12px;' +
     '  display:flex;flex-direction:row;align-items:center;gap:8px;' +
     '  cursor:pointer;user-select:none;transition:background 0.12s;}' +
     '.sc-cell-label:hover{background:#222222;}' +
-    '.sc-cell-label .ind-heading{font-size:14px;color:#ededed;}' +
+    '.sc-cell-label .ind-heading{font-size:14px;color:#ededed;white-space:normal;overflow:visible;text-overflow:clip;}' +
     '.sc-cell-label-inner{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;}' +
     '.sc-cell-label .ind-jump{margin-left:0;}' +
     '.sc-cell-comp{background:#242424;border-radius:8px;padding:8px 4px;' +
@@ -1851,6 +1852,7 @@
     '.sc-score{' +
     "  font-family:'Baskervville','Baskerville',Georgia,serif;" +
     '  font-size:21px;font-style:italic;font-weight:400;}' +
+    '.sc-cell-client .sc-score{font-size:28px;}' +
     '.sc-score-suffix{font-size:0.5em;font-style:italic;color:#7c7c7c;}' +
     '.sc-empty-msg{display:flex;align-items:center;justify-content:center;' +
     '  height:100%;font-size:11px;' +
@@ -1962,7 +1964,7 @@
 
     var grid = document.createElement('div');
     grid.className = 'sc-grid';
-    grid.style.gridTemplateColumns = 'minmax(232px,1.66fr) repeat(' + N + ',1fr)';
+    grid.style.gridTemplateColumns = 'minmax(320px,2.2fr) 1.3fr repeat(' + (N - 1) + ',1fr)';
 
     // ── Per-brand mean scores (overall = mean of visible indicator scores) ──
     var brandMeans = {};
@@ -2005,7 +2007,9 @@
       if (mean !== null && mean !== undefined) {
         var meanEl = document.createElement('div');
         meanEl.className = 'sc-hdr-score';
-        meanEl.innerHTML = mean.toFixed(1) + '<span class="sc-score-suffix">/5</span>';
+        meanEl.innerHTML = isClient
+          ? mean.toFixed(1) + '<span class="sc-score-suffix">/5</span>'
+          : mean.toFixed(1);
         cell.appendChild(meanEl);
       }
       grid.appendChild(cell);
@@ -2063,8 +2067,9 @@
           var scoreEl = document.createElement('div');
           scoreEl.className = 'sc-score';
           scoreEl.style.color = colour;
-          scoreEl.innerHTML = Number(sc).toFixed(1) +
-            '<span class="sc-score-suffix">/5</span>';
+          scoreEl.innerHTML = isClient
+            ? Number(sc).toFixed(1) + '<span class="sc-score-suffix">/5</span>'
+            : Number(sc).toFixed(1);
           cell.appendChild(scoreEl);
         }
 
@@ -2556,7 +2561,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-31.4';
+  const VERSION = '2026-05-31.5';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
