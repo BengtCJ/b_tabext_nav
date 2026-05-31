@@ -1815,12 +1815,18 @@
     '.sc-wrap{display:flex;flex-direction:column;}' +
     '.sc-frame{display:flex;flex-direction:column;' +
     '  background:#0d0d0d;border:1px solid #262626;border-radius:16px;' +
-    '  padding:8px;gap:4px;overflow:hidden;}' +
-    '.sc-wordmark-block{padding:4px 4px 0;flex-shrink:0;}' +
+    '  padding:2px;gap:2px;overflow:hidden;}' +
     '.sc-wordmark{line-height:0;}' +
     '.sc-score-type{' +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
     '  font-size:11px;color:#555;letter-spacing:0.10em;text-transform:uppercase;margin-top:2px;}' +
+    // Header label cell (wordmark + Score — transparent, left-aligned, bottom-weighted)
+    '.sc-cell-hdr-label{background:transparent;border-radius:8px;padding:8px 12px;' +
+    '  display:flex;flex-direction:column;justify-content:flex-end;}' +
+    // 31px header overall score — white, not RAG-coloured
+    '.sc-hdr-score{' +
+    "  font-family:'Baskervville','Baskerville',Georgia,serif;" +
+    '  font-size:31px;font-style:italic;font-weight:400;color:#ffffff;line-height:1;}' +
     '.sc-grid-scroll{overflow-y:auto;}' +
     '.sc-grid{display:grid;gap:2px;}' +
     '.sc-cell-hdr-comp{padding:8px 4px;display:flex;flex-direction:column;' +
@@ -1853,9 +1859,9 @@
     // ── Detail page header (above the card, in the transparent area) ──
     // ── Commentary box (inside card, below table) ──
     '.sc-commentary{' +
-    '  border:1px solid #262626;border-radius:8px;background:#181818;' +
-    '  padding:16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;' +
-    '  margin-top:12px;}' +  // 12px + 4px frame gap = 16px (section) from table
+    '  border-radius:8px;background:#181818;' +
+    '  padding:16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;}' +
+    // no own border; 2px gap comes from sc-frame gap:2px
     '.sc-commentary-verdict{' +
     "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;" +
     '  font-size:16px;color:#b0b0b0;line-height:1.4;}' +
@@ -1939,19 +1945,6 @@
     var frame = document.createElement('div');
     frame.className = 'sc-frame';
 
-    // ── Wordmark block (BULLETPROOF + dynamic score type) ──
-    var wmBlock = document.createElement('div');
-    wmBlock.className = 'sc-wordmark-block';
-    var wmEl = document.createElement('div');
-    wmEl.className = 'sc-wordmark';
-    wmEl.innerHTML = BULLETPROOF_SVG;
-    wmBlock.appendChild(wmEl);
-    var stEl = document.createElement('div');
-    stEl.className = 'sc-score-type';
-    stEl.textContent = (meta && meta.scoreType) ? meta.scoreType : 'Survey Score';
-    wmBlock.appendChild(stEl);
-    frame.appendChild(wmBlock);
-
     if (!model.rows.length) {
       var empty = document.createElement('div');
       empty.className = 'sc-empty-msg';
@@ -1971,9 +1964,33 @@
     grid.className = 'sc-grid';
     grid.style.gridTemplateColumns = 'minmax(232px,1.66fr) repeat(' + N + ',1fr)';
 
-    // ── Header row ──
-    var corner = document.createElement('div');
-    grid.appendChild(corner);
+    // ── Per-brand mean scores (overall = mean of visible indicator scores) ──
+    var brandMeans = {};
+    model.brands.forEach(function(bk) {
+      var vals = model.rows.map(function(r) {
+        return (r.scores && r.scores[bk] !== undefined && r.scores[bk] !== null) ? r.scores[bk] : null;
+      }).filter(function(v) { return v !== null && !isNaN(v); });
+      brandMeans[bk] = vals.length
+        ? vals.reduce(function(a, b) { return a + b; }, 0) / vals.length
+        : null;
+    });
+
+    // ── Row padding: flex ~20px (few rows) → ~12px (many rows) ──
+    var nRows = model.rows.length;
+    var rowPad = nRows >= 6 ? 12 : nRows >= 4 ? 16 : 20;  // 4px multiples; ≈10-20px spec range
+
+    // ── Header row (grid row 1): label cell = wordmark; brand cells = name + mean score ──
+    var hdrLabel = document.createElement('div');
+    hdrLabel.className = 'sc-cell-hdr-label';
+    var wmEl = document.createElement('div');
+    wmEl.className = 'sc-wordmark';
+    wmEl.innerHTML = BULLETPROOF_SVG;
+    hdrLabel.appendChild(wmEl);
+    var stEl = document.createElement('div');
+    stEl.className = 'sc-score-type';
+    stEl.textContent = 'Score';
+    hdrLabel.appendChild(stEl);
+    grid.appendChild(hdrLabel);
 
     model.brands.forEach(function(brandKey, i) {
       var isClient = i === 0;
@@ -1984,6 +2001,13 @@
       nameEl.textContent = (typeof BRAND_DISPLAY_MAP !== 'undefined' && BRAND_DISPLAY_MAP[brandKey])
         ? BRAND_DISPLAY_MAP[brandKey] : brandKey;
       cell.appendChild(nameEl);
+      var mean = brandMeans[brandKey];
+      if (mean !== null && mean !== undefined) {
+        var meanEl = document.createElement('div');
+        meanEl.className = 'sc-hdr-score';
+        meanEl.innerHTML = mean.toFixed(1) + '<span class="sc-score-suffix">/5</span>';
+        cell.appendChild(meanEl);
+      }
       grid.appendChild(cell);
     });
 
@@ -1992,6 +2016,7 @@
       // Label cell
       var labelCell = document.createElement('div');
       labelCell.className = 'sc-cell-label';
+      labelCell.style.padding = rowPad + 'px 12px';
       labelCell.addEventListener('click', (function(id) {
         return function() { if (typeof onSelect === 'function') onSelect(id); };
       })(row.id));
@@ -2026,6 +2051,7 @@
         var sc = (row.scores && row.scores[brandKey] !== undefined) ? row.scores[brandKey] : null;
         var cell = document.createElement('div');
         cell.className = isClient ? 'sc-cell-client' : 'sc-cell-comp';
+        cell.style.padding = rowPad + 'px 4px';
 
         if (sc !== null) {
           var colour;
@@ -2049,7 +2075,7 @@
     scroll.appendChild(grid);
     frame.appendChild(scroll);
 
-    if (meta && meta.showCommentary && meta.verdict) {
+    if (meta && meta.showCommentary && meta.verdict && nRows < 7) {
       var commentary = document.createElement('div');
       commentary.className = 'sc-commentary';
       var verdictEl = document.createElement('div');
@@ -2530,7 +2556,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-31.3';
+  const VERSION = '2026-05-31.4';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
@@ -3371,7 +3397,7 @@
     var indOrder = [];
     rows.forEach(function(r) {
       if (!indMap[r.indicator_id]) {
-        indMap[r.indicator_id] = { id: r.indicator_id, name: r.name, source: r.source, scores: {} };
+        indMap[r.indicator_id] = { id: r.indicator_id, name: r.name || METRIC_LABELS[r.indicator_id] || r.indicator_id, source: r.source, scores: {} };
         indOrder.push(r.indicator_id);
       }
       indMap[r.indicator_id].scores[r.brand] = r.score;

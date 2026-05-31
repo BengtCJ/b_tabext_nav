@@ -103,9 +103,11 @@ roles above, this section wins **for the scorecard table**.
 **Layout**
 - Columns: `minmax(232px, 1.66fr)` label, then `repeat(N, 1fr)` brand columns where **N =
   the comparator count from the data** — do NOT hardcode 5; it can move by one or two.
-- Gap: 2px (named override above; frame shows through). Cell radius 8px.
+- Gap: 2px (named override above; frame shows through). Cell radius 8px. Cell padding flexes
+  ~10–20px with row height (see Detail page header → Vertical layout → Row height & padding).
 - Drill affordance lives INSIDE the label column (right-aligned), not its own column.
-- Frame: `#0d0d0d`, 1px border `#262626`, radius 16px, 8px padding. The frame is a
+- Frame: `#0d0d0d`, 1px border `#262626`, radius 16px, **2px padding** — the 2px gutter is uniform throughout (cell↔cell, cell↔frame,
+  table↔commentary), so the dark frame reads as a consistent hairline. The frame is a
   **contained card** sized to the scorecard, NOT a full-window fill. The extension's
   root/body behind it is **transparent** so the host dashboard background shows through —
   the `#0d0d0d` belongs to the card element only, never the window.
@@ -126,17 +128,22 @@ No brand colours anywhere except the pink client header cell.
 Comparator values are never colour-coded (`#d2d2d2`); the header overall score is not
 colour-coded (white text).
 
-**Title block**
-- `BULLETPROOF` wordmark + subtitle. Subtitle is DYNAMIC per score type (`Survey Score`,
-  etc.) — live text, not baked into the wordmark vector. A supplied SVG wordmark renders
-  `BULLETPROOF` only; the score-type word is the live subtitle beneath.
+**Header row (the table's first row — full height)**
+- The header is the table's **first row**, full height — not a strip above the table.
+- **Label cell** (transparent): the `BULLETPROOF` SVG wordmark + the subtitle **`Score`**
+  beneath it (live text under the wordmark vector; was "Survey Score").
+- **Brand cells:** brand name (13px) above an **overall score** (31px, white — not
+  RAG-coloured), `/5`. Overall = the **mean of that brand's visible indicator scores**
+  (interim — additive swap if a dedicated field appears).
+- Fills per Cell fills below: client cell pink, comparator header cells transparent (names +
+  scores sit on the dark frame).
 
 **Commentary box (optional — extension-rendered, inside the card)**
 - Placement: inside the card, BELOW the table, full content width. Toggled from the
   Settings panel (config default lives in CONFIG/DEFAULTS, not here). When off it does NOT
   render — the card shrinks to fit, no empty gap.
-- Panel: 1px border `#262626`, radius 8px, fill `#181818` (reuses the cell tokens);
-  padding `section` (16px). Gap from the table above: `section` (16px).
+- Panel: radius 8px, fill `#181818`, padding `section` (16px); **no own border**. Sits
+  **2px** below the table (the same 2px gutter as the cells).
 - Verdict (lead sentence): Tableau Regular, 16px, `#b0b0b0` (matches reading — unified, not white).
 - Reading (paragraph): Tableau Regular, 13px, `#b0b0b0`, line-height ~1.5.
 - Verdict → reading gap: `default` (8px).
@@ -173,6 +180,15 @@ by this section.
 - Header block pinned to the top; the card is **bottom-weighted** in the space beneath it.
 - **Bottom inset:** the card is never flush to the container bottom — always ≥ `loose`
   (24px) clear of it.
+- **Row height & padding (flexible):** the header row + indicator rows fill the card's table
+  zone. The **header row** is the one consistently tall row (it carries the wordmark and the
+  31px overall scores). **Indicator rows** clamp between a generous **max ~88px** (few rows)
+  and a compact **min ~52px** (many); cell padding flexes ~10–20px in tandem. Name + `+source`
+  + numeral are kept across the range. Type stays fixed — only the row box and padding flex.
+  Min/max height + padding are build-and-review at `1421 × 773`.
+- **Crowding priority:** if rows at the compact min plus the commentary box would overflow,
+  **commentary yields first** (hidden); then the "too small" state. Rows never compress below
+  the min.
 - **Top-gap minimum:** ≥ `section` (16px) between header and card; only the densest case
   (≈7 indicator rows + commentary on) may surrender this toward 0.
 - **Anti-drop cap:** the empty space *above* the card is capped — when content is sparse
@@ -180,9 +196,10 @@ by this section.
   so a short card (e.g. 2 rows, commentary off) lifts clear of the bottom instead of
   stranding against it. Implement with a capped top spacer + a min bottom inset; the cap is
   a build-and-review value tuned at `1421 × 773`.
-- **Row-count robustness:** must hold for **2–7 indicator rows**. Validate three extremes
-  at `1421 × 773`: 7 rows + commentary (top gap → min), 2 rows + commentary (bottom-weighted,
-  intentional), 2 rows + commentary off (must not look dropped).
+- **Row-count robustness:** must hold for **2–7 indicator rows** with rows + padding flexing
+  per above. Validate at `1421 × 773`: 2 rows + commentary (rows tall, ~20px padding,
+  bottom-weighted) and 7 rows (rows at compact min, ~10px padding, commentary yielded). ~6 rows
+  is the practical limit with commentary on; beyond that commentary hides.
 
 ## Enforcement (what the harness / lint checks)
 - No `font-size` value that isn't one of the four roles or a Scorecard-section locked size
@@ -197,6 +214,8 @@ by this section.
   render — only the 56px title is hard-locked.
 - Tune the Detail page Vertical-layout anti-drop cap at `1421 × 773` against the
   2-row / commentary-off case; validate the 2–7 row extremes.
+- Header overall score is the mean of the brand's visible indicators (interim) — swap to a
+  dedicated field if one appears.
 - Set the **minimum container size** (the "too small" floor) — derive from where a chart
   first breaks, not from the current canvas.
 - Confirm the overview card copy against the design (e.g. "STRATEGIC STRENTH" looks like
