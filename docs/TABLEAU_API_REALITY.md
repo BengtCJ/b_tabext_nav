@@ -50,7 +50,7 @@ GitHub issues on `tableau/extensions-api`. Record the URL + date checked in each
 
 | Capability | Notes | Source |
 |---|---|---|
-| Read worksheet summary data (`getSummaryDataAsync`) | Used to build the indicator table and chart data | `[observed]` — in use in index.html |
+| Read worksheet summary data (`getSummaryDataAsync`) | Used to build the indicator table and chart data. Calling it on **two different worksheets** in the same extension (main data + score worksheet) works — confirmed by `[scoreWorksheet probe] OK` in console. | `[observed]` — in use in index.html; `[tested]` 2026-05-31 b_tabext_nav |
 | Read parameters + `currentValue` | Used to resolve the selected client brand | `[observed]` |
 | Listen to `ParameterChanged` events | Re-renders on parameter change | `[observed]` |
 | Select / highlight marks (`selectMarksByValueAsync`) | Cross-worksheet highlight on brand click | `[observed]` |
@@ -140,6 +140,7 @@ both confirmed working or already in use.
 
 | Quirk | Workaround | Source |
 |---|---|---|
+| `getSummaryDataAsync` only returns fields present in the worksheet view (rows/columns/marks shelves) — **not** all fields in the data source | A field must be on a shelf to appear in the result. Adding to Detail marks did not reliably surface new fields in testing; adding to Rows/Columns does. Consequence: `subcategory_name` was absent from the main data worksheet (which only exposes `Brand Name Upper`, `subcategory_id`, `indicator_id`, `Year`, `Quarter`, `SUM(Raw Value)`) but IS present in the score worksheet. Read each field from whichever worksheet exposes it. | `[tested]` 2026-05-31 b_tabext_nav |
 | Embedded browser does not support ES2020+ | No `??` (use `||`), no `?.` (use `&&`/ternary). Lint for these. | `[tested]` — your code-style rule |
 | `vw`/`vh` units break inside the extension iframe | Size from `offsetWidth` / `offsetHeight` only | `[tested]` — your rule |
 | Removing the default blue mark-selection highlight / grey-out | **Not** a formatting toggle — there is no setting for it. Documented workarounds: **(a) Highlight-action trick** — add a calculated field that is the same constant for every row (e.g. `True` = `TRUE`) to the Detail shelf, then create a Highlight action targeting "Selected Fields" on that field; every mark shares the value, so selecting one highlights all and nothing greys out. **(b) Transparent-shape trick** for text/KPI marks — set the mark to a transparent custom shape so a click shows no blue box. **(c) Fit "Entire view"** on a text sheet so the selection outline falls outside the visible area. Our highlight comes from `selectMarksByValueAsync`, so (a) on the target worksheets is the relevant fix. | community-confirmed: thedataschool.co.uk, biztory.com, domoorewithdata.com — verify in our workbook |
@@ -154,12 +155,7 @@ both confirmed working or already in use.
   the exact call/signature here for reference. `[tested]` your finding; signature TBD.
 - Whether `getSummaryDataAsync` row/column limits or formatting options matter for the
   largest worksheets in use. `[docs]` / `[tested]` needed.
-- **`getSummaryDataAsync` on a second (scoreWorksheet) in the same extension** — not yet
-  `[tested]`. The `fetchScoreData()` function in `index.html` runs an isolation probe
-  (`maxRows: 1`) before building the pivot. After the first Tableau connect with a score
-  worksheet configured, confirm the console shows `[scoreWorksheet probe] OK`; if it
-  instead shows `[scoreWorksheet probe FAILED]`, record the error here and move this entry
-  to Dead ends. On success, move to Confirmed with `[tested]` tag.
+- Library-loading + `min-api-version` items above.
 - Library-loading + `min-api-version` items above.
 
 ## Dead ends — do not retry
