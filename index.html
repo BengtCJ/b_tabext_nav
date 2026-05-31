@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>BP Nav + Charts</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Baskervville:ital@0;1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@1,400&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"
           onerror="console.warn('Tableau Extensions API not available — running in preview mode')"></script>
@@ -1825,7 +1825,7 @@
     '  display:flex;flex-direction:column;justify-content:flex-end;}' +
     // 31px header overall score — white on comparators, black on client cell
     '.sc-hdr-score{' +
-    "  font-family:'Baskervville','Baskerville',Georgia,serif;" +
+    "  font-family:'Baskerville','Libre Baskerville',Georgia,serif;" +
     '  font-size:31px;font-style:italic;font-weight:400;color:#ffffff;line-height:1;}' +
     '.sc-cell-hdr-client .sc-hdr-score{color:#000000;}' +
     '.sc-grid-scroll{overflow-y:auto;}' +
@@ -1850,7 +1850,7 @@
     '.sc-cell-client{background:#3a3a3a;border-radius:8px;padding:8px 8px;' +
     '  display:flex;align-items:flex-end;justify-content:flex-start;}' +
     '.sc-score{' +
-    "  font-family:'Baskervville','Baskerville',Georgia,serif;" +
+    "  font-family:'Baskerville','Libre Baskerville',Georgia,serif;" +
     '  font-size:21px;font-style:italic;font-weight:400;}' +
     '.sc-cell-client .sc-score{font-size:28px;}' +
     '.sc-score-suffix{font-size:0.5em;font-style:italic;color:#7c7c7c;}' +
@@ -2263,7 +2263,7 @@
       gap: 16px;
     }
     #chart-title {
-      font-family: 'Baskervville', 'Baskerville', Georgia, serif;
+      font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif;
       font-style: italic;
       font-size: 26px;
       color: #e6e6e6;
@@ -2561,10 +2561,10 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-31.6';
+  const VERSION = '2026-05-31.7';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
-  const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
+  const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
   const FONT_BODY  = "'Tableau Regular', 'Helvetica Neue', Arial, sans-serif";
   const FONT_LIGHT = "'Tableau Light', 'Helvetica Neue', Arial, sans-serif";
 
@@ -3351,6 +3351,12 @@
       questionTemplate: 'Is there a clear market opportunity for {{client}} and a clear demand for the product/service?',
       scoreType:        'Survey Score',
     },
+    'qa':   { title: 'ATTENTION VALUE' },
+    'cs':   { title: 'CULTURAL CUT-THROUGH' },
+    'maar': { title: 'INSTANT RECALL' },
+    'ps':   { title: 'NARRATIVE POWER' },
+    'sbr':  { title: 'STRATEGIC STRENGTH' },
+    'dba':  { title: 'SYMBOL STRENGTH' },
   };
 
   // Long-format score rows for offline preview (?subgroup=cmoaf).
@@ -3516,6 +3522,8 @@
       var sourceIdx = colIdx(CONFIG.sourceField);
       var subcatIdx     = colIdx(CONFIG.subcategoryIdField);
       var subcatNameIdx = colIdx('subcategory_name');
+      console.log('[cols]', cols.map(function(c) { return c.fieldName; }).join(', '));
+      console.log('[subcatNameIdx]', subcatNameIdx);
 
       if (brandIdx === -1 || valueIdx === -1 || indIdx === -1) {
         var available = cols.map(function(c) { return c.fieldName; }).join(', ');

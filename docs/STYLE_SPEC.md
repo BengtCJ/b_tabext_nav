@@ -23,7 +23,7 @@ wanted; validate at the container size before final sign-off.
 
 | Role | Face | Use | Size |
 |---|---|---|---|
-| **Hero** | Baskervville italic | the BAN figure, arc centre — the focal number | per-chart override |
+| **Hero** | Baskerville italic (stack in Faces) | the BAN figure, arc centre — the focal number | per-chart override |
 | **Heading** | Tableau Light | table indicator names, section labels | 16px |
 | **Label** | Tableau Light (brands UPPERCASE) / Regular (values) | brand names, value labels | 13px |
 | **Caption** | Tableau Light | axis ticks, legend, small notes | 11px |
@@ -37,7 +37,7 @@ wanted; validate at the container size before final sign-off.
   size above; derive it from where a chart actually breaks, not from the current canvas.
 
 ## Faces (existing constants — keep)
-- Baskervville italic — hero numbers.
+- Baskerville italic — hero numbers and scorecard numerals. Stack `'Baskerville','Libre Baskerville',Georgia,serif`: macOS **Baskerville** (Monotype) renders where installed and matches the Figma; **Libre Baskerville** (loaded webfont, OFL) is the cross-viewer fallback. Both default to lining figures. The old double-v **Baskervville** (ANRT webfont) is removed — it defaulted to old-style figures and, being first in the cascade, shadowed Baskerville (the uneven-digit bug). Cross-viewer note: Mac viewers see Monotype Baskerville, others see Libre Baskerville; identical rendering for all viewers is a licensing decision, not assumed here.
 - Tableau Regular — value labels / body.
 - Tableau Light — brand names (always uppercase) and axis/caption text.
 
@@ -81,7 +81,7 @@ The transparent body/root shows through beneath it.
 Fixed tokens. Render from these; do not re-derive. Where this conflicts with the generic
 roles above, this section wins **for the scorecard table**.
 
-**Numerals (scores & values)** — `'Baskervville','Baskerville',Georgia,serif`, italic 400
+**Numerals (scores & values)** — `'Baskerville','Libre Baskerville',Georgia,serif`, italic 400
 - Header brand score: 31px · Body value: **comparator 21px, client column ~28px** (the client
   is the emphasised column; size build-and-review)
 - Suffix `/5`: **client column only** (comparators show the bare number, per the Figma — header
