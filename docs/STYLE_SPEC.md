@@ -87,6 +87,7 @@ roles above, this section wins **for the scorecard table**.
 - Suffix `/5`: **client column only** (comparators show the bare number, per the Figma — header
   and body alike); `font-size:0.5em`, italic, muted `#7c7c7c`, inline after the value,
   baseline-aligned. Values to 1 decimal (client `5.0/5`; comparator `5.0`).
+  The `0.5em` applies to the literal `/5` glyphs **only** — never to a value digit. The integer and decimal digits of a value (both `4`s in `4.4`) render at the **same size and on the same baseline**; wrap only `/5` in the suffix span, not the decimal portion. No value digit is shrunk or raised.
 - **Cell alignment:** value numerals sit **bottom-left**, clearly **inset** by the cell padding —
   at typical row counts (≤5) padding is at the generous (~20px) end so the numeral reads off the
   corner, tightening only near the row-count max. Brand-name header labels left-aligned to match.
@@ -222,6 +223,7 @@ by this section.
   - Text on any coloured fill meets contrast (WCAG AA): e.g. the pink client cell uses dark
     text, never white.
   - Value suffix appears only where intended (client column only — never on comparators).
+  - Value digits are uniform: every digit of a value (including the post-decimal digit) renders at the same size and on the same baseline; only the `/5` suffix may be `0.5em`.
   - Numerals are inset from the cell edge (padding > 0 — not hugging the corner).
 
 ## TODO before this is final
