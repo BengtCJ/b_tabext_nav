@@ -85,6 +85,8 @@ roles above, this section wins **for the scorecard table**.
 - Header brand score: 31px · Body value: 21px (uniform across client and comparator cells)
 - Suffix always `/5` (these tables): `font-size:0.5em`, italic, muted `#7c7c7c`, inline
   immediately after the value, baseline-aligned. Values to 1 decimal (`5.0/5`, `3.3/5`).
+- **Cell alignment:** value numerals sit **bottom-left** within the cell (not centred);
+  brand-name header labels are left-aligned to match the column.
 
 **Labels / text** — Tableau Light / Regular (NOT a different sans)
 - Indicator name: 14px, `#ededed`, normal case (not uppercase)
@@ -135,7 +137,7 @@ colour-coded (white text).
   render — the card shrinks to fit, no empty gap.
 - Panel: 1px border `#262626`, radius 8px, fill `#181818` (reuses the cell tokens);
   padding `section` (16px). Gap from the table above: `section` (16px).
-- Verdict (lead sentence): Tableau Regular, 16px, `#ededed`.
+- Verdict (lead sentence): Tableau Regular, 16px, `#b0b0b0` (matches reading — unified, not white).
 - Reading (paragraph): Tableau Regular, 13px, `#b0b0b0`, line-height ~1.5.
 - Verdict → reading gap: `default` (8px).
 - Content is PLACEHOLDER for now — two slots (verdict, reading) resolved through one
@@ -152,18 +154,35 @@ by this section.
 
 - **Title** = the subgroup display name = `subcategory_name` (read from the source sheet,
   same rows as `subcategory_id`), uppercased. **Tableau Regular**, `text-transform:
-  uppercase`, **116px**, `#ededed`.
-  - 116 is the nearest modular-scale step to the Figma cross-check of ~110 — on-scale,
-    not transcribed (97 / 116 are the steps either side; ~110 → 116).
+  uppercase`, **56px**, `#ededed`. Renders **one word per line** — `subcategory_name` is
+  always two words, so the title is always two lines (split on whitespace; do not rely on
+  width-wrapping).
+  - 56 ≈ half the original 116 and is the nearest modular-scale step in range (47 / 56 / 67).
 - **Question** = subtitle sentence; **hardcoded for now** with the client brand
   interpolated (re-interpolates on `ParameterChanged`). **Tableau Light**, normal case,
-  19px, `#888`.
+  19px, `#ededed` (white).
   - Interim: a single hardcoded sentence shows on **every** subgroup until it is sourced
     per-subgroup. Accepted as interim.
-- **Spacing:** title → question = `default` (8px); header block → card = `loose` (24px).
-- **Locked vs review:** **116px is locked.** Question 19px and the two gaps are
-  build-and-review values — confirm on the first render at `1421 × 773`, don't re-derive
-  from the Figma.
+- **Spacing:** title → question = `default` (8px). Header → card spacing is governed by
+  **Vertical layout** below (flexible, bounded), not a fixed gap.
+- **Locked vs review:** **56px title is locked.** Question 19px, the title→question gap,
+  and the Vertical-layout cap are build-and-review values — confirm on the first render at
+  `1421 × 773`, don't re-derive from the Figma.
+
+### Vertical layout (header ↔ card)
+- Header block pinned to the top; the card is **bottom-weighted** in the space beneath it.
+- **Bottom inset:** the card is never flush to the container bottom — always ≥ `loose`
+  (24px) clear of it.
+- **Top-gap minimum:** ≥ `section` (16px) between header and card; only the densest case
+  (≈7 indicator rows + commentary on) may surrender this toward 0.
+- **Anti-drop cap:** the empty space *above* the card is capped — when content is sparse
+  enough that the natural gap would exceed the cap, the surplus is placed *below* the card
+  so a short card (e.g. 2 rows, commentary off) lifts clear of the bottom instead of
+  stranding against it. Implement with a capped top spacer + a min bottom inset; the cap is
+  a build-and-review value tuned at `1421 × 773`.
+- **Row-count robustness:** must hold for **2–7 indicator rows**. Validate three extremes
+  at `1421 × 773`: 7 rows + commentary (top gap → min), 2 rows + commentary (bottom-weighted,
+  intentional), 2 rows + commentary off (must not look dropped).
 
 ## Enforcement (what the harness / lint checks)
 - No `font-size` value that isn't one of the four roles or a Scorecard-section locked size
@@ -175,7 +194,9 @@ by this section.
 ## TODO before this is final
 - Validate the type scale + spacing at `1421 × 773` (and adjust if the client reacts).
 - Confirm the Detail page header question size (19px) and gaps (8 / 24) on the first
-  render — only the 116px title is hard-locked.
+  render — only the 56px title is hard-locked.
+- Tune the Detail page Vertical-layout anti-drop cap at `1421 × 773` against the
+  2-row / commentary-off case; validate the 2–7 row extremes.
 - Set the **minimum container size** (the "too small" floor) — derive from where a chart
   first breaks, not from the current canvas.
 - Confirm the overview card copy against the design (e.g. "STRATEGIC STRENTH" looks like

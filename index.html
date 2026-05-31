@@ -1824,9 +1824,9 @@
     '.sc-grid-scroll{overflow-y:auto;}' +
     '.sc-grid{display:grid;gap:2px;}' +
     '.sc-cell-hdr-comp{padding:8px 4px;display:flex;flex-direction:column;' +
-    '  align-items:center;justify-content:center;}' +
+    '  align-items:flex-start;justify-content:center;}' +
     '.sc-cell-hdr-client{padding:8px 4px;background:#e994a2;border-radius:8px;' +
-    '  display:flex;flex-direction:column;align-items:center;justify-content:center;}' +
+    '  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;}' +
     '.sc-brand-name{' +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
     '  font-size:13px;color:#bfbfbf;}' +
@@ -1839,9 +1839,9 @@
     '.sc-cell-label-inner{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;}' +
     '.sc-cell-label .ind-jump{margin-left:0;}' +
     '.sc-cell-comp{background:#242424;border-radius:8px;padding:8px 4px;' +
-    '  display:flex;align-items:center;justify-content:center;}' +
+    '  display:flex;align-items:flex-end;justify-content:flex-start;}' +
     '.sc-cell-client{background:#3a3a3a;border-radius:8px;padding:8px 4px;' +
-    '  display:flex;align-items:center;justify-content:center;}' +
+    '  display:flex;align-items:flex-end;justify-content:flex-start;}' +
     '.sc-score{' +
     "  font-family:'Baskervville','Baskerville',Georgia,serif;" +
     '  font-size:21px;font-style:italic;font-weight:400;}' +
@@ -1858,17 +1858,21 @@
     '  margin-top:12px;}' +  // 12px + 4px frame gap = 16px (section) from table
     '.sc-commentary-verdict{' +
     "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;" +
-    '  font-size:16px;color:#ededed;line-height:1.4;}' +
+    '  font-size:16px;color:#b0b0b0;line-height:1.4;}' +
     '.sc-commentary-reading{' +
     "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;" +
     '  font-size:13px;color:#b0b0b0;line-height:1.5;}' +
     '.detail-header{display:flex;flex-direction:column;gap:8px;flex-shrink:0;}' +
     '.detail-header-title{' +
     "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;" +
-    '  font-size:116px;color:#ededed;line-height:1;text-transform:uppercase;}' +
+    '  font-size:56px;color:#ededed;line-height:1;text-transform:uppercase;}' +
     '.detail-header-question{' +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
-    '  font-size:19px;color:#888;line-height:1.3;}';
+    '  font-size:19px;color:#ededed;line-height:1.3;}' +
+    '.sc-top-spacer{flex:1 1 0;max-height:104px;}' +
+    '.sc-bot-spacer{flex:1 0 12px;min-height:12px;}';
+    // sc-top-spacer: grows up to 104px; effective top-gap cap ≈ 104+16 (2 gaps) = 120px
+    // sc-bot-spacer: min 12px; effective bottom inset ≈ 12+12 (gap+padding) = 24px (loose)
 
   function injectCSS() {
     if (document.getElementById(STYLE_ID)) return;
@@ -2094,7 +2098,11 @@
         if (subgroupMeta.title) {
           var hdrTitle = document.createElement('div');
           hdrTitle.className = 'detail-header-title';
-          hdrTitle.textContent = subgroupMeta.title;
+          subgroupMeta.title.split(/\s+/).forEach(function(word) {
+            var line = document.createElement('div');
+            line.textContent = word;
+            hdrTitle.appendChild(line);
+          });
           hdr.appendChild(hdrTitle);
         }
         if (subgroupMeta.question) {
@@ -2104,8 +2112,14 @@
           hdr.appendChild(hdrQ);
         }
         root.appendChild(hdr);
+        var topSpacer = document.createElement('div');
+        topSpacer.className = 'sc-top-spacer';
+        root.appendChild(topSpacer);
       }
       renderMatrix(root, matrixModel, subgroupMeta, onIndicatorSelected);
+      var botSpacer = document.createElement('div');
+      botSpacer.className = 'sc-bot-spacer';
+      root.appendChild(botSpacer);
       return;
     }
 
@@ -2516,7 +2530,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-31.2';
+  const VERSION = '2026-05-31.3';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
