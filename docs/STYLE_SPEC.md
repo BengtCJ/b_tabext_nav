@@ -96,8 +96,10 @@ roles above, this section wins **for the scorecard table**.
 - Indicator name: 14px, `#ededed`, normal case; **wraps to 2 lines, never truncates/ellipsis**
   (label column widened to suit — see Layout)
 - Source subtitle: 11px, `#777`, prefixed `+` (e.g. `+snowflake`)
-- Brand name (header): 13px, `#bfbfbf`; on the **pink client cell use dark text `#4b1528`**
-  (pink-family) for contrast — white fails WCAG on the light pink.
+- Brand name (header): 13px, `#bfbfbf`, **title-case** (normalize source casing — e.g.
+  `Peet's Coffee`, not `PEET'S COFFEE`); on the **pink client cell use black text** for
+  contrast (white fails WCAG on the light pink; if the client highlight ever becomes a
+  per-client parameter, compute the text colour for contrast rather than hardcoding black).
 - Drill / back affordance label: 11px, `#888`
 
 **Affordances** (the in-extension view-swap — no Tableau navigation)
@@ -138,11 +140,10 @@ colour-coded (white text).
 **Header row (the table's first row — full height)**
 - The header is the table's **first row**, full height — not a strip above the table.
 - **Label cell** (transparent): the `BULLETPROOF` SVG wordmark + the subtitle **`Score`**
-  beneath it (live text under the wordmark vector; was "Survey Score").
+  beneath it, **normal case (not uppercased)** (live text under the wordmark vector; was "Survey Score").
 - **Brand cells:** brand name (13px) above an **overall score** (31px, not RAG-coloured); `/5`
   on the **client column only** (comparators bare). Overall = the **mean of that brand's visible
-  indicator scores** (interim). Text white on comparator cells; **dark `#4b1528` on the pink
-  client cell** for contrast.
+  indicator scores** (interim). Text white on comparator cells; **black on the pink client cell** for contrast.
 - Fills per Cell fills below: client cell pink, comparator header cells transparent (names +
   scores sit on the dark frame).
 

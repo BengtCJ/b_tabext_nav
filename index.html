@@ -1819,15 +1819,15 @@
     '.sc-wordmark{line-height:0;}' +
     '.sc-score-type{' +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
-    '  font-size:11px;color:#555;letter-spacing:0.10em;text-transform:uppercase;margin-top:2px;}' +
+    '  font-size:11px;color:#555;margin-top:2px;}' +
     // Header label cell (wordmark + Score — transparent, left-aligned, bottom-weighted)
     '.sc-cell-hdr-label{background:transparent;border-radius:8px;padding:8px 12px;' +
     '  display:flex;flex-direction:column;justify-content:flex-end;}' +
-    // 31px header overall score — white on comparators, #4b1528 on client cell
+    // 31px header overall score — white on comparators, black on client cell
     '.sc-hdr-score{' +
     "  font-family:'Baskervville','Baskerville',Georgia,serif;" +
     '  font-size:31px;font-style:italic;font-weight:400;color:#ffffff;line-height:1;}' +
-    '.sc-cell-hdr-client .sc-hdr-score{color:#4b1528;}' +
+    '.sc-cell-hdr-client .sc-hdr-score{color:#000000;}' +
     '.sc-grid-scroll{overflow-y:auto;}' +
     '.sc-grid{display:grid;gap:2px;}' +
     '.sc-cell-hdr-comp{padding:8px 4px;display:flex;flex-direction:column;' +
@@ -1837,7 +1837,7 @@
     '.sc-brand-name{' +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
     '  font-size:13px;color:#bfbfbf;}' +
-    '.sc-cell-hdr-client .sc-brand-name{color:#4b1528;}' +
+    '.sc-cell-hdr-client .sc-brand-name{color:#000000;}' +
     '.sc-cell-label{background:#181818;border-radius:8px;padding:8px 12px;' +
     '  display:flex;flex-direction:row;align-items:center;gap:8px;' +
     '  cursor:pointer;user-select:none;transition:background 0.12s;}' +
@@ -1845,9 +1845,9 @@
     '.sc-cell-label .ind-heading{font-size:14px;color:#ededed;white-space:normal;overflow:visible;text-overflow:clip;}' +
     '.sc-cell-label-inner{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;}' +
     '.sc-cell-label .ind-jump{margin-left:0;}' +
-    '.sc-cell-comp{background:#242424;border-radius:8px;padding:8px 4px;' +
+    '.sc-cell-comp{background:#242424;border-radius:8px;padding:8px 8px;' +
     '  display:flex;align-items:flex-end;justify-content:flex-start;}' +
-    '.sc-cell-client{background:#3a3a3a;border-radius:8px;padding:8px 4px;' +
+    '.sc-cell-client{background:#3a3a3a;border-radius:8px;padding:8px 8px;' +
     '  display:flex;align-items:flex-end;justify-content:flex-start;}' +
     '.sc-score{' +
     "  font-family:'Baskervville','Baskerville',Georgia,serif;" +
@@ -2055,7 +2055,7 @@
         var sc = (row.scores && row.scores[brandKey] !== undefined) ? row.scores[brandKey] : null;
         var cell = document.createElement('div');
         cell.className = isClient ? 'sc-cell-client' : 'sc-cell-comp';
-        cell.style.padding = rowPad + 'px 4px';
+        cell.style.padding = rowPad + 'px 8px';
 
         if (sc !== null) {
           var colour;
@@ -2561,7 +2561,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-31.5';
+  const VERSION = '2026-05-31.6';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskervville', 'Baskerville', Georgia, serif";
