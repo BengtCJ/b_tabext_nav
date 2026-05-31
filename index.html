@@ -1830,10 +1830,10 @@
     '.sc-cell-hdr-client .sc-hdr-score{color:#000000;}' +
     '.sc-grid-scroll{overflow-y:auto;}' +
     '.sc-grid{display:grid;gap:2px;}' +
-    '.sc-cell-hdr-comp{padding:8px 4px;display:flex;flex-direction:column;' +
+    '.sc-cell-hdr-comp{display:flex;flex-direction:column;gap:6px;' +
     '  align-items:flex-start;justify-content:center;}' +
-    '.sc-cell-hdr-client{padding:8px 4px;background:#e994a2;border-radius:8px;' +
-    '  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;}' +
+    '.sc-cell-hdr-client{background:#e994a2;border-radius:8px;' +
+    '  display:flex;flex-direction:column;gap:6px;align-items:flex-start;justify-content:center;}' +
     '.sc-brand-name{' +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
     '  font-size:13px;color:#bfbfbf;}' +
@@ -1981,6 +1981,7 @@
     var nRows = model.rows.length;
     var rowPad = nRows >= 6 ? 12 : nRows >= 4 ? 16 : 20;  // 4px multiples; ≈10-20px spec range
     var leftPad = nRows >= 6 ? 12 : 22;                    // generous ~22px left inset at ≤5 rows
+    var hdrPad = nRows >= 6 ? 16 : 20;                     // header top/bottom; intentionally taller than body
 
     // ── Header row (grid row 1): label cell = wordmark; brand cells = name + mean score ──
     var hdrLabel = document.createElement('div');
@@ -1999,6 +2000,7 @@
       var isClient = i === 0;
       var cell = document.createElement('div');
       cell.className = isClient ? 'sc-cell-hdr-client' : 'sc-cell-hdr-comp';
+      cell.style.padding = hdrPad + 'px 8px ' + hdrPad + 'px ' + leftPad + 'px';
       var nameEl = document.createElement('div');
       nameEl.className = 'sc-brand-name';
       nameEl.textContent = (BRAND_DISPLAY_MAP && BRAND_DISPLAY_MAP[brandKey])
@@ -2563,7 +2565,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-31.11';
+  const VERSION = '2026-05-31.12';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
