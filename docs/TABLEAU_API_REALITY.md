@@ -51,8 +51,8 @@ GitHub issues on `tableau/extensions-api`. Record the URL + date checked in each
 | Capability | Notes | Source |
 |---|---|---|
 | Read worksheet summary data (`getSummaryDataAsync`) | Used to build the indicator table and chart data. Calling it on **two different worksheets** in the same extension (main data + score worksheet) works — confirmed by `[scoreWorksheet probe] OK` in console. | `[observed]` — in use in index.html; `[tested]` 2026-05-31 b_tabext_nav |
-| Read parameters + `currentValue` | Used to resolve the selected client brand | `[observed]` |
-| Listen to `ParameterChanged` events | Re-renders on parameter change | `[observed]` |
+| Read parameters + `currentValue` | `getParametersAsync()` is on the `Sheet` class (which `Dashboard` extends), **not** on `tableau.extensions.workbook`. Correct call: `await tableau.extensions.dashboardContent.dashboard.getParametersAsync()`. Each `Parameter` object has `.currentValue`. | `[tested]` 2026-06-01 b_tabext_nav |
+| Listen to `ParameterChanged` events | After `getParametersAsync()`, call `parameter.addEventListener(tableau.TableauEventType.ParameterChanged, handler)` on each parameter object. Re-renders the table/chart on brand or other parameter change. | `[tested]` 2026-06-01 b_tabext_nav |
 | Select / highlight marks (`selectMarksByValueAsync`) | Cross-worksheet highlight on brand click | `[observed]` |
 | Settings API (`settings.set` / `saveAsync` / `getAll`) | Config persists in the `.twb` workbook | `[observed]` + relied on in architecture |
 | `initializeAsync` with a `configure` callback | Powers the ⚙ settings dialog | `[observed]` |
@@ -148,6 +148,7 @@ both confirmed working or already in use.
 | Extension can freeze on Tableau Desktop (Windows) | Reported: extensions freeze when navigating between sheets/dashboards, and consistently when **duplicating a dashboard** — and it affects *any* extension on the dashboard, not just ours. Watch for it during Desktop authoring; reloading recovers it. | `[docs]` github.com/tableau/extensions-api issue #377 |
 | Navigation button seems dead in Desktop | In Tableau Desktop a plain click doesn't fire a Navigation button — Alt-click (Windows) / Option-click (Mac), or use Presentation mode. On Server / Cloud / Reader a normal click works. People think the button is broken otherwise. | `[docs]` help.tableau.com "Create a Dashboard", 2026-05 |
 | "No data available" can be a downstream symptom, not a data fault | A thrown exception in a parameter/event listener (e.g. calling `getParametersAsync` on an undefined dashboard ref) aborts the render path, leaving the chart in its no-data state and — because the period controls are data-driven — hiding the granularity buttons too. Before assuming a worksheet/filter/data problem, check the console for an upstream listener throw. Listeners must reference the dashboard object captured in `initializeAsync`, and must no-op when there is no dashboard (`?chart=` fallback). | `[tested]` 2026-06-01 bp-nav-charts |
+| `tableau.extensions.workbook` is NOT the object for `getParametersAsync` | `tableau.extensions.workbook` exists and returns a `Workbook` instance, but its only public method is `getAllDataSourcesAsync()`. `getParametersAsync` is on the `Sheet` class — call it on the `Dashboard`: `dashboard.getParametersAsync()`. Using `tableau.extensions.workbook.getParametersAsync()` throws `TypeError: getParametersAsync is not a function`. | `[tested]` 2026-06-01 b_tabext_nav |
 
 ## To verify (open questions)
 

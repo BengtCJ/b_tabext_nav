@@ -2565,7 +2565,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-01.1';
+  const VERSION = '2026-06-01.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3911,13 +3911,11 @@
       }
       await fetchAndCacheData();
 
-      // Re-render question text when any parameter changes (e.g. client brand)
-      // workbook lives on tableau.extensions, not on the dashboard object.
-      // Guard with _dashboard && so the block no-ops in no-dashboard contexts.
+      // Re-render when any parameter changes (e.g. client brand).
+      // getParametersAsync is on Sheet (Dashboard's parent class), not on workbook.
       try {
-        var wb = _dashboard && tableau.extensions.workbook;
-        if (wb) {
-          var params = await wb.getParametersAsync();
+        if (_dashboard) {
+          var params = await _dashboard.getParametersAsync();
           params.forEach(function(p) {
             p.addEventListener(tableau.TableauEventType.ParameterChanged, function() {
               if (_view === 'table') switchToTable();
