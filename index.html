@@ -2565,7 +2565,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-05-31.13';
+  const VERSION = '2026-06-01.1';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3912,13 +3912,18 @@
       await fetchAndCacheData();
 
       // Re-render question text when any parameter changes (e.g. client brand)
+      // workbook lives on tableau.extensions, not on the dashboard object.
+      // Guard with _dashboard && so the block no-ops in no-dashboard contexts.
       try {
-        var params = await _dashboard.workbook.getParametersAsync();
-        params.forEach(function(p) {
-          p.addEventListener(tableau.TableauEventType.ParameterChanged, function() {
-            if (_view === 'table') switchToTable();
+        var wb = _dashboard && tableau.extensions.workbook;
+        if (wb) {
+          var params = await wb.getParametersAsync();
+          params.forEach(function(p) {
+            p.addEventListener(tableau.TableauEventType.ParameterChanged, function() {
+              if (_view === 'table') switchToTable();
+            });
           });
-        });
+        }
       } catch(e) { console.warn('[param listener]', e); }
     }).catch(function(err) {
       console.error('initializeAsync failed:', err);
