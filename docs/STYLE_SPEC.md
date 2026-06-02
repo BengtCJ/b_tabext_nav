@@ -100,32 +100,29 @@ roles above, this section wins **for the scorecard table**.
   per-client parameter, compute the text colour for contrast rather than hardcoding black).
 - Drill / back affordance label: 11px, `#888`
 
-**Affordances** (the in-extension view-swap — no Tableau navigation). OPEN DATA and CLOSE
-DATA are **one component in two states** (the "view-swap chip"), not two affordances — same
-type, padding, radius, hover; only the glyph and word change. They read as one control
-inverting in place, matching the JS `switchToChart` / `switchToTable` swap (nothing navigates).
-- **Icon = a true mirror pair**, Material Symbols `open_in_full` (open) ↔ `close_fullscreen`
-  (close), 17px. Implement as **inline SVG paths** (no icon-font dependency; single file).
-  Replaces the old chart-glyph / left-arrow mix — two unrelated glyphs read as separate
-  buttons; one concept inverted reads as a pair. (Inline SVG also sidesteps the pending
-  Cloud webfont safe-list question in TABLEAU_API_REALITY.)
-- **Label = action + object, uppercase:** `OPEN DATA` / `CLOSE DATA` — Tableau Light, 11px,
-  ~0.06em tracking. "Data" (not "chart") because a drill-down may be a BAN, scale, treemap or
-  share chart, not always a chart; it names the detail behind the score, content-agnostic
-  across all forms, and matches the reference "DATA VIEW" language.
-- **Rest:** text `#888`, no fill, 0.5px transparent border. **Hover/focus:** a light pill —
-  fill `#ededed`, text `#141414` (WCAG AA), padding 4/8px, radius 8px (reuses cell radius).
-  The pill is the only hover chrome.
-- **Anchor:** OPEN DATA is right-aligned in the label cell; CLOSE DATA is right-aligned at the
-  top of the expanded view — the chip inverts roughly **in place**, it does not move to a new
-  region.
+**Affordances** (the in-extension view-swap — no Tableau navigation). Two affordances tuned to
+their context, tied together by **one shared chip treatment** (not a mirror icon): the OPEN
+DATA chip repeats once per row, so it stays quiet; the close control appears once on the detail
+view, so it is a single clear ✕. Both use the same rest fill + hover pill, so they read as one
+family. The view swap is JS (`switchToChart` / `switchToTable`) — nothing navigates.
+- **OPEN DATA chip (table) — text only, no icon.** Label `OPEN DATA`, Tableau Light, 11px,
+  uppercase, ~0.06em tracking. No icon: an expand glyph repeated down every row reads as noise;
+  the column stays calm. Right-aligned in the label cell (bottom-right).
+- **Close control (expanded view) — ✕ icon only, no label.** Material Symbols `close` (the
+  cross), ~18px, inline SVG (no icon-font dependency); an X is unambiguous, so a simple
+  two-stroke cross is acceptable if the named path isn't to hand. Top-right of the expanded
+  view. The universal dismiss; a label would be redundant on a single focused view.
+- **Shared chip treatment (both).** Rest: fill `#202020`, text `#888`, radius 8px, padding
+  4/8px, 0.5px transparent border — the rest fill is what makes each read as a control before
+  hover. Hover/focus: a light pill — fill `#ededed`, text `#141414` (WCAG AA); the pill is the
+  only hover chrome. The ✕ uses a square ~26px target; the OPEN DATA chip hugs its text.
 
 **Expanded (single-indicator) view.** When a row's chip opens, the view swaps in place to
 that one indicator's chart and the **scorecard header row is not rendered** (no wordmark, no
 per-brand overall scores) — it is stale chrome for a single-metric view, and the layout is a
 fixed zone, not a scroll surface, so there is no scroll-to alternative. The expanded view
 shows only: the **indicator name** (14px `#ededed`) + its `+source` subtitle (11px `#777`)
-top-left, the **CLOSE DATA chip** top-right, and the chart filling the remaining height.
+top-left, the **close ✕** top-right, and the chart filling the remaining height.
 Returns to the full table on close.
 
 **Layout**
