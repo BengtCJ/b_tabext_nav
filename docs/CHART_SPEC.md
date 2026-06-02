@@ -69,12 +69,18 @@ get month + quarter options; annual / point-in-time indicators (`tam`, `cagr`, `
 - **Columns:** brands, client first (`COMPETITOR_ORDER`: Nespresso, Starbucks, Peet's, Lavazza).
 - **Rows:** metric-level only (`level = metric`); no aggregate/subgroup header score row.
 - **RAG:** client column only — score > 4 → `--rag-green`; score < 2 → `--rag-red`; else `--rag-amber`. Competitor scores stay neutral text.
-- **`cmoaf` metric membership at metric level (confirmed):** `svt` only (Q3 populated quarter). `cagr`/`mcon`/`tam` are market-level headline numbers, not per-brand scores — they do not appear in the matrix.
+- **`cmoaf` metric membership at metric level:** `cagr`, `mcon`, `svt`, `tam` (per the subcategory→indicator mapping; subgroup id is `cmoaf`). `svt` is per-brand. `cagr`/`mcon`/`tam` come from **market-level** raw values (single `coffee_general` rows, no per-brand split) yet render as **per-brand scores** in the matrix — whether that is correct-by-construction (a market-level indicator scoring identically across all brands) or a placeholder is an **open data-contract question** (see Data sanity checklist). *Correction:* this line previously read "`svt` only … do not appear" under a "(confirmed)" tag and was wrong; the four-indicator membership is confirmed against the data.
+
+## Data sanity checklist (the data-contract track)
+Run on every surface, separate from the visual teardown (WORKFLOW §6). Visual checks won't catch these — the `cmoaf` membership miss proved it.
+- **Membership matches the mapping.** Rows/columns shown for a subgroup must equal that subgroup's indicators in the subcategory→indicator mapping — verified against source data, not memory or a guess.
+- **A "(confirmed)" tag is earned, not assumed.** The `cmoaf` line carried "(confirmed)" while wrong; a tag without a check is the bug.
+- **Per-brand vs market-level.** A market-level indicator (single `coffee_general` value: `cagr`, `mcon`, `tam`) shown as a per-brand score is suspect until confirmed correct-by-construction or fixed. (Open: the `cmoaf` per-brand 5.0s.)
+- **Constant-down-a-column is a stub smell.** Identical values for every brand on a metric usually mean placeholder scoring — flag, don't present as real.
+- **Field presence.** A field the design reads (`subcategory_name`, score field) must exist in the source for the current subgroup, or the surface blanks/falls back (the new-sheet title issue).
 
 ## Open items to resolve (known data/spec mismatches)
-- The data (`Raw Values`) contains `ba` and `cra` rows, but the combined `METRIC_CHARTS`
-  may not map them — confirm whether they're intended, and if so add them to a class
-  above. Don't silently drop or invent a mapping.
+- `ba` and `cra` subgroup membership is now known from the mapping (`ba` → Narrative Power `ps`; `cra` → Strategic Strength `sbr`) — **verify against source** before relying on it. Their **data-shape class is still open** (`ba` is a single scalar per brand, so it cannot feed `multiscale`). Don't silently drop or invent a mapping.
 - `ba` in the data is a single scalar per brand, not the five attribute columns
   `multiscale` needs — so `ba → multiscale` cannot render from current data. Resolve the
   data shape or the chart choice before wiring it.

@@ -60,6 +60,15 @@ Learned from the scorecard round, which converged but took too many turns.
    fill. Reconcile each against the locked tokens. The recurring failure is reading structure
    ("table, header, commentary") but not these fine properties — most "way off" catches live
    on this list. Prototype only the gaps the frame doesn't pin.
+   **Walk the inventory in tier order (coarse → fine, blocker → polish):**
+   1. **Presence** — every required element there, and the right rows/columns present? (Row/column *membership* is a Tier-1 check but is verified on the data track, never asserted by eye or from memory — see CHART_SPEC Data sanity checklist; the cmoaf row miss came from skipping this.)
+   2. **Placement** — position and order (column order, which column is the client, where the numeral sits).
+   3. **Proportion** — relative sizes (client emphasis, largest element).
+   4. **Spacing** — gaps, gutters, padding, inset; on the 4px grid + named overrides.
+   5. **Colour / contrast** — fills, client highlight, WCAG on any coloured fill.
+   6. **Format detail** — suffix placement, casing, figures (lining not old-style), truncation.
+   7. **State completeness** — too-small / no-data / empty states; optional blocks (commentary).
+   Tiers 1–3 are the structural bones — a miss here reads as "way off" and outranks any Tier 4–7 polish. Pure aesthetic "feel" stays a chat live-tune, not a checklist item. Push every measurable Tier 4–6 item into the harness (STYLE_SPEC → Enforcement → Visual fidelity).
 3. **Prototype the delta in chat** — static HTML, dummy data, renders inline. Live-tune
    only the "know-it-when-I-see-it" values (proportion, elegance); state the nameable ones
    in one pass rather than discovering them one per turn.
@@ -69,7 +78,7 @@ Learned from the scorecard round, which converged but took too many turns.
    acceptance criteria.** The prototype is throwaway; the spec entry is the durable output.
 6. **Keep data/contract questions on a separate track** (field presence, value sanity) —
    don't let them ride the visual loop or they get lost (Display Name + the 5.0-across rows
-   sat unresolved through the whole scorecard chat).
+   sat unresolved through the whole scorecard chat). That track is the **Data sanity checklist** in `CHART_SPEC.md` — run it on every surface.
 
 **Batch by class, not one-at-a-time-from-scratch.** Charts share chrome (Baskervville
 numerals, `#e994a2` highlight, fills, radius, gaps, too-small/no-data states). Lock that
