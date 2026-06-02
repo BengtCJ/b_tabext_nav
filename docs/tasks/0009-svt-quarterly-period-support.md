@@ -14,17 +14,39 @@ STYLE_SPEC (tokens only).  No new Tableau API capability — this is parser + lo
 
 ---
 
-## Root cause (confirmed in code)
+## Actual root cause (confirmed by console diagnostics 2026-06-02)
 
-1. **Parser** (`_rawData = rows.map(...)`, line ~3726):
+The spec above described the expected root cause. Live testing revealed a deeper issue:
+
+**`Year` is `'%null%'` (Tableau null sentinel) for all SVT rows.**
+
+The worksheet (`raw_values_filtered`) exposes `Year | Quarter | SUM(Raw Value)`. Year is
+correctly populated for other indicators (survey-sourced). For SVT (Snowflake-sourced),
+the underlying date dimension does not map to the worksheet's `Year` field → `Year = null`.
+Quarter is populated (integer 1–4) but carries no year context on its own.
+
+Consequence: even after adding `quarterIdx` support (Change 3 in the original plan),
+`year && quarter` = `NaN && 4` = falsy → `period = null` still.
+
+No code-side inference is reliable: cross-row year lookup breaks when the same quarter
+number appears in multiple years (e.g. Q1 spans 2024 and 2025 in a 5-quarter dataset).
+
+**Real fix: `periodField` config + one Tableau calculated field.**
+
+---
+
+## Root cause (original — still partially relevant)
+
+1. **Parser** (`_rawData = rows.map(...)`, ~line 3848):
    `period = (year && month) ? toYearMonth(year, month) : null`
    No quarter path — SVT rows always get `period = null`.
+   → Fixed (Changes 1–3 below) but insufficient alone because Year is also null.
 
-2. **`computeAvailableGrains`** (line ~3790):
+2. **`computeAvailableGrains`** (~line 3855):
    Filters for `d.period` (non-null) → finds nothing for SVT →
    returns `{ monthly: false, quarterly: false }`.
 
-3. **`processIndicator`** (line ~3820):
+3. **`processIndicator`** (~line 3963):
    `isTrend = _availableGrains.monthly` → `false` → snapshot branch →
    data has no meaningful period → line chart fails to render.
 
@@ -163,46 +185,74 @@ CONFIG.quarterField = document.getElementById('s-quarterField').value.trim();
 
 ---
 
+## Change 7 — `periodField` config (actual fix for null-Year SVT rows)
+
+Added after the 6 original changes to handle the confirmed root cause.
+
+**`DEFAULTS`**: `periodField: ''`
+
+**Column lookup**: `var periodIdx = CONFIG.periodField ? colIdx(CONFIG.periodField) : -1;`
+
+**Parser** — check `periodIdx` *before* Year+Month/Year+Quarter:
+```js
+var period = null;
+if (periodIdx !== -1) {
+  var pRaw = row[periodIdx].value || row[periodIdx].formattedValue || '';
+  if (pRaw && pRaw !== '%null%' && pRaw !== 'Null') period = String(pRaw).trim();
+}
+if (!period) {
+  period = (year && month && !isNaN(year) && !isNaN(month))
+    ? toYearMonth(year, month)
+    : (year && quarter && !isNaN(year) && !isNaN(quarter))
+      ? (year + '-Q' + quarter)
+      : null;
+}
+```
+
+**Settings UI**: "Period field (optional override)" input after Quarter field.
+
+**Save handler**: `CONFIG.periodField = document.getElementById('s-periodField').value.trim();`
+
+### Tableau action required to complete the fix
+
+In `raw_values_filtered`, create a calculated field (e.g. `Period String`) that produces
+`"YYYY-Q#"` using SVT's actual Snowflake date column:
+```
+STR(YEAR([<svt-date-field>])) + '-Q' + STR(DATEPART('quarter', [<svt-date-field>]))
+```
+Add it to the Detail shelf. Then set `periodField = 'Period String'` (or whatever name
+was used) in extension settings. The `periodField` takes precedence over Year+Quarter
+for rows where it's non-null, and falls back cleanly for rows where it's null.
+
+---
+
 ## Acceptance criteria
 
 - [ ] SVT line chart renders with quarterly period labels (`2025-Q1`, `2025-Q2`, …) when
-      only Year + Quarter columns are present in the worksheet.
-- [ ] The Monthly button is hidden for SVT; the Quarterly button is visible and active by
-      default.  (`refreshViewToggle` already derives this from `_availableGrains` — no
-      change needed there; verify it works.)
+      `periodField` is configured and the calculated field is present in the worksheet.
+- [ ] The Monthly button is hidden for SVT; the Quarterly button is visible and active.
 - [ ] Monthly-data indicators (`eqr`, `ebl`, `sov`, `bss`, `sstsr`, `vom`) are unaffected:
-      their `computeAvailableGrains` results and `aggregateByQuarter` path are unchanged.
-- [ ] An indicator with *both* monthly and quarterly format rows (unlikely but possible)
-      continues to show both buttons; the quarterly view still uses `aggregateByQuarter`.
-- [ ] `quarterField` persists via the Settings API and round-trips through the settings panel.
-- [ ] Preview / `?chart=svt` sample-data path still renders (sample data uses period strings
-      already — no quarterly column parsing happens there; line 3477 preview fallback
-      unchanged).
+      `periodField` falls through to the Year+Month path for those rows (periodField value
+      is null/empty for them, or periodField is blank entirely).
+- [ ] `quarterField` and `periodField` both persist via the Settings API and round-trip
+      through the settings panel.
+- [ ] Preview / `?chart=svt` sample-data path still renders.
 
 ## Constraints (hard)
 
 - No `??` / `?.` — use `||` and ternary/`&&` (pre-ES2020 embedded browser).
-- Tokens only for any styling (STYLE_SPEC); no geometry-driven sizes.
 - Single `index.html` — no new files.
-- `aggregateByQuarter` must not be called on already-quarterly data (it would call
-  `toYearQuarter("2025-Q1")` → `NaN` → silently drop all rows).
-- Read exact CONFIG/DEFAULTS field names and settings-panel pattern from the file before
-  writing — do not invent a different convention.
+- `aggregateByQuarter` must not be called on already-quarterly data.
+- Read exact CONFIG/DEFAULTS field names and settings-panel pattern from the file.
 
 ## Verify by
 
-1. Open the live URL with `?chart=svt` — should render a multi-period line chart using
-   the quarterly sample data (or confirm the preview fallback still shows something).
-2. In a real Tableau dashboard: set Quarter field in settings to the actual column name,
-   confirm SVT rows now have non-null periods, confirm the line chart loads.
-3. Switch to another monthly indicator (`eqr`) — confirm it still shows both M/Q buttons
-   and its data is unchanged.
+1. Create the `Period String` calculated field in `raw_values_filtered`, set `periodField`
+   in extension settings, reload — SVT line chart renders with quarterly labels.
+2. Clear `periodField` in settings — SVT falls back to no period (null Year) and shows
+   "No data available" as before. Confirms the field is the active fix.
+3. Switch to `eqr` — still renders (Year+Month path unaffected).
 
 ## On uncertainty
 
-Stop, record the finding, kick back to chat.  Do not guess — especially on how the
-Tableau worksheet exposes the Quarter column (field name, value type — integer 1–4 vs
-string "Q1" vs "1").  The `parseFloat` assumption in Change 3 covers integer quarters
-(1, 2, 3, 4); if the column holds strings like `"Q1"`, `parseFloat` returns `NaN` and
-the period will be null — that case needs a separate branch.  Verify the actual column
-format before shipping.
+Stop, record the finding, kick back to chat.
