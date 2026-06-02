@@ -2735,7 +2735,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-02.11';
+  const VERSION = '2026-06-02.12';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3841,14 +3841,74 @@
         return;
       }
 
-      _rawData = rows.map(function(row) {
+      // ─── PRE-PASS: infer year for null-Year rows ─────────────────────────────
+      // Some indicators (e.g. SVT from Snowflake) have Year='%null%' because their
+      // date source doesn't map to the worksheet's Year dimension. We recover the year
+      // by matching each brand's per-indicator quarter sequence (sorted by raw row
+      // order) against the ordered (year, quarter) pairs extracted from rows that DO
+      // have Year populated. A raw-row-index map is built so the main rows.map pass
+      // can use the inferred year transparently.
+      var _inferredYearByRI = {};
+      if (yearIdx !== -1 && quarterIdx !== -1) {
+        // Step 1 — sorted unique (year, quarter) pairs from rows with non-null Year
+        var _ypSeen = {}, _ypList = [];
+        rows.forEach(function(row) {
+          var rawY = row[yearIdx].value;
+          if (!rawY || rawY === '%null%' || rawY === 'Null') return;
+          var y = Math.round(parseFloat(rawY));
+          var q = Math.round(parseFloat(row[quarterIdx].value));
+          if (y > 0 && q > 0) {
+            var k = y + '|' + q;
+            if (!_ypSeen[k]) { _ypSeen[k] = true; _ypList.push([y, q]); }
+          }
+        });
+        _ypList.sort(function(a, b) { return a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1]; });
+
+        // Step 2 — collect null-Year rows grouped by (indicator, brand), in raw order
+        var _nullGroups = {};
+        rows.forEach(function(row, ri) {
+          var rawY = row[yearIdx].value;
+          if (rawY && rawY !== '%null%' && rawY !== 'Null') return;
+          var q = quarterIdx !== -1 ? Math.round(parseFloat(row[quarterIdx].value)) : 0;
+          if (!q || q <= 0 || isNaN(q)) return;
+          var ind   = indIdx   !== -1 ? (row[indIdx].value   || '') : '';
+          var brand = row[brandIdx].formattedValue || row[brandIdx].value || '';
+          var gk = ind + '||' + brand;
+          if (!_nullGroups[gk]) _nullGroups[gk] = [];
+          _nullGroups[gk].push({ ri: ri, q: q });
+        });
+
+        // Step 3 — find matching consecutive subsequence in _ypList per group
+        Object.keys(_nullGroups).forEach(function(gk) {
+          var grp = _nullGroups[gk].sort(function(a, b) { return a.ri - b.ri; });
+          var n = grp.length;
+          if (n === 0 || n > _ypList.length) return;
+          var qtrs = grp.map(function(r) { return r.q; });
+          for (var s = 0; s <= _ypList.length - n; s++) {
+            var ok = true;
+            for (var j = 0; j < n; j++) {
+              if (_ypList[s + j][1] !== qtrs[j]) { ok = false; break; }
+            }
+            if (ok) {
+              grp.forEach(function(r, j) { _inferredYearByRI[r.ri] = _ypList[s + j][0]; });
+              break;
+            }
+          }
+        });
+      }
+
+      _rawData = rows.map(function(row, rowIdx) {
         var rawVal = parseFloat(row[valueIdx].value);
-        var year    = yearIdx    !== -1 ? parseFloat(row[yearIdx].value)    : null;
+        var rawY   = yearIdx !== -1 ? row[yearIdx].value : null;
+        var isYNull = !rawY || rawY === '%null%' || rawY === 'Null';
+        var year   = isYNull
+          ? (_inferredYearByRI[rowIdx] || null)
+          : parseFloat(rawY);
         var month   = monthIdx   !== -1 ? parseFloat(row[monthIdx].value)   : null;
         var quarter = quarterIdx !== -1 ? parseFloat(row[quarterIdx].value) : null;
 
-        // Period: prefer a pre-computed period field (handles cases where Year is null
-        // for some indicators, e.g. SVT from a different date dimension in Snowflake).
+        // Period: prefer an explicit pre-computed field (periodField config), then
+        // Year+Month, then Year+Quarter (year may be inferred from the pre-pass above).
         var period = null;
         if (periodIdx !== -1) {
           var pRaw = row[periodIdx].value || row[periodIdx].formattedValue || '';
