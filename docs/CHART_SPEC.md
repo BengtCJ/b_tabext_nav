@@ -71,6 +71,22 @@ get month + quarter options; annual / point-in-time indicators (`tam`, `cagr`, `
 - **RAG:** client column only — score > 4 → `--rag-green`; score < 2 → `--rag-red`; else `--rag-amber`. Competitor scores stay neutral text.
 - **`cmoaf` metric membership at metric level (confirmed):** `svt` only (Q3 populated quarter). `cagr`/`mcon`/`tam` are market-level headline numbers, not per-brand scores — they do not appear in the matrix.
 
+## BAN context cells (the headline / single-number view)
+The BAN renderer may show three greyscale context cells grounding the number high/low. This
+is contextual chrome on the existing `ban` — **not a new chart type**; `METRIC_CHARTS` and the
+data-shape classes are unchanged. Styling lives in `STYLE_SPEC → BAN detail screen`.
+Per-indicator membership:
+
+| Indicator | Cell type | Cells / source |
+|---|---|---|
+| `mcon` | threshold standard | DOJ/FTC HHI bands (2023): <1500 / 1500–1800 / >1800. `[docs]` current US merger guidelines, Dec 2023 |
+| `nps` `bt` `sop` `dvtr` | scale bands (greyscale) | locked 1–5 thresholds <2 / 2–4 / >4; grounding = `coffee_general` category mean |
+| `cagr` | illustrative ranges | example sectors (low/declining · mature · high-growth); generic illustrative copy, NOT sourced |
+| `tam` | none (magnitude-only) | no cells until SAM/SOM or comparator market sizes are sourced |
+
+Invariant carried: `nps` here is a **Likert mean, not true NPS** (`guardNpsRecalculated`) — the
+definition string must say so; cells are greyscale scale-bands, never RAG.
+
 ## Open items to resolve (known data/spec mismatches)
 - The data (`Raw Values`) contains `ba` and `cra` rows, but the combined `METRIC_CHARTS`
   may not map them — confirm whether they're intended, and if so add them to a class
@@ -83,6 +99,11 @@ get month + quarter options; annual / point-in-time indicators (`tam`, `cagr`, `
 - Edge-trim switch default (on/off) — confirm. And how to render **interior** gaps (a
   missing period mid-series): break the line, span it, or mark it? Not decided — the
   edge-trim switch deliberately doesn't touch these.
+- BAN context data: `cagr` cells are illustrative generic copy (accepted interim); `tam` has
+  no context cells until reference market sizes are sourced — do not invent either.
+- Verify `mcon`/`cagr`/`tam` display units against `INDICATOR_UNITS` before rendering: `mcon`
+  is an integer HHI (2002, not a 0.2002 decimal), `cagr` is `%`, `tam` is `$B`. The HHI band
+  thresholds assume the integer scale.
 
 ## "Looks wrong if…" (quick visual checks)
 - A primary brand isn't highlighted, or two brands share the highlight colour.

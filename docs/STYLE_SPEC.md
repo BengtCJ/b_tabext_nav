@@ -86,7 +86,7 @@ roles above, this section wins **for the scorecard table**.
   is the emphasised column; size build-and-review)
 - Suffix `/5`: **client column only** (comparators show the bare number, per the Figma — header
   and body alike); `font-size:0.5em`, italic, muted `#7c7c7c`, inline after the value,
-  baseline-aligned. Values to 1 decimal (client `5.0/5`; comparator `5.0`).
+  baseline-aligned. Value precision is set per indicator by `INDICATOR_DECIMALS` (see BAN detail screen) — the single source; Likert values resolve to 1 decimal there (client `5.0/5`; comparator `5.0`).
   The `0.5em` applies to the literal `/5` glyphs **only** — never to a value digit. The integer and decimal digits of a value (both `4`s in `4.4`) render at the **same size and on the same baseline**; wrap only `/5` in the suffix span, not the decimal portion. No value digit is shrunk or raised.
 - **Cell alignment:** value numerals sit **bottom-left**, clearly **inset** by the cell padding — left inset is **generous (~22px) at typical row counts (≤5)** so the numeral reads well off the corner, tightening only near the row-count max. **The inset applies to comparator cells as well as the client cell** (comparators were reading too tight to the edge). Brand-name header labels left-aligned to match.
 
@@ -207,6 +207,56 @@ by this section.
   per above. Validate at `1421 × 773`: 2 rows + commentary (rows tall, ~20px padding,
   bottom-weighted) and 7 rows (rows at compact min, ~10px padding, commentary yielded). ~6 rows
   is the practical limit with commentary on; beyond that commentary hides.
+
+## BAN detail screen (the headline / single-number view)
+The in-extension view an indicator swaps to when its chosen chart is a BAN. Layout: a focal
+number (main, left) with a generic definition beneath it, and an optional right rail of three
+context cells that ground the number high/low. Reuses the Scorecard frame chrome — do not
+re-derive.
+
+**Focal number (Hero).** Baskerville italic — the locked
+`'Baskerville','Libre Baskerville',Georgia,serif` stack, never the removed Baskervville —
+colour `#e994a2`. The pink is the *focal* accent here even on market-level metrics that have
+no client brand: a documented exception to the client-only rule, kept as one constant so
+per-client theming stays additive. Size is the sanctioned per-chart Hero override. The
+unit/suffix (`%`, `/5`, `$…B`) renders muted `#6f6f6f`, ~0.3em, italic.
+
+**Decimals — `INDICATOR_DECIMALS` (single source of value precision).** Per-indicator integer
+decimal places, applied to the **displayed** value (after any `INDICATOR_UNITS` conversion),
+never the raw. No thousands separator. This map is the single source for value precision
+across all surfaces; the Scorecard "Values to 1 decimal" rule defers to it. Values:
+`mcon` 0 · `cagr` 1 · `tam` 1 · `nps`/`bt`/`sop`/`dvtr`/`ba` 1 · `svt`/`vom` 2.
+
+**Definition.** A generic per-indicator sentence stating what the metric is — stable, never a
+per-value reading, so it needs no maintenance as data refreshes. Tableau Light/Regular,
+13–14px, `#a4a4a4`.
+
+**Caveat (optional, per-indicator).** A generic italic note, 11–12px `#6f6f6f`, for indicators
+whose benchmark needs qualifying (`cagr`: no absolute good/bad line; `mcon`: 2023 guidelines,
+other vintages/jurisdictions differ). Omitted where unset.
+
+**Context cells (right rail).** Three cells in the Scorecard frame: frame `#0d0d0d`, 1px
+`#262626`, 2px gutter and padding, frame radius 10 = cell radius 8 + 2px gutter. Cells are
+**greyscale only — never RAG on this surface**: default `#222222`, the cell the value lands in
+lighter `#363636` ("active"), with a quiet grey marker note `#cfcfcf`. Cell type is
+per-indicator:
+- **Threshold standard** (`mcon`) — an external standard's bands, decisive. DOJ/FTC HHI bands
+  (2023): `< 1500` unconcentrated · `1500–1800` moderate · `> 1800` highly concentrated.
+- **Scale bands** (`nps`/`bt`/`sop`/`dvtr`) — the locked 1–5 thresholds `< 2` / `2–4` / `> 4`,
+  rendered greyscale here (RAG belongs to the Scorecard table, not this surface), with a
+  category-average grounding marker (`coffee_general`).
+- **Illustrative ranges** (`cagr`) — no absolute standard, so the cells characterise the
+  spectrum by example sector (low/declining · mature/steady · high-growth) with loose ranges;
+  generic illustrative copy, not sourced data.
+- **None** (`tam`) — magnitude-only; no cells until reference sizes are sourced.
+
+Locked: frame chrome (reused), greyscale-only rule, decimals-via-map, generic-definition rule.
+Build-and-review at 1421×773: exact number/definition sizes, cell proportions, the active grey.
+
+**Enforcement adds (harness asserts):** BAN context cells contain no RAG colour (greyscale
+only); value precision matches `INDICATOR_DECIMALS` with no thousands separator; the gutter is
+the uniform 2px and frame radius = cell radius + gutter; the definition string contains no
+interpolated value (it is generic).
 
 ## Enforcement (what the harness / lint checks)
 - No `font-size` value that isn't one of the four roles or a Scorecard-section locked size
