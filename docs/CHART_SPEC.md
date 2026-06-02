@@ -85,6 +85,22 @@ Run on every surface, separate from the visual teardown (WORKFLOW §6). Visual c
 - **Constant-down-a-column is a stub smell.** Identical values for every brand on a metric usually mean placeholder scoring — flag, don't present as real.
 - **Field presence.** A field the design reads (`subcategory_name`, score field) must exist in the source for the current subgroup, or the surface blanks/falls back (the new-sheet title issue).
 
+## BAN context cells (the headline / single-number view)
+The BAN renderer may show three greyscale context cells grounding the number high/low. This
+is contextual chrome on the existing `ban` — **not a new chart type**; `METRIC_CHARTS` and the
+data-shape classes are unchanged. Styling lives in `STYLE_SPEC → BAN detail screen`.
+Per-indicator membership:
+
+| Indicator | Cell type | Cells / source |
+|---|---|---|
+| `mcon` | threshold standard | DOJ/FTC HHI bands (2023): <1500 / 1500–1800 / >1800. `[docs]` current US merger guidelines, Dec 2023 |
+| `nps` `bt` `sop` `dvtr` | scale bands (greyscale) | locked 1–5 thresholds <2 / 2–4 / >4; grounding = `coffee_general` category mean |
+| `cagr` | illustrative ranges | example sectors (low/declining · mature · high-growth); generic illustrative copy, NOT sourced |
+| `tam` | none (magnitude-only) | no cells until SAM/SOM or comparator market sizes are sourced |
+
+Invariant carried: `nps` here is a **Likert mean, not true NPS** (`guardNpsRecalculated`) — the
+definition string must say so; cells are greyscale scale-bands, never RAG.
+
 ## Open items to resolve (known data/spec mismatches)
 - `ba` and `cra` subgroup membership is now known from the mapping (`ba` → Narrative Power `ps`; `cra` → Strategic Strength `sbr`) — **verify against source** before relying on it. Their **data-shape class is still open** (`ba` is a single scalar per brand, so it cannot feed `multiscale`). Don't silently drop or invent a mapping.
 - `ba` in the data is a single scalar per brand, not the five attribute columns
@@ -95,6 +111,11 @@ Run on every surface, separate from the visual teardown (WORKFLOW §6). Visual c
 - Edge-trim switch default (on/off) — confirm. And how to render **interior** gaps (a
   missing period mid-series): break the line, span it, or mark it? Not decided — the
   edge-trim switch deliberately doesn't touch these.
+- BAN context data: `cagr` cells are illustrative generic copy (accepted interim); `tam` has
+  no context cells until reference market sizes are sourced — do not invent either.
+- Verify `mcon`/`cagr`/`tam` display units against `INDICATOR_UNITS` before rendering: `mcon`
+  is an integer HHI (2002, not a 0.2002 decimal), `cagr` is `%`, `tam` is `$B`. The HHI band
+  thresholds assume the integer scale.
 
 ## "Looks wrong if…" (quick visual checks)
 - A primary brand isn't highlighted, or two brands share the highlight colour.

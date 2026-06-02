@@ -49,7 +49,7 @@ Learned from the scorecard round, which converged but took too many turns.
 1. **Inherit, don't re-decide.** Start from the locked tokens (STYLE_SPEC) and the metric's
    data-shape class + valid charts (CHART_SPEC). Apply them as the prototype's defaults.
    **Never guess a value that's already in the spec** (the scorecard burned a round
-   defaulting to Playfair when Baskervville italic was already locked).
+   defaulting to Playfair when Baskerville / Libre Baskerville italic was already locked).
 2. **Tear down the reference frame, in writing, first.** Before prototyping or speccing,
    produce a written property inventory read straight off the Figma frame / screenshot — not
    a loose glance. List, with values: gutters/gaps and whether they're uniform; corner radii
@@ -80,8 +80,7 @@ Learned from the scorecard round, which converged but took too many turns.
    don't let them ride the visual loop or they get lost (Display Name + the 5.0-across rows
    sat unresolved through the whole scorecard chat). That track is the **Data sanity checklist** in `CHART_SPEC.md` — run it on every surface.
 
-**Batch by class, not one-at-a-time-from-scratch.** Charts share chrome (Baskervville
-numerals, `#e994a2` highlight, fills, radius, gaps, too-small/no-data states). Lock that
+**Batch by class, not one-at-a-time-from-scratch.** Charts share chrome (Baskerville numerals, `#e994a2` highlight, fills, radius, gaps, too-small/no-data states). Lock that
 shared base **once**, then each chart is a small delta; charts in the same data-shape class
 (e.g. the share charts) get prototyped together. "One at a time" = one small delta each,
 not a full loop each.

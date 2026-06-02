@@ -423,27 +423,111 @@
   }
 
   // ─── CHART: BAN ───────────────────────────────────────────────────────────
-  function renderBAN(el, data, selectedBrand, D) {
-    var sel = (Array.isArray(data) ? data.find(function(d) { return d.name === selectedBrand; }) || data[0] : null);
-    var value = sel ? sel.value : (data && !Array.isArray(data) ? data : null);
-    var rect = el.getBoundingClientRect();
-    var W = rect.width || window.innerWidth || 200;
-    var H = rect.height || window.innerHeight || 200;
-    var fontSize = Math.min(Math.max(H * 0.48, 48), 180);
+  function renderBAN(el, data, selectedBrand, D, metricId) {
+    var mId    = metricId || '';
+    var ctx    = INDICATOR_BAN_CONTEXT[mId] || { type: 'none', prefix: '', suffix: '' };
+    var decs   = (INDICATOR_DECIMALS[mId] !== undefined) ? INDICATOR_DECIMALS[mId] : 2;
+    var defn   = INDICATOR_DEFINITION[mId] || '';
+    var caveat = ctx.caveat || '';
 
-    el.style.display        = 'flex';
-    el.style.flexDirection  = 'column';
-    el.style.alignItems     = 'center';
-    el.style.justifyContent = 'center';
-    el.style.height         = '100%';
-    el.style.gap            = '8px';
+    var hit    = Array.isArray(data) ? (data.find(function(d) { return d.name === selectedBrand; }) || data[0]) : null;
+    var value  = hit ? hit.value : (data && !Array.isArray(data) ? data : null);
+    var numVal = (value !== null && value !== undefined) ? parseFloat(value) : null;
 
-    var displayVal = value !== null && value !== undefined ? parseFloat(value).toFixed(2) : '--';
+    var W = el.offsetWidth  || 400;
+    var H = el.offsetHeight || 200;
+    if (H < 80) { showTooSmall(el); return; }
 
-    el.innerHTML =
-      '<div style="font-size:' + fontSize + 'px;font-weight:400;line-height:1;' +
-      'color:' + D.value.color + ';font-family:' + D.value.font + ';font-style:' + D.value.style + ';">' +
-      displayVal + '</div>';
+    var heroSize = Math.min(Math.max(Math.floor(H * 0.28), 48), 112);
+
+    // Active cell: which of the 3 context cells does the value land in?
+    var activeIdx = -1;
+    if (numVal !== null && ctx.thresholds && ctx.thresholds.length === 2) {
+      activeIdx = numVal < ctx.thresholds[0] ? 0 : (numVal <= ctx.thresholds[1] ? 1 : 2);
+    }
+
+    var hasCells = !!(ctx.cells && ctx.cells.length === 3);
+
+    el.style.display       = 'flex';
+    el.style.flexDirection = 'row';
+    el.style.alignItems    = 'stretch';
+    el.style.height        = '100%';
+    el.style.boxSizing     = 'border-box';
+    el.style.padding       = '24px';
+    el.style.gap           = '16px';
+
+    // Left: hero number + definition + optional caveat
+    var left = document.createElement('div');
+    left.style.cssText = 'flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:0;';
+
+    var heroEl = document.createElement('div');
+    heroEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:' + heroSize + 'px;line-height:1;color:#e994a2;';
+    if (numVal !== null) {
+      heroEl.innerHTML = ctx.prefix + numVal.toFixed(decs) +
+        (ctx.suffix ? '<span style="color:#6f6f6f;font-size:0.3em;margin-left:0.08em;vertical-align:baseline;">' + ctx.suffix + '</span>' : '');
+    } else {
+      heroEl.textContent = '--';
+    }
+    left.appendChild(heroEl);
+
+    if (defn) {
+      var defnEl = document.createElement('div');
+      defnEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;color:#a4a4a4;line-height:1.4;';
+      defnEl.textContent = defn;
+      left.appendChild(defnEl);
+    }
+
+    if (caveat) {
+      var cavEl = document.createElement('div');
+      cavEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#6f6f6f;line-height:1.3;margin-top:4px;';
+      cavEl.textContent = caveat;
+      left.appendChild(cavEl);
+    }
+
+    el.appendChild(left);
+
+    // Right rail: three greyscale context cells (greyscale only — no RAG on this surface)
+    if (hasCells) {
+      var GUTTER = 2;
+      var CELL_R = 8;
+      var FRAME_R = CELL_R + GUTTER; // 10 = 8 + 2
+
+      var rail = document.createElement('div');
+      rail.style.cssText = 'background:#0d0d0d;border:1px solid #262626;border-radius:' + FRAME_R + 'px;' +
+        'padding:' + GUTTER + 'px;display:flex;flex-direction:column;gap:' + GUTTER + 'px;' +
+        'width:164px;flex-shrink:0;';
+
+      ctx.cells.forEach(function(cell, i) {
+        var isActive = (i === activeIdx);
+        var cellEl = document.createElement('div');
+        cellEl.style.cssText = 'background:' + (isActive ? '#363636' : '#222222') + ';' +
+          'border-radius:' + CELL_R + 'px;padding:8px 10px;display:flex;flex-direction:column;gap:4px;flex:1;';
+
+        var lbl = document.createElement('div');
+        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:10px;color:#cfcfcf;' +
+          'text-transform:uppercase;letter-spacing:0.06em;';
+        lbl.textContent = cell.label;
+
+        var rng = document.createElement('div');
+        rng.style.cssText = 'font-family:' + FONT_BODY + ';font-size:12px;color:#cfcfcf;';
+        rng.textContent = cell.range;
+
+        cellEl.appendChild(lbl);
+        cellEl.appendChild(rng);
+
+        if (cell.note) {
+          var noteEl = document.createElement('div');
+          noteEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:10px;color:#6f6f6f;';
+          noteEl.textContent = cell.note;
+          cellEl.appendChild(noteEl);
+        }
+
+        rail.appendChild(cellEl);
+      });
+
+      el.appendChild(rail);
+    }
   }
 
   // ─── BANs ─────────────────────────────────────────────────────────────────
@@ -2705,6 +2789,90 @@
     vom: true, svt: true,
   };
 
+  // ─── INDICATOR DECIMALS ───────────────────────────────────────────────────
+  // Applied to the displayed value — single source of precision across all surfaces.
+  const INDICATOR_DECIMALS = {
+    mcon: 0,
+    cagr: 1, tam: 1,
+    nps:  1, bt: 1, sop: 1, dvtr: 1, ba: 1,
+    svt:  2, vom: 2,
+  };
+
+  // ─── INDICATOR DEFINITIONS ────────────────────────────────────────────────
+  // Generic per-indicator sentence — no interpolated value, never per-value maintenance.
+  const INDICATOR_DEFINITION = {
+    mcon:  'Market concentration measured by the Herfindahl–Hirschman Index (HHI). Higher values indicate greater concentration among competitors.',
+    cagr:  'Compound annual growth rate of the total addressable market over the measurement period.',
+    tam:   'Total addressable market size in USD billions at the time of measurement.',
+    nps:   'Mean brand-preference rating on a 1–5 Likert scale. This is a survey mean, not a recalculated true Net Promoter Score.',
+    bt:    'Mean brand trust rating on a 1–5 Likert scale across surveyed consumers.',
+    sop:   'Mean share-of-preference rating on a 1–5 Likert scale across surveyed consumers.',
+    dvtr:  'Mean recognition score for distinctive verbal tone on a 1–5 Likert scale across surveyed consumers.',
+  };
+
+  // ─── INDICATOR BAN CONTEXT ────────────────────────────────────────────────
+  // Per-indicator context-cell config for the BAN detail view.
+  // thresholds: [lo, hi] — value < lo → cell 0; lo ≤ value ≤ hi → cell 1; > hi → cell 2.
+  const INDICATOR_BAN_CONTEXT = {
+    mcon: {
+      type: 'threshold', prefix: '', suffix: '',
+      cells: [
+        { label: 'Unconcentrated',      range: '< 1,500',          note: 'DOJ/FTC 2023' },
+        { label: 'Moderate',            range: '1,500 – 1,800', note: 'DOJ/FTC 2023' },
+        { label: 'Highly concentrated', range: '> 1,800',          note: 'DOJ/FTC 2023' },
+      ],
+      thresholds: [1500, 1800],
+      caveat: 'Bands follow US merger guidelines (2023). Other vintages and jurisdictions differ.',
+    },
+    cagr: {
+      type: 'illustrative', prefix: '', suffix: '%',
+      cells: [
+        { label: 'Low / declining', range: '< 3%',          note: 'e.g. legacy retail' },
+        { label: 'Mature / steady', range: '3 – 8%',   note: 'e.g. packaged goods' },
+        { label: 'High growth',     range: '> 8%',          note: 'e.g. emerging category' },
+      ],
+      thresholds: [3, 8],
+      caveat: 'Ranges are illustrative sector examples, not a benchmark standard.',
+    },
+    tam:  { type: 'none', prefix: '$', suffix: 'B' },
+    nps: {
+      type: 'scale', prefix: '', suffix: '/5',
+      cells: [
+        { label: 'Low',    range: '< 2',        note: null },
+        { label: 'Mid',    range: '2 – 4', note: 'cat. avg.' },
+        { label: 'Strong', range: '> 4',        note: null },
+      ],
+      thresholds: [2, 4],
+    },
+    bt: {
+      type: 'scale', prefix: '', suffix: '/5',
+      cells: [
+        { label: 'Low',    range: '< 2',        note: null },
+        { label: 'Mid',    range: '2 – 4', note: 'cat. avg.' },
+        { label: 'Strong', range: '> 4',        note: null },
+      ],
+      thresholds: [2, 4],
+    },
+    sop: {
+      type: 'scale', prefix: '', suffix: '/5',
+      cells: [
+        { label: 'Low',    range: '< 2',        note: null },
+        { label: 'Mid',    range: '2 – 4', note: 'cat. avg.' },
+        { label: 'Strong', range: '> 4',        note: null },
+      ],
+      thresholds: [2, 4],
+    },
+    dvtr: {
+      type: 'scale', prefix: '', suffix: '/5',
+      cells: [
+        { label: 'Low',    range: '< 2',        note: null },
+        { label: 'Mid',    range: '2 – 4', note: 'cat. avg.' },
+        { label: 'Strong', range: '> 4',        note: null },
+      ],
+      thresholds: [2, 4],
+    },
+  };
+
   // ─── MULTI-PERIOD CHART TYPES ─────────────────────────────────────────────
   const MULTI_PERIOD_CHARTS = [
     'line-smooth', 'line-straight',
@@ -3147,7 +3315,7 @@
       case 'donut':          renderDonut(el, data, selectedBrand, dashboard, D.donut);           break;
       case 'bar':            renderBar(el, data, selectedBrand, dashboard, D.bar);               break;
       case 'line':           renderLine(el, data, selectedBrand, dashboard, D.line);             break;
-      case 'ban':            renderBAN(el, data, selectedBrand, D.ban);                          break;
+      case 'ban':            renderBAN(el, data, selectedBrand, D.ban, CONFIG.metricId);         break;
       case 'bans':           renderBANs(el, data, selectedBrand, D.bans);                        break;
       case 'line-straight':  renderLineChart(el, chartData, selectedBrand, true);                break;
       case 'line-smooth':    renderLineChart(el, chartData, selectedBrand, false);               break;
