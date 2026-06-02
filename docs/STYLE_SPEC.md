@@ -100,11 +100,33 @@ roles above, this section wins **for the scorecard table**.
   per-client parameter, compute the text colour for contrast rather than hardcoding black).
 - Drill / back affordance label: 11px, `#888`
 
-**Affordances** (the in-extension view-swap — no Tableau navigation)
-- To chart: a **chart-view icon** (bar/line-chart glyph) 17px + label **"View chart"**,
-  inside the label column, right-aligned. (Replaces the old `circle-arrow-down` / "Jump to".)
-- Back from chart: a **back icon** (left-arrow / "back to table" glyph) 17px + matching
-  label, same 11px `#888` treatment, mirroring "View chart". Returns to the table view.
+**Affordances** (the in-extension view-swap — no Tableau navigation). OPEN DATA and CLOSE
+DATA are **one component in two states** (the "view-swap chip"), not two affordances — same
+type, padding, radius, hover; only the glyph and word change. They read as one control
+inverting in place, matching the JS `switchToChart` / `switchToTable` swap (nothing navigates).
+- **Icon = a true mirror pair**, Material Symbols `open_in_full` (open) ↔ `close_fullscreen`
+  (close), 17px. Implement as **inline SVG paths** (no icon-font dependency; single file).
+  Replaces the old chart-glyph / left-arrow mix — two unrelated glyphs read as separate
+  buttons; one concept inverted reads as a pair. (Inline SVG also sidesteps the pending
+  Cloud webfont safe-list question in TABLEAU_API_REALITY.)
+- **Label = action + object, uppercase:** `OPEN DATA` / `CLOSE DATA` — Tableau Light, 11px,
+  ~0.06em tracking. "Data" (not "chart") because a drill-down may be a BAN, scale, treemap or
+  share chart, not always a chart; it names the detail behind the score, content-agnostic
+  across all forms, and matches the reference "DATA VIEW" language.
+- **Rest:** text `#888`, no fill, 0.5px transparent border. **Hover/focus:** a light pill —
+  fill `#ededed`, text `#141414` (WCAG AA), padding 4/8px, radius 8px (reuses cell radius).
+  The pill is the only hover chrome.
+- **Anchor:** OPEN DATA is right-aligned in the label cell; CLOSE DATA is right-aligned at the
+  top of the expanded view — the chip inverts roughly **in place**, it does not move to a new
+  region.
+
+**Expanded (single-indicator) view.** When a row's chip opens, the view swaps in place to
+that one indicator's chart and the **scorecard header row is not rendered** (no wordmark, no
+per-brand overall scores) — it is stale chrome for a single-metric view, and the layout is a
+fixed zone, not a scroll surface, so there is no scroll-to alternative. The expanded view
+shows only: the **indicator name** (14px `#ededed`) + its `+source` subtitle (11px `#777`)
+top-left, the **CLOSE DATA chip** top-right, and the chart filling the remaining height.
+Returns to the full table on close.
 
 **Layout**
 - Columns: **`minmax(320px, 2.2fr)` label** (wider so long names show — they wrap, never
