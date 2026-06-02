@@ -2735,7 +2735,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-02.9';
+  const VERSION = '2026-06-02.10';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3880,6 +3880,9 @@
             (yearIdx !== -1 ? r0[yearIdx].value : 'n/a') + ' month=' +
             (monthIdx !== -1 ? r0[monthIdx].value : 'n/a') + ' quarter=' +
             (quarterIdx !== -1 ? r0[quarterIdx].value : 'n/a') + ' => period=' + s.period);
+          console.log('[fetchAndCacheData] svt formattedValues: year=' +
+            (yearIdx !== -1 ? r0[yearIdx].formattedValue : 'n/a') + ' quarter=' +
+            (quarterIdx !== -1 ? r0[quarterIdx].formattedValue : 'n/a'));
         }
       }
 
