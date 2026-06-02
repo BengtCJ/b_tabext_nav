@@ -2699,7 +2699,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-02.2';
+  const VERSION = '2026-06-02.3';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3143,6 +3143,9 @@
     var srcEl = document.getElementById('chart-source');
     if (srcEl) {
       var indForSrc = _indicators.find(function(i) { return i.id === CONFIG.metricId; });
+      if (!indForSrc && _scoreModel) {
+        indForSrc = _scoreModel.rows.find(function(r) { return r.id === CONFIG.metricId; });
+      }
       srcEl.textContent = (indForSrc && indForSrc.source) ? indForSrc.source : '';
     }
 
@@ -3468,6 +3471,7 @@
         : SAMPLE_SCORES;
       if (filteredScores.length) {
         matrixModel = buildScoreModel(filteredScores, CONFIG.clientBrand, urlSubgroup || '');
+        _scoreModel = matrixModel;
       }
       var rawMetaU = urlSubgroup ? SUBGROUP_META[urlSubgroup] : null;
       subgroupMeta = urlSubgroup ? {
@@ -3486,6 +3490,7 @@
           ? SAMPLE_INDICATORS.filter(function(d) { return d.subcategory_id === urlSubgroup; })
           : SAMPLE_INDICATORS;
         list = filtered.length ? filtered : SAMPLE_INDICATORS;
+        _indicators = list;
       }
     } else {
       // Tableau mode
