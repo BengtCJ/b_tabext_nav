@@ -2746,7 +2746,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-02.6';
+  const VERSION = '2026-06-02.7';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3876,6 +3876,23 @@
           _subcatName: subcatNameIdx !== -1 ? (row[subcatNameIdx].formattedValue || row[subcatNameIdx].value || '') : '',
         };
       }).filter(function(d) { return d.value !== null && d.name !== 'coffee_general'; });
+
+      // Diagnostic: SVT row count + first row's raw year/month/quarter/period
+      var svtRows = _rawData.filter(function(d) { return d.indicator === 'svt'; });
+      console.log('[fetchAndCacheData] total rows=' + _rawData.length + ', svt rows=' + svtRows.length);
+      if (svtRows.length) {
+        var s = svtRows[0];
+        var ri = rows.findIndex(function(r) {
+          return (r[indIdx] && r[indIdx].value === 'svt');
+        });
+        if (ri !== -1) {
+          var r0 = rows[ri];
+          console.log('[fetchAndCacheData] svt sample raw: year=' +
+            (yearIdx !== -1 ? r0[yearIdx].value : 'n/a') + ' month=' +
+            (monthIdx !== -1 ? r0[monthIdx].value : 'n/a') + ' quarter=' +
+            (quarterIdx !== -1 ? r0[quarterIdx].value : 'n/a') + ' => period=' + s.period);
+        }
+      }
 
       // Dedupe by indicator_id to build the table
       var seen = {};
