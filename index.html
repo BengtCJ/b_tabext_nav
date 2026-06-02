@@ -2735,7 +2735,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-02.10';
+  const VERSION = '2026-06-02.11';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -2982,6 +2982,7 @@
     yearField:          'Year',
     monthField:         'Month',
     quarterField:       'Quarter',
+    periodField:        '',
     categoryField:      'category_id',
     chart:              'hbar',
     selectedColor:      '#e994a2',
@@ -3825,16 +3826,13 @@
       var yearIdx    = colIdx(CONFIG.yearField);
       var monthIdx   = colIdx(CONFIG.monthField);
       var quarterIdx = colIdx(CONFIG.quarterField);
+      var periodIdx  = CONFIG.periodField ? colIdx(CONFIG.periodField) : -1;
       var catIdx     = colIdx(CONFIG.categoryField);
       var indIdx    = colIdx(CONFIG.indicatorIdField);
       var nameIdx   = colIdx(CONFIG.nameField);
       var sourceIdx = colIdx(CONFIG.sourceField);
       var subcatIdx     = colIdx(CONFIG.subcategoryIdField);
       var subcatNameIdx = colIdx('subcategory_name');
-
-      // Diagnostic: log all column names + quarterIdx so we can verify the Quarter field name
-      console.log('[fetchAndCacheData] columns:', cols.map(function(c) { return c.fieldName; }).join(' | '));
-      console.log('[fetchAndCacheData] quarterIdx=' + quarterIdx + ' (looking for "' + CONFIG.quarterField + '")');
 
       if (brandIdx === -1 || valueIdx === -1 || indIdx === -1) {
         var available = cols.map(function(c) { return c.fieldName; }).join(', ');
@@ -3848,11 +3846,22 @@
         var year    = yearIdx    !== -1 ? parseFloat(row[yearIdx].value)    : null;
         var month   = monthIdx   !== -1 ? parseFloat(row[monthIdx].value)   : null;
         var quarter = quarterIdx !== -1 ? parseFloat(row[quarterIdx].value) : null;
-        var period  = (year && month && !isNaN(year) && !isNaN(month))
-          ? toYearMonth(year, month)
-          : (year && quarter && !isNaN(year) && !isNaN(quarter))
-            ? (year + '-Q' + quarter)
-            : null;
+
+        // Period: prefer a pre-computed period field (handles cases where Year is null
+        // for some indicators, e.g. SVT from a different date dimension in Snowflake).
+        var period = null;
+        if (periodIdx !== -1) {
+          var pRaw = row[periodIdx].value || row[periodIdx].formattedValue || '';
+          if (pRaw && pRaw !== '%null%' && pRaw !== 'Null') period = String(pRaw).trim();
+        }
+        if (!period) {
+          period = (year && month && !isNaN(year) && !isNaN(month))
+            ? toYearMonth(year, month)
+            : (year && quarter && !isNaN(year) && !isNaN(quarter))
+              ? (year + '-Q' + quarter)
+              : null;
+        }
+
         return {
           name:      row[brandIdx].formattedValue || row[brandIdx].value,
           value:     isNaN(rawVal) ? null : rawVal,
@@ -3865,26 +3874,6 @@
           _subcatName: subcatNameIdx !== -1 ? (row[subcatNameIdx].formattedValue || row[subcatNameIdx].value || '') : '',
         };
       }).filter(function(d) { return d.value !== null && d.name !== 'coffee_general'; });
-
-      // Diagnostic: SVT row count + first row's raw year/month/quarter/period
-      var svtRows = _rawData.filter(function(d) { return d.indicator === 'svt'; });
-      console.log('[fetchAndCacheData] total rows=' + _rawData.length + ', svt rows=' + svtRows.length);
-      if (svtRows.length) {
-        var s = svtRows[0];
-        var ri = rows.findIndex(function(r) {
-          return (r[indIdx] && r[indIdx].value === 'svt');
-        });
-        if (ri !== -1) {
-          var r0 = rows[ri];
-          console.log('[fetchAndCacheData] svt sample raw: year=' +
-            (yearIdx !== -1 ? r0[yearIdx].value : 'n/a') + ' month=' +
-            (monthIdx !== -1 ? r0[monthIdx].value : 'n/a') + ' quarter=' +
-            (quarterIdx !== -1 ? r0[quarterIdx].value : 'n/a') + ' => period=' + s.period);
-          console.log('[fetchAndCacheData] svt formattedValues: year=' +
-            (yearIdx !== -1 ? r0[yearIdx].formattedValue : 'n/a') + ' quarter=' +
-            (quarterIdx !== -1 ? r0[quarterIdx].formattedValue : 'n/a'));
-        }
-      }
 
       // Dedupe by indicator_id to build the table
       var seen = {};
@@ -4102,6 +4091,9 @@
           '<div class="field"><label>Quarter field</label>' +
             '<input type="text" id="s-quarterField" value="' + escAttr(CONFIG.quarterField) + '" list="s-columns">' +
           '</div>' +
+          '<div class="field"><label>Period field <span style="font-weight:400;opacity:0.55">(optional override)</span></label>' +
+            '<input type="text" id="s-periodField" value="' + escAttr(CONFIG.periodField) + '" list="s-columns" placeholder="e.g. Period String">' +
+          '</div>' +
           '<div class="field"><label>Category field</label>' +
             '<input type="text" id="s-categoryField" value="' + escAttr(CONFIG.categoryField) + '" list="s-columns">' +
           '</div>' +
@@ -4177,6 +4169,7 @@
       CONFIG.yearField          = document.getElementById('s-yearField').value.trim();
       CONFIG.monthField         = document.getElementById('s-monthField').value.trim();
       CONFIG.quarterField       = document.getElementById('s-quarterField').value.trim();
+      CONFIG.periodField        = document.getElementById('s-periodField').value.trim();
       CONFIG.categoryField      = document.getElementById('s-categoryField').value.trim();
       CONFIG.selectedColor      = document.getElementById('s-selectedColor').value;
       CONFIG.neutralColor       = document.getElementById('s-neutralColor').value;
