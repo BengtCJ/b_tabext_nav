@@ -2699,7 +2699,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-02.3';
+  const VERSION = '2026-06-02.4';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -2945,6 +2945,7 @@
     valueField:         'SUM(Raw Value)',
     yearField:          'Year',
     monthField:         'Month',
+    quarterField:       'Quarter',
     categoryField:      'category_id',
     chart:              'hbar',
     selectedColor:      '#e994a2',
@@ -3762,9 +3763,10 @@
 
       var brandIdx  = colIdx(CONFIG.brandField);
       var valueIdx  = colIdx(CONFIG.valueField);
-      var yearIdx   = colIdx(CONFIG.yearField);
-      var monthIdx  = colIdx(CONFIG.monthField);
-      var catIdx    = colIdx(CONFIG.categoryField);
+      var yearIdx    = colIdx(CONFIG.yearField);
+      var monthIdx   = colIdx(CONFIG.monthField);
+      var quarterIdx = colIdx(CONFIG.quarterField);
+      var catIdx     = colIdx(CONFIG.categoryField);
       var indIdx    = colIdx(CONFIG.indicatorIdField);
       var nameIdx   = colIdx(CONFIG.nameField);
       var sourceIdx = colIdx(CONFIG.sourceField);
@@ -3780,10 +3782,14 @@
 
       _rawData = rows.map(function(row) {
         var rawVal = parseFloat(row[valueIdx].value);
-        var year   = yearIdx  !== -1 ? parseFloat(row[yearIdx].value)  : null;
-        var month  = monthIdx !== -1 ? parseFloat(row[monthIdx].value) : null;
-        var period = (year && month && !isNaN(year) && !isNaN(month))
-          ? toYearMonth(year, month) : null;
+        var year    = yearIdx    !== -1 ? parseFloat(row[yearIdx].value)    : null;
+        var month   = monthIdx   !== -1 ? parseFloat(row[monthIdx].value)   : null;
+        var quarter = quarterIdx !== -1 ? parseFloat(row[quarterIdx].value) : null;
+        var period  = (year && month && !isNaN(year) && !isNaN(month))
+          ? toYearMonth(year, month)
+          : (year && quarter && !isNaN(year) && !isNaN(quarter))
+            ? (year + '-Q' + quarter)
+            : null;
         return {
           name:      row[brandIdx].formattedValue || row[brandIdx].value,
           value:     isNaN(rawVal) ? null : rawVal,
@@ -3848,18 +3854,32 @@
   // quarterly: true if aggregateByQuarter would produce ≥2 distinct quarter-periods.
   function computeAvailableGrains(indicatorId) {
     var rows = _rawData.filter(function(d) { return d.indicator === indicatorId && d.period; });
-    var periods = [];
-    rows.forEach(function(d) {
-      if (periods.indexOf(d.period) === -1) periods.push(d.period);
-    });
-    if (periods.length < 2) return { monthly: false, quarterly: false };
+    if (rows.length < 2) return { monthly: false, quarterly: false };
 
-    var qData = aggregateByQuarter(rows, indicatorId);
-    var qPeriods = [];
-    qData.forEach(function(d) {
-      if (d.period && qPeriods.indexOf(d.period) === -1) qPeriods.push(d.period);
+    // Partition periods by format: YYYY-MM (monthly) vs YYYY-Q# (already quarterly)
+    var moPeriods = [], qPeriods = [];
+    rows.forEach(function(d) {
+      if (/^\d{4}-\d{2}$/.test(d.period)) {
+        if (moPeriods.indexOf(d.period) === -1) moPeriods.push(d.period);
+      } else if (/^\d{4}-Q\d$/.test(d.period)) {
+        if (qPeriods.indexOf(d.period) === -1) qPeriods.push(d.period);
+      }
     });
-    return { monthly: true, quarterly: qPeriods.length >= 2 };
+
+    var hasMonthly = moPeriods.length >= 2;
+
+    // Quarterly: directly available if already Q-format, OR derivable by aggregating monthly rows
+    var hasQuarterly = qPeriods.length >= 2;
+    if (!hasQuarterly && hasMonthly) {
+      var agg = aggregateByQuarter(rows, indicatorId);
+      var aggQs = [];
+      agg.forEach(function(d) {
+        if (d.period && aggQs.indexOf(d.period) === -1) aggQs.push(d.period);
+      });
+      hasQuarterly = aggQs.length >= 2;
+    }
+
+    return { monthly: hasMonthly, quarterly: hasQuarterly };
   }
 
   // ─── PROCESS DATA FOR A SELECTED INDICATOR ────────────────────────────────
@@ -3874,13 +3894,21 @@
     if (_viewMode === 'quarterly' && !_availableGrains.quarterly) {
       _viewMode = 'monthly';
     }
+    // Symmetric fallback: monthly → quarterly when only quarterly data exists
+    if (_viewMode === 'monthly' && !_availableGrains.monthly && _availableGrains.quarterly) {
+      _viewMode = 'quarterly';
+    }
 
     var data    = _rawData.filter(function(d) { return d.indicator === indicatorId; });
-    var isTrend = _availableGrains.monthly;
+    var isTrend = _availableGrains.monthly || _availableGrains.quarterly;
 
     if (isTrend) {
       if (_viewMode === 'quarterly') {
-        data = aggregateByQuarter(data, indicatorId);
+        // If data is already in YYYY-Q# format, skip aggregation (aggregateByQuarter
+        // expects YYYY-MM input and would produce NaN quarters from quarterly strings).
+        data = _availableGrains.monthly
+          ? aggregateByQuarter(data, indicatorId)
+          : sortByPeriod(data.filter(function(d) { return d.period; }));
       } else {
         data = sortByPeriod(data.filter(function(d) { return d.period; }));
       }
@@ -3988,6 +4016,9 @@
           '<div class="field"><label>Month field</label>' +
             '<input type="text" id="s-monthField" value="' + escAttr(CONFIG.monthField) + '" list="s-columns">' +
           '</div>' +
+          '<div class="field"><label>Quarter field</label>' +
+            '<input type="text" id="s-quarterField" value="' + escAttr(CONFIG.quarterField) + '" list="s-columns">' +
+          '</div>' +
           '<div class="field"><label>Category field</label>' +
             '<input type="text" id="s-categoryField" value="' + escAttr(CONFIG.categoryField) + '" list="s-columns">' +
           '</div>' +
@@ -4062,6 +4093,7 @@
       CONFIG.valueField         = document.getElementById('s-valueField').value.trim();
       CONFIG.yearField          = document.getElementById('s-yearField').value.trim();
       CONFIG.monthField         = document.getElementById('s-monthField').value.trim();
+      CONFIG.quarterField       = document.getElementById('s-quarterField').value.trim();
       CONFIG.categoryField      = document.getElementById('s-categoryField').value.trim();
       CONFIG.selectedColor      = document.getElementById('s-selectedColor').value;
       CONFIG.neutralColor       = document.getElementById('s-neutralColor').value;
