@@ -2565,7 +2565,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-01.2';
+  const VERSION = '2026-06-02.1';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -2718,6 +2718,7 @@
     scoreWorksheet:     '',
     scoreField:         'Score',
     clientBrand:        'ILLY',
+    parameter:          'Select Client Brand',
     indicatorIdField:   'indicator_id',
     nameField:          'Display Name',
     sourceField:        'Source',
@@ -2740,12 +2741,12 @@
   let _dashboard          = null;
   let _lastData           = null;
   let _lastSelected       = null;
-  let _clientBrand        = null;
   let _allData            = null;       // chart data for current indicator (post period/mode)
   let _selectedPeriod     = 'all';
   let _rawData            = [];         // full cached worksheet rows
   let _indicators         = [];         // parsed { id, name, source } list
   let _scoreModel         = null;       // { brands, header, rows } from scores worksheet; null when unavailable
+  let _rawScoreNormalized = [];         // cached normalised score rows — rebuilt on brand-parameter change without re-fetching
   let _view               = 'table';
   let _selectedIndicatorId = null;
   var _subgroup           = null;   // resolved subgroup id for this dashboard instance
@@ -3010,7 +3011,7 @@
       }
     }
     refreshPeriodSelector();
-    renderChart(data, _clientBrand, _dashboard);
+    renderChart(data, CONFIG.clientBrand, _dashboard);
   }
 
   // ─── SET VIEW MODE (Qtr/Mo) — re-process current indicator ────────────────
@@ -3244,7 +3245,7 @@
         ? SAMPLE_SCORES.filter(function(d) { return d.subcategory_id === urlSubgroup; })
         : SAMPLE_SCORES;
       if (filteredScores.length) {
-        matrixModel = buildScoreModel(filteredScores, 'ILLY', urlSubgroup || '');
+        matrixModel = buildScoreModel(filteredScores, CONFIG.clientBrand, urlSubgroup || '');
       }
       var rawMetaU = urlSubgroup ? SUBGROUP_META[urlSubgroup] : null;
       subgroupMeta = urlSubgroup ? {
@@ -3311,10 +3312,9 @@
         quarterly: !!INDICATOR_TREND[indicatorId],
       };
       _allData        = null;
-      _clientBrand    = null;
       _selectedBrand  = null;
       refreshViewToggle();
-      renderChart(getSampleData(CONFIG.chart), null, null);
+      renderChart(getSampleData(CONFIG.chart), CONFIG.clientBrand, null);
     }
   }
 
@@ -3496,6 +3496,7 @@
           score:          isNaN(sc) ? null : sc,
         };
       }).filter(function(r) { return r.level === 'metric'; });
+      _rawScoreNormalized = normalised;   // cache for brand-parameter re-renders
 
       var subcategoryName = '';
       if (subcatNameIdx !== -1) {
@@ -3672,7 +3673,6 @@
 
     _allData        = data;
     _selectedPeriod = 'all';
-    _clientBrand    = null;
     _selectedBrand  = null;
 
     refreshViewToggle();
@@ -3911,14 +3911,44 @@
       }
       await fetchAndCacheData();
 
-      // Re-render when any parameter changes (e.g. client brand).
-      // getParametersAsync is on Sheet (Dashboard's parent class), not on workbook.
+      // Read client brand from the Tableau parameter; re-render on change.
+      // getParametersAsync is on Sheet (Dashboard extends Sheet), not on workbook.
+      // Parameter values are in Brand Name Upper form — the same form as chart data —
+      // so CONFIG.clientBrand is used raw on both sides of every brand match.
       try {
         if (_dashboard) {
           var params = await _dashboard.getParametersAsync();
+
+          // Set initial client brand from the parameter (overrides the DEFAULTS fallback)
+          var brandFromParam = false;
           params.forEach(function(p) {
-            p.addEventListener(tableau.TableauEventType.ParameterChanged, function() {
+            if (p.name === CONFIG.parameter && p.currentValue && p.currentValue.value) {
+              CONFIG.clientBrand = p.currentValue.value;
+              brandFromParam = true;
+            }
+          });
+          // If the parameter resolved a different brand than the default, rebuild and re-render
+          if (brandFromParam && _rawScoreNormalized.length) {
+            _scoreModel = buildScoreModel(_rawScoreNormalized, CONFIG.clientBrand, _subgroup);
+          }
+          if (brandFromParam) switchToTable();
+
+          // Listen to all parameters; on change, refresh client brand and re-render
+          params.forEach(function(p) {
+            p.addEventListener(tableau.TableauEventType.ParameterChanged, async function() {
+              try {
+                var fresh = await _dashboard.getParametersAsync();
+                fresh.forEach(function(fp) {
+                  if (fp.name === CONFIG.parameter && fp.currentValue && fp.currentValue.value) {
+                    CONFIG.clientBrand = fp.currentValue.value;
+                  }
+                });
+                if (_rawScoreNormalized.length) {
+                  _scoreModel = buildScoreModel(_rawScoreNormalized, CONFIG.clientBrand, _subgroup);
+                }
+              } catch(e) { console.warn('[param refresh]', e); }
               if (_view === 'table') switchToTable();
+              else applyPeriodAndRender();
             });
           });
         }

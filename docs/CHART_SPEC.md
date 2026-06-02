@@ -11,6 +11,12 @@ Human-readable metric names and units live in `INDICATOR_DISPLAY_NAMES` /
 - The **client/primary brand** is always drawn in `selectedColor` (`#e994a2`); all
   others in the neutral grey. The primary is positioned per the chart's convention
   (e.g. forced to top/last so it reads first).
+- **Client identity is matched on the raw `Brand Name Upper` value** — the form the
+  `Select Client Brand` parameter holds. Brand-name normalization (title-case, display
+  formatting) is **display-only** and must never be applied to the value used for the client
+  match. One shared resolver performs this match for both the scorecard table and the charts, so
+  the two surfaces cannot drift apart (the recurring "client not highlighted" regressions came
+  from normalising the match value or hardcoding the client).
 - Brand names: uppercase, Tableau Light.
 - Honour the **"too small"** and **"no data"** states — never render a broken chart into
   a tiny or empty container.
