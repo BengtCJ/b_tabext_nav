@@ -36,6 +36,28 @@ Defaults and the full allowed list per metric live in `METRIC_CHARTS` in `index.
 (first entry = default). Treat that object as the source of truth and keep it consistent
 with the classes above.
 
+### Per-class chart menu and uniform default (locked)
+One default per class — siblings render the same chart so the dashboard reads
+consistently; everything else is a user-selectable alternate (the `METRIC_CHARTS` allowed
+list, default first).
+
+| Class | Uniform default | Also offered (alternates) |
+|---|---|---|
+| Headline | `ban` | — |
+| Ratio 0–1 | `vbar` (grouped) | `hbar`, `progress-ring`, `line-straight`, `line-smooth`, `small-multiples` |
+| Compositional share | `treemap` | `inset-bubble`, `bubbles`, `area-100`, `treemap-bar`, `stream` |
+| Signed float | `line-straight` | `line-smooth`, `small-multiples` |
+| Likert 1–5 | `scale-figma` | `hbar`, `vbar`, `bans`, `ban` |
+
+Part-of-whole idioms are **class-gated, not blanket-banned**: `progress-ring`, `waffle` and
+`donut` are valid for a **true 0–1 ratio** (each value is a genuine fraction) and for
+**compositional share** (parts of ~100%), but stay banned for **Likert** (a 1–5 mean is not
+a fraction). Class-validity is not the same as the offered list — only the alternates above
+are wired in today.
+
+`ba` and `cra` keep their current (`hbar`) default and are out of scope until their
+data-shape class is resolved (see Open items).
+
 ## Period granularity & gaps (data-driven)
 - **Offer only the granularities the data has.** The monthly/quarterly view controls are
   data-driven, not a static list: for the current indicator, a granularity is offered
@@ -68,6 +90,13 @@ get month + quarter options; annual / point-in-time indicators (`tam`, `cagr`, `
   metric to it. (`guardBaAttributes`)
 - **Sanity:** the client and expected competitor set (e.g. Starbucks) should be present;
   warn if missing. (`guardStarbucksPresent`)
+- **Independent ratios are never stacked:** `eqr`, `ebl`, `sstsr` are independent per-brand
+  fractions that do not sum to 100% — a stacked bar draws a total that does not exist.
+  Snapshot them as grouped (non-stacked) bars. (enforce in harness)
+- **Signed-float trends are straight, with a zero baseline:** smoothing a signed series with
+  few points can fabricate a zero-crossing the data never makes, and would glide through
+  `svt`'s pipeline-zero tail. Default `vom`/`svt` to `line-straight` with the zero line
+  drawn; `line-smooth` is alternate-only. (enforce in harness)
 
 ## Table data shape (scorecard matrix)
 
@@ -127,3 +156,7 @@ definition string must say so; cells are greyscale scale-bands, never RAG.
 - A period/granularity option is selectable but produces an empty chart (it should have
   been hidden).
 - A trend opens with blank leading or trailing periods while the edge-trim switch is on.
+- A 0–1 ratio (`eqr`/`ebl`/`sstsr`) drawn as a **stacked** bar (implies a brand total that
+  isn't real) instead of grouped bars.
+- A signed-float trend (`vom`/`svt`) drawn with a **smoothed** line that crosses or
+  approaches zero where the straight segments don't.
