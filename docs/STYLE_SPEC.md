@@ -30,6 +30,10 @@ wanted; validate at the container size before final sign-off.
 
 - **Hero is the only sanctioned size override.** It may be sized per chart where it is
   the focal element, and nowhere else.
+- **A chart-view title uses the Heading role (Tableau Light), never Baskerville.**
+  Baskerville italic is hero numerals only; an indicator name shown as a chart
+  title is a Heading, not a hero. If 16px reads with too little title contrast at
+  1421×773, bump Heading to 18 per the Heading note — do not switch the face.
 - No other element sets its own font size. In particular, **no font size derived from
   geometry** (`Math.min(11, cellW * 0.22)` and similar must go).
 - Below the documented **minimum container size**, a chart shows its "too small" state

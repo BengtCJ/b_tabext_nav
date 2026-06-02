@@ -11,6 +11,11 @@ Human-readable metric names and units live in `INDICATOR_DISPLAY_NAMES` /
 - The **client/primary brand** is always drawn in `selectedColor` (`#e994a2`); all
   others in the neutral grey. The primary is positioned per the chart's convention
   (e.g. forced to top/last so it reads first).
+- **Headline-class bans are market-level, not brand.** `tam`, `cagr`, `mcon` are
+  single `coffee_general` figures with no brand in frame — the hero number is drawn
+  **neutral** (`#ededed`), not the client pink. `#e994a2` marks the client *brand*;
+  a market figure has no brand to mark. Reserve the hero pink for a ban that
+  represents the client brand specifically (e.g. a per-brand Likert ban).
 - **Client identity is matched on the raw `Brand Name Upper` value** — the form the
   `Select Client Brand` parameter holds. Brand-name normalization (title-case, display
   formatting) is **display-only** and must never be applied to the value used for the client

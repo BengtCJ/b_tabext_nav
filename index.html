@@ -427,7 +427,7 @@
     var H = el.offsetHeight || 200;
     if (H < 80) { showTooSmall(el); return; }
 
-    var heroSize = Math.min(Math.max(Math.floor(H * 0.28), 48), 112);
+    var heroSize = 112;
 
     // Active cell: which of the 3 context cells does the value land in?
     var activeIdx = -1;
@@ -449,9 +449,11 @@
     var left = document.createElement('div');
     left.style.cssText = 'flex:1;display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:0;';
 
+    var HEADLINE_IDS = ['tam', 'cagr', 'mcon'];
+    var heroColor = (HEADLINE_IDS.indexOf(mId) !== -1) ? '#ededed' : CONFIG.selectedColor;
     var heroEl = document.createElement('div');
     heroEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:' + heroSize + 'px;line-height:1;color:#e994a2;';
+      'font-size:' + heroSize + 'px;line-height:1;color:' + heroColor + ';text-align:center;';
     if (numVal !== null) {
       heroEl.innerHTML = ctx.prefix + numVal.toFixed(decs) +
         (ctx.suffix ? '<span style="color:#6f6f6f;font-size:0.3em;margin-left:0.08em;vertical-align:baseline;">' + ctx.suffix + '</span>' : '');
@@ -469,7 +471,7 @@
 
     if (caveat) {
       var cavEl = document.createElement('div');
-      cavEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#6f6f6f;line-height:1.3;margin-top:4px;';
+      cavEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#a4a4a4;line-height:1.3;margin-top:4px;';
       cavEl.textContent = caveat;
       left.appendChild(cavEl);
     }
@@ -491,15 +493,15 @@
         var isActive = (i === activeIdx);
         var cellEl = document.createElement('div');
         cellEl.style.cssText = 'background:' + (isActive ? '#363636' : '#222222') + ';' +
-          'border-radius:' + CELL_R + 'px;padding:8px 10px;display:flex;flex-direction:column;gap:4px;flex:1;';
+          'border-radius:' + CELL_R + 'px;padding:8px 12px;display:flex;flex-direction:column;gap:4px;flex:1;';
 
         var lbl = document.createElement('div');
-        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:10px;color:#cfcfcf;' +
+        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;color:#cfcfcf;' +
           'text-transform:uppercase;letter-spacing:0.06em;';
         lbl.textContent = cell.label;
 
         var rng = document.createElement('div');
-        rng.style.cssText = 'font-family:' + FONT_BODY + ';font-size:12px;color:#cfcfcf;';
+        rng.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#cfcfcf;';
         rng.textContent = cell.range;
 
         cellEl.appendChild(lbl);
@@ -507,7 +509,7 @@
 
         if (cell.note) {
           var noteEl = document.createElement('div');
-          noteEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:10px;color:#6f6f6f;';
+          noteEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#a4a4a4;';
           noteEl.textContent = cell.note;
           cellEl.appendChild(noteEl);
         }
@@ -2423,7 +2425,7 @@
     }
     #chart-name {
       font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      font-size: 14px;
+      font-size: 16px;
       color: #ededed;
       line-height: 1.2;
     }
@@ -2733,7 +2735,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-02.8';
+  const VERSION = '2026-06-02.9';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
