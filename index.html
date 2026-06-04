@@ -598,6 +598,7 @@
   function renderBanShell(el, content) {
     var H = el.offsetHeight || 300;
     if (H < 80) { showTooSmall(el); return; }
+    var heroSz = Math.min(200, Math.max(80, Math.floor(H * 0.22)));
 
     var GUTTER = 2;
     var CELL_R = 8;
@@ -608,12 +609,11 @@
     el.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
       'padding:24px;box-sizing:border-box;height:100%;overflow:hidden;';
 
-    // ── LOCKUP: bounded max-width, centred in the card ─────────────────────
-    // max-width wide enough for hero + text + rail (band); surplus becomes balanced margins.
+    // ── LOCKUP: fills card width; hero + graphic scale to fill, small residual is balanced margin.
     var lockup = document.createElement('div');
     lockup.setAttribute('data-ban-lockup', '1');
     lockup.style.cssText = 'display:flex;flex-direction:row;align-items:flex-start;gap:16px;' +
-      'max-width:880px;width:100%;';
+      'width:100%;';
 
     // ── HERO COL (left, content-sized) ─────────────────────────────────────
     var heroCol = document.createElement('div');
@@ -622,7 +622,7 @@
     var heroEl = document.createElement('div');
     heroEl.setAttribute('data-ban-hero', '1');
     heroEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:112px;line-height:1;color:#ededed;';
+      'font-size:' + heroSz + 'px;line-height:1;color:#ededed;';
     var dispStr = content.prefix + content.dispVal;
     if (content.unitSuffix) {
       heroEl.innerHTML = dispStr + '<span style="color:#6f6f6f;font-size:0.32em;' +
@@ -794,6 +794,7 @@
   // ─── BAN RADIAL (Direction 2 — concentric rings, band metrics only) ────────
   function renderBanRadial(el, content) {
     var H = el.offsetHeight || 300;
+    var W_el = el.offsetWidth || 600;
     if (H < 80) { showTooSmall(el); return; }
 
     // Defensive: band-less falls back to editorial
@@ -811,12 +812,15 @@
     var lockup = document.createElement('div');
     lockup.setAttribute('data-ban-lockup', '1');
     lockup.style.cssText = 'display:flex;flex-direction:row;align-items:center;gap:24px;' +
-      'max-width:880px;width:100%;';
+      'width:100%;';
 
     // ── RINGS SVG ────────────────────────────────────────────────────────────
-    var SZ = 200, CX = 100, CY = 100;
-    var RADII = [36, 60, 84]; // inner→outer = band 0→2
-    var HERO_SZ = 48;         // per-chart hero size override for radial view
+    // Graphic scales to fill: bounded by available height and 45% of width (legend gets the rest).
+    var SZ = Math.max(120, Math.min(Math.floor((H - 48) * 0.85), Math.floor((W_el - 48) * 0.45)));
+    var CX = SZ / 2, CY = SZ / 2;
+    var _scale = SZ / 200;
+    var RADII = [36, 60, 84].map(function(r) { return Math.round(r * _scale); }); // inner→outer = band 0→2
+    var HERO_SZ = Math.max(32, Math.round(48 * _scale)); // per-chart hero size override for radial view
 
     var ns = 'http://www.w3.org/2000/svg';
     var svgEl = document.createElementNS(ns, 'svg');
@@ -838,7 +842,7 @@
         // Pink dot at 12-o'clock on the active ring
         var dot = document.createElementNS(ns, 'circle');
         dot.setAttribute('data-ban-active-marker', '1');
-        dot.setAttribute('cx', CX); dot.setAttribute('cy', CY - r); dot.setAttribute('r', '5');
+        dot.setAttribute('cx', CX); dot.setAttribute('cy', CY - r); dot.setAttribute('r', Math.max(4, Math.round(5 * _scale)));
         dot.setAttribute('fill', '#e994a2');
         svgEl.appendChild(dot);
       }
@@ -866,8 +870,8 @@
     if (!hasPinkDot) {
       var pr = document.createElementNS(ns, 'rect');
       pr.setAttribute('data-ban-pink-rule', '1');
-      pr.setAttribute('x', CX - 20); pr.setAttribute('y', CY + HERO_SZ / 2 + 8);
-      pr.setAttribute('width', 40); pr.setAttribute('height', 2);
+      pr.setAttribute('x', CX - Math.round(20 * _scale)); pr.setAttribute('y', CY + HERO_SZ / 2 + Math.round(8 * _scale));
+      pr.setAttribute('width', Math.round(40 * _scale)); pr.setAttribute('height', 2);
       pr.setAttribute('fill', '#e994a2');
       svgEl.appendChild(pr);
     }
@@ -933,6 +937,7 @@
   function renderBanLedger(el, content) {
     var H = el.offsetHeight || 300;
     if (H < 80) { showTooSmall(el); return; }
+    var heroSz = Math.min(200, Math.max(80, Math.floor(H * 0.22)));
 
     var GUTTER = 2;
     var CELL_R = 8;
@@ -945,7 +950,7 @@
     var lockup = document.createElement('div');
     lockup.setAttribute('data-ban-lockup', '1');
     lockup.style.cssText = 'display:flex;flex-direction:column;gap:' + GUTTER + 'px;' +
-      'max-width:880px;width:100%;';
+      'width:100%;';
 
     // ── CELL ROW: hero cell + band cells ──────────────────────────────────────
     var cellRow = document.createElement('div');
@@ -960,7 +965,7 @@
     var heroEl = document.createElement('div');
     heroEl.setAttribute('data-ban-hero', '1');
     heroEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:112px;line-height:1;color:#ededed;';
+      'font-size:' + heroSz + 'px;line-height:1;color:#ededed;';
     var dispStr = content.prefix + content.dispVal;
     if (content.unitSuffix) {
       heroEl.innerHTML = dispStr + '<span style="color:#6f6f6f;font-size:0.32em;' +
@@ -3269,7 +3274,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-04.3';
+  const VERSION = '2026-06-04.4';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3952,8 +3957,9 @@
     check('no-placeholder-tokens', !hasToken && !hasPending,
       hasToken ? 'Found {{…}} token' : (hasPending ? 'Found "pending" text' : 'clean'));
 
-    // 6. No geometry-derived font sizing in renderBanShell (code-level; always passes)
-    check('no-geometry-font-size', true, 'renderBanShell uses no Math.min/floor(W*…) sizing — code-verified');
+    // 6. Hero IS geometry-responsive (Task-022 amendment); all other type is fixed (enforced by non-hero-type-constant check).
+    check('hero-geometry-responsive-others-fixed', true,
+      'hero scales with H (bounded 80–200px); non-hero type fixed — verified by non-hero-type-constant check');
 
     // 7. Text measure capped: [data-ban-textcol] has max-width set (~60ch)
     var textColEl = chartEl ? chartEl.querySelector('[data-ban-textcol]') : null;
@@ -4126,6 +4132,70 @@
 
       runAtSize('wide-short-1500x340',  1500, 340);
       runAtSize('narrow-tall-400x700',   400, 700);
+    })();
+
+    // hero-scales-bounded: hero at H=900 > hero at H=500, both within [80, 200].
+    (function() {
+      var HEADLINE = ['tam', 'cagr', 'mcon'];
+      if (HEADLINE.indexOf(CONFIG.metricId) === -1) {
+        check('hero-scales-bounded', true, 'non-headline metric — skip'); return;
+      }
+      var PREVIEW_BAN = { cagr: 1.9, tam: 14.4, mcon: 2002 };
+      var numVal = PREVIEW_BAN[CONFIG.metricId];
+      var brand = CONFIG.clientBrand;
+      var testEl = chartEl;
+
+      function getHeroSzAtHeight(h) {
+        var origStyle = testEl.style.cssText;
+        testEl.style.cssText = 'width:1000px;height:' + h + 'px;position:relative;overflow:hidden;';
+        renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand));
+        var he = testEl.querySelector('[data-ban-hero]');
+        var fs = he ? parseInt(he.style.fontSize || '0', 10) : 0;
+        testEl.style.cssText = origStyle;
+        renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand));
+        return fs;
+      }
+
+      var fs500 = getHeroSzAtHeight(500);
+      var fs900 = getHeroSzAtHeight(900);
+      var bounded = fs500 >= 80 && fs500 <= 200 && fs900 >= 80 && fs900 <= 200;
+      var grows   = fs900 > fs500;
+      check('hero-scales-bounded', bounded && grows,
+        'H=500:' + fs500 + 'px H=900:' + fs900 + 'px bounded=' + bounded + ' grows=' + grows);
+    })();
+
+    // non-hero-type-constant: title and reading font-size unchanged across container heights.
+    (function() {
+      var HEADLINE = ['tam', 'cagr', 'mcon'];
+      if (HEADLINE.indexOf(CONFIG.metricId) === -1) {
+        check('non-hero-type-constant', true, 'non-headline metric — skip'); return;
+      }
+      var PREVIEW_BAN = { cagr: 1.9, tam: 14.4, mcon: 2002 };
+      var numVal = PREVIEW_BAN[CONFIG.metricId];
+      var brand = CONFIG.clientBrand;
+      var testEl = chartEl;
+
+      function getNonHeroSizes(h) {
+        var origStyle = testEl.style.cssText;
+        testEl.style.cssText = 'width:1000px;height:' + h + 'px;position:relative;overflow:hidden;';
+        renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand));
+        var title   = testEl.querySelector('[data-ban-title]');
+        var reading = testEl.querySelector('[data-ban-reading]');
+        var result = {
+          title:   title   ? title.style.fontSize   : 'n/a',
+          reading: reading ? reading.style.fontSize : 'n/a'
+        };
+        testEl.style.cssText = origStyle;
+        renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand));
+        return result;
+      }
+
+      var s500 = getNonHeroSizes(500);
+      var s900 = getNonHeroSizes(900);
+      var titleSame   = s500.title   === s900.title;
+      var readingSame = s500.reading === s900.reading;
+      check('non-hero-type-constant', titleSame && readingSame,
+        'title:' + s500.title + '/' + s900.title + ' reading:' + s500.reading + '/' + s900.reading);
     })();
 
     // Log results

@@ -28,8 +28,11 @@ wanted; validate at the container size before final sign-off.
 | **Label** | Tableau Light (brands UPPERCASE) / Regular (values) | brand names, value labels | 13px |
 | **Caption** | Tableau Light | axis ticks, legend, small notes | 11px |
 
-- **Hero is the only sanctioned size override.** It may be sized per chart where it is
-  the focal element, and nowhere else.
+- **Hero is the only sanctioned size override, and the only geometry-responsive size.** It may
+  be sized per chart AND may scale with the container (bounded min/max) so the focal figure
+  fills the canvas. No OTHER type derives its size from geometry — the ban on geometry-driven
+  font size (`Math.min(11, cellW*0.22)` and similar) still binds every non-hero element.
+  Chart graphics (e.g. radial rings) are not type and scale freely to fill.
 - **A chart-view title uses the Heading role (Tableau Light), never Baskerville.**
   Baskerville italic is hero numerals only; an indicator name shown as a chart
   title is a Heading, not a hero. If 16px reads with too little title contrast at
@@ -233,7 +236,10 @@ panel below in the scorecard commentary style. Band-less metrics render hero cel
 **Fluid layout & aspect robustness (fixed type, fluid layout).** Type never changes with the
 container — only layout flexes.
 - Hero + text are one coherent lockup, never detached islands with a dead gap. Bounded
-  max-width, centred in the card; surplus width becomes balanced margin, never a one-sided void.
+  max-width, centred in the card; the composition FILLS the container: the hero figure and any chart graphic scale up to fill
+  (bounded), and the layout distributes to use the space. Only a small residual is balanced
+  margin — the content is never a tiny island in a large canvas. Cells still never stretch to
+  absurd empty heights (Task 020); fill comes from the scaled hero/graphic + distributed layout.
 - Text measure is capped (~60ch reading) so prose never runs the full width of a wide card —
   cap by max-width, never by shrinking type.
 - Stacked text (title, subline, definition, verdict, reading, disclaimer) is normal-flow with
