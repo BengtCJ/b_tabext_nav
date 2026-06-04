@@ -218,6 +218,18 @@ Locked: the content model, the band vs band-less split, the guaranteed pink rule
 hero, neutral hero figure. Build-and-review at `1421 × 773`: hero size, rail/hero proportion,
 pill placement, verdict/reading sizes.
 
+### Direction 2 — Radial (band metrics only)
+Concentric rings encode the bands (inner→outer by the band order); the hero figure sits centred
+in the rings; a pink dot marks the active band's ring (the guaranteed accent). A right-hand
+legend lists the bands — serif-italic ranges, `e.g.` examples, bullet markers, hairline
+dividers. Offered only where bands exist; not shown for band-less metrics. Honours the
+size-&-aspect rules: rings + legend centred and bounded, never stretched.
+### Direction 3 — Ledger (scorecard sibling)
+Hero in a cell plus the bands as hairline 2px cells (the scorecard cell system); active band in
+the emphasis fill (`#3a3a3a`) with a pink "you are here" dot; a verdict + reading commentary
+panel below in the scorecard commentary style. Band-less metrics render hero cell + commentary
+(complete, not empty). Cells content-sized per the size-&-aspect rules.
+
 **Fluid layout & aspect robustness (fixed type, fluid layout).** Type never changes with the
 container — only layout flexes.
 - Hero + text are one coherent lockup, never detached islands with a dead gap. Bounded

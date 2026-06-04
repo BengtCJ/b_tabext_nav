@@ -21,9 +21,10 @@
   // Snapshot charts: data reduced to latest period before rendering.
   // Trend charts: all periods passed through (monthly or quarterly per _viewMode).
   const METRIC_CHARTS = {
-    tam:   ['ban'],
-    cagr:  ['ban'],
-    mcon:  ['ban'],
+    // Headline class — three switchable directions; radial only where bands exist
+    tam:   ['ban_editorial', 'ban_ledger'],
+    cagr:  ['ban_editorial', 'ban_radial', 'ban_ledger'],
+    mcon:  ['ban_editorial', 'ban_ledger'],
 
     // Ratio 0–1, per-brand per-month — supports snapshot + trend
     // Grouped (non-stacked) vbar is default: independent per-brand fractions that do not sum to 100%
@@ -128,6 +129,7 @@
   let _selectedBrand  = null;  // clicked brand — opacity highlight only
   let _chartOverrides = {};    // { metricId: chartType, ... } — persisted to settings
   let _viewMode       = 'monthly'; // 'quarterly' | 'monthly'
+  var _banDirections  = {};         // { metricId: 'ban_editorial'|'ban_radial'|'ban_ledger' }
 
   // ─── CHART RENDERERS ──────────────────────────────────────────────────────
   function renderDonut(el, data, selectedBrand, dashboard, D) {
@@ -540,7 +542,7 @@
     var ctx  = INDICATOR_BAN_CONTEXT[metricId] || {};
     var brandName = BRAND_DISPLAY_MAP[brand] || brand || 'the market leader';
 
-    var TITLES = { cagr: 'Market Growth Rate', tam: 'Total Addressable Market', mcon: 'Market Concentration' };
+    // Single canonical display name — read from METRIC_LABELS (same source as chart header)
     var UNITS  = { cagr: '%', tam: '$B', mcon: 'HHI' };
 
     // Pill-friendly label: first segment before " /" or full label if no slash
@@ -577,7 +579,7 @@
     var dispVal = (numVal !== null && numVal !== undefined) ? numVal.toFixed(decs) : '--';
 
     return {
-      title:       TITLES[metricId] || metricId.toUpperCase(),
+      title:       METRIC_LABELS[metricId] || metricId.toUpperCase(),
       code:        metricId.toUpperCase(),
       unit:        UNITS[metricId] || '',
       scope:       'Global coffee market',
@@ -651,6 +653,7 @@
     titleBlock.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
 
     var titleEl = document.createElement('div');
+    titleEl.setAttribute('data-ban-title', '1');
     titleEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:16px;color:#ededed;';
     titleEl.textContent = content.title;
 
@@ -786,6 +789,269 @@
     if (lockup.offsetHeight > avail) {
       showTooSmall(el);
     }
+  }
+
+  // ─── BAN RADIAL (Direction 2 — concentric rings, band metrics only) ────────
+  function renderBanRadial(el, content) {
+    var H = el.offsetHeight || 300;
+    if (H < 80) { showTooSmall(el); return; }
+
+    // Defensive: band-less falls back to editorial
+    if (!content.isBandMetric || !content.bands || !content.bands.length) {
+      renderBanShell(el, content);
+      return;
+    }
+
+    var GUTTER = 2;
+
+    el.innerHTML = '';
+    el.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+      'padding:24px;box-sizing:border-box;height:100%;overflow:hidden;';
+
+    var lockup = document.createElement('div');
+    lockup.setAttribute('data-ban-lockup', '1');
+    lockup.style.cssText = 'display:flex;flex-direction:row;align-items:center;gap:24px;' +
+      'max-width:880px;width:100%;';
+
+    // ── RINGS SVG ────────────────────────────────────────────────────────────
+    var SZ = 200, CX = 100, CY = 100;
+    var RADII = [36, 60, 84]; // inner→outer = band 0→2
+    var HERO_SZ = 48;         // per-chart hero size override for radial view
+
+    var ns = 'http://www.w3.org/2000/svg';
+    var svgEl = document.createElementNS(ns, 'svg');
+    svgEl.setAttribute('width', SZ);
+    svgEl.setAttribute('height', SZ);
+    svgEl.setAttribute('viewBox', '0 0 ' + SZ + ' ' + SZ);
+    svgEl.style.cssText = 'flex-shrink:0;';
+
+    content.bands.forEach(function(band, i) {
+      var r = RADII[i];
+      var ring = document.createElementNS(ns, 'circle');
+      ring.setAttribute('cx', CX); ring.setAttribute('cy', CY); ring.setAttribute('r', r);
+      ring.setAttribute('fill', 'none');
+      ring.setAttribute('stroke', band.active ? '#b0b0b0' : '#222');
+      ring.setAttribute('stroke-width', band.active ? '2' : '1');
+      svgEl.appendChild(ring);
+
+      if (band.active) {
+        // Pink dot at 12-o'clock on the active ring
+        var dot = document.createElementNS(ns, 'circle');
+        dot.setAttribute('data-ban-active-marker', '1');
+        dot.setAttribute('cx', CX); dot.setAttribute('cy', CY - r); dot.setAttribute('r', '5');
+        dot.setAttribute('fill', '#e994a2');
+        svgEl.appendChild(dot);
+      }
+    });
+
+    // Hero figure centred (SVG text)
+    var heroTxt = document.createElementNS(ns, 'text');
+    heroTxt.setAttribute('data-ban-hero', '1');
+    heroTxt.setAttribute('x', CX); heroTxt.setAttribute('y', CY);
+    heroTxt.setAttribute('text-anchor', 'middle');
+    heroTxt.setAttribute('dominant-baseline', 'central');
+    heroTxt.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:' + HERO_SZ + 'px;fill:#ededed;';
+    heroTxt.textContent = content.prefix + content.dispVal;
+    if (content.unitSuffix) {
+      var suffSpan = document.createElementNS(ns, 'tspan');
+      suffSpan.style.cssText = 'fill:#6f6f6f;font-size:' + Math.round(HERO_SZ * 0.32) + 'px;';
+      suffSpan.textContent = content.unitSuffix;
+      heroTxt.appendChild(suffSpan);
+    }
+    svgEl.appendChild(heroTxt);
+
+    // Fallback pink rule if no active band marker was drawn
+    var hasPinkDot = content.bands.some(function(b) { return b.active; });
+    if (!hasPinkDot) {
+      var pr = document.createElementNS(ns, 'rect');
+      pr.setAttribute('data-ban-pink-rule', '1');
+      pr.setAttribute('x', CX - 20); pr.setAttribute('y', CY + HERO_SZ / 2 + 8);
+      pr.setAttribute('width', 40); pr.setAttribute('height', 2);
+      pr.setAttribute('fill', '#e994a2');
+      svgEl.appendChild(pr);
+    }
+
+    lockup.appendChild(svgEl);
+
+    // ── LEGEND (right, normal flow, capped at 60ch) ──────────────────────────
+    var legend = document.createElement('div');
+    legend.setAttribute('data-ban-textcol', '1');
+    legend.style.cssText = 'display:flex;flex-direction:column;flex:1;min-width:0;max-width:60ch;gap:0;';
+
+    var ttl = document.createElement('div');
+    ttl.setAttribute('data-ban-title', '1');
+    ttl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:16px;color:#ededed;margin-bottom:16px;';
+    ttl.textContent = content.title;
+    legend.appendChild(ttl);
+
+    content.bands.forEach(function(band, i) {
+      if (i > 0) {
+        var hr = document.createElement('div');
+        hr.style.cssText = 'height:1px;background:#1e1e1e;margin:8px 0;';
+        legend.appendChild(hr);
+      }
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;flex-direction:row;align-items:flex-start;gap:8px;';
+
+      var bullet = document.createElement('div');
+      bullet.style.cssText = 'width:6px;height:6px;border-radius:50%;margin-top:4px;flex-shrink:0;' +
+        'background:' + (band.active ? '#e994a2' : '#2a2a2a') + ';';
+      if (band.active) bullet.setAttribute('data-ban-active-marker', '1');
+      row.appendChild(bullet);
+
+      var info = document.createElement('div');
+      info.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
+
+      var bName = document.createElement('div');
+      bName.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;text-transform:uppercase;' +
+        'letter-spacing:0.06em;color:' + (band.active ? '#ededed' : '#555') + ';';
+      bName.textContent = band.label;
+
+      var rng = document.createElement('div');
+      rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:13px;' +
+        'color:' + (band.active ? '#ededed' : '#555') + ';';
+      rng.textContent = band.range;
+
+      info.appendChild(bName);
+      info.appendChild(rng);
+      if (band.example) {
+        var eg = document.createElement('div');
+        eg.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#555;';
+        eg.textContent = band.example;
+        info.appendChild(eg);
+      }
+      row.appendChild(info);
+      legend.appendChild(row);
+    });
+
+    lockup.appendChild(legend);
+    el.appendChild(lockup);
+  }
+
+  // ─── BAN LEDGER (Direction 3 — scorecard cell row + commentary) ────────────
+  function renderBanLedger(el, content) {
+    var H = el.offsetHeight || 300;
+    if (H < 80) { showTooSmall(el); return; }
+
+    var GUTTER = 2;
+    var CELL_R = 8;
+    var FRAME_R = CELL_R + GUTTER;
+
+    el.innerHTML = '';
+    el.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+      'padding:24px;box-sizing:border-box;height:100%;overflow:hidden;';
+
+    var lockup = document.createElement('div');
+    lockup.setAttribute('data-ban-lockup', '1');
+    lockup.style.cssText = 'display:flex;flex-direction:column;gap:' + GUTTER + 'px;' +
+      'max-width:880px;width:100%;';
+
+    // ── CELL ROW: hero cell + band cells ──────────────────────────────────────
+    var cellRow = document.createElement('div');
+    cellRow.style.cssText = 'background:#0d0d0d;border:1px solid #262626;border-radius:' + FRAME_R + 'px;' +
+      'padding:' + GUTTER + 'px;display:flex;flex-direction:row;gap:' + GUTTER + 'px;';
+
+    // Hero cell
+    var heroCell = document.createElement('div');
+    heroCell.style.cssText = 'background:#1a1a1a;border-radius:' + CELL_R + 'px;' +
+      'padding:16px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;flex-shrink:0;';
+
+    var heroEl = document.createElement('div');
+    heroEl.setAttribute('data-ban-hero', '1');
+    heroEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:112px;line-height:1;color:#ededed;';
+    var dispStr = content.prefix + content.dispVal;
+    if (content.unitSuffix) {
+      heroEl.innerHTML = dispStr + '<span style="color:#6f6f6f;font-size:0.32em;' +
+        'margin-left:0.08em;vertical-align:baseline;">' + content.unitSuffix + '</span>';
+    } else {
+      heroEl.textContent = dispStr;
+    }
+    heroCell.appendChild(heroEl);
+
+    // Pink rule (guaranteed accent; band metrics get the dot instead, but keep rule for band-less)
+    var hasBandDot = content.isBandMetric && content.bands.some(function(b) { return b.active; });
+    if (!hasBandDot) {
+      var pinkRule = document.createElement('div');
+      pinkRule.setAttribute('data-ban-pink-rule', '1');
+      pinkRule.style.cssText = 'background:#e994a2;width:40px;height:2px;flex-shrink:0;';
+      heroCell.appendChild(pinkRule);
+    }
+    cellRow.appendChild(heroCell);
+
+    // Band cells (band metrics only); flex:1 = share horizontal space (not height stretching)
+    if (content.isBandMetric && content.bands.length > 0) {
+      content.bands.forEach(function(band) {
+        var cell = document.createElement('div');
+        cell.setAttribute('data-ban-cell', '1');
+        cell.style.cssText = 'background:' + (band.active ? '#3a3a3a' : '#1a1a1a') + ';' +
+          'border-radius:' + CELL_R + 'px;padding:8px 12px;display:flex;flex-direction:column;' +
+          'gap:4px;flex:1;'; // flex:1 = equal horizontal share; cells are in a row, not a column
+
+        var labelRow = document.createElement('div');
+        labelRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
+
+        var lbl = document.createElement('div');
+        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;text-transform:uppercase;' +
+          'letter-spacing:0.06em;color:' + (band.active ? '#ededed' : '#555') + ';';
+        lbl.textContent = band.label;
+        labelRow.appendChild(lbl);
+
+        if (band.active) {
+          var dot = document.createElement('div');
+          dot.setAttribute('data-ban-active-marker', '1');
+          dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#e994a2;flex-shrink:0;';
+          labelRow.appendChild(dot);
+        }
+        cell.appendChild(labelRow);
+
+        var rng = document.createElement('div');
+        rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:13px;' +
+          'color:' + (band.active ? '#ededed' : '#555') + ';';
+        rng.textContent = band.range;
+        cell.appendChild(rng);
+
+        if (band.example) {
+          var eg = document.createElement('div');
+          eg.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#555;';
+          eg.textContent = band.example;
+          cell.appendChild(eg);
+        }
+        cellRow.appendChild(cell);
+      });
+    }
+    lockup.appendChild(cellRow);
+
+    // ── COMMENTARY PANEL (verdict + reading, scorecard style, 60ch cap) ───────
+    var panel = document.createElement('div');
+    panel.setAttribute('data-ban-textcol', '1');
+    panel.style.cssText = 'background:#181818;border-radius:8px;padding:16px;' +
+      'display:flex;flex-direction:column;gap:8px;max-width:60ch;margin-top:' + GUTTER + 'px;';
+
+    var verdictEl = document.createElement('div');
+    verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:26px;color:#b0b0b0;line-height:1.3;';
+    verdictEl.textContent = content.verdict;
+    panel.appendChild(verdictEl);
+
+    var readingEl = document.createElement('div');
+    readingEl.setAttribute('data-ban-reading', '1');
+    readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
+    readingEl.textContent = content.reading;
+    panel.appendChild(readingEl);
+
+    if (content.disclaimer) {
+      var discEl = document.createElement('div');
+      discEl.setAttribute('data-ban-disclaimer', '1');
+      discEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;' +
+        'color:#555;margin-top:4px;';
+      discEl.textContent = content.disclaimer;
+      panel.appendChild(discEl);
+    }
+
+    lockup.appendChild(panel);
+    el.appendChild(lockup);
   }
 
   // ─── BANs ─────────────────────────────────────────────────────────────────
@@ -2984,6 +3250,7 @@
         <div id="chart-source"></div>
       </div>
       <div id="chart-header-right">
+        <div id="direction-switcher" style="display:none;" class="pill-wrap"></div>
         <div id="pills-row">
           <div id="period-selector"></div>
           <div id="view-toggle">
@@ -3002,7 +3269,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-04.2';
+  const VERSION = '2026-06-04.3';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3437,7 +3704,9 @@
 
   // ─── VIEW TOGGLE (refreshViewToggle, refreshPeriodSelector, applyPeriodAndRender)
   function refreshViewToggle() {
-    var hasTrend = _availableGrains && (_availableGrains.monthly || _availableGrains.quarterly);
+    // Point-in-time metrics (aggregation='none') never show the trend toggle
+    var isPointInTime = INDICATOR_AGGREGATION[CONFIG.metricId] === 'none';
+    var hasTrend = !isPointInTime && _availableGrains && (_availableGrains.monthly || _availableGrains.quarterly);
 
     var nameEl = document.getElementById('chart-name');
     if (nameEl) {
@@ -3475,6 +3744,35 @@
       }
     }
     refreshPeriodSelector();
+    refreshDirectionSwitcher();
+  }
+
+  // ─── DIRECTION SWITCHER (ban_editorial / ban_radial / ban_ledger) ──────────
+  var BAN_DIR_LABELS = { 'ban_editorial': 'Editorial', 'ban_radial': 'Radial', 'ban_ledger': 'Ledger' };
+  var HEADLINE_BAN_IDS = ['tam', 'cagr', 'mcon'];
+
+  function refreshDirectionSwitcher() {
+    var sw = document.getElementById('direction-switcher');
+    if (!sw) return;
+    sw.innerHTML = '';
+    var mId = CONFIG.metricId;
+    if (HEADLINE_BAN_IDS.indexOf(mId) === -1) { sw.style.display = 'none'; return; }
+    var validDirs = METRIC_CHARTS[mId] || [];
+    if (validDirs.length <= 1) { sw.style.display = 'none'; return; }
+    sw.style.display = 'flex';
+    validDirs.forEach(function(dir) {
+      var btn = document.createElement('button');
+      btn.textContent = BAN_DIR_LABELS[dir] || dir;
+      btn.className = 'pill-btn' + (CONFIG.chart === dir ? ' active' : '');
+      btn.onclick = function() {
+        if (CONFIG.chart === dir) return;
+        CONFIG.chart = dir;
+        _banDirections[mId] = dir;
+        refreshDirectionSwitcher();
+        applyPeriodAndRender();
+      };
+      sw.appendChild(btn);
+    });
   }
 
   function refreshPeriodSelector() {
@@ -3663,18 +3961,23 @@
     check('text-measure-capped-60ch', !!textColMW && textColMW !== 'none',
       textColEl ? 'max-width=' + textColMW : 'no data-ban-textcol element found');
 
-    // 8. Band cells content-sized: no cell has flex:1 (which would stretch to card height)
+    // 8. Band cells content-sized: no cell with flex:1 inside a COLUMN flex parent
+    //    (column + flex:1 = height-stretch; row + flex:1 = horizontal share, which is acceptable in ledger)
     var banCells = chartEl ? chartEl.querySelectorAll('[data-ban-cell]') : [];
     var cellsOk = true;
     var stretchedCount = 0;
     Array.prototype.forEach.call(banCells, function(c) {
-      var f = c.style.flex;
-      if (f === '1' || f === '1 1 0%' || f === '1 1 auto' || f === '1 1 0px') {
-        cellsOk = false; stretchedCount++;
+      var parent = c.parentElement;
+      var parentDir = parent ? window.getComputedStyle(parent).flexDirection : 'row';
+      if (parentDir === 'column') {
+        var f = c.style.flex;
+        if (f === '1' || f === '1 1 0%' || f === '1 1 auto' || f === '1 1 0px') {
+          cellsOk = false; stretchedCount++;
+        }
       }
     });
     check('band-cells-content-sized', cellsOk,
-      banCells.length + ' cell(s)' + (stretchedCount ? ', ' + stretchedCount + ' stretched' : ', none stretched'));
+      banCells.length + ' cell(s)' + (stretchedCount ? ', ' + stretchedCount + ' height-stretched' : ', none height-stretched'));
 
     // 9. No absolute positioning inside the ban shell (all text in normal flow)
     var absEls = chartEl ? chartEl.querySelectorAll('[data-ban-lockup] *') : [];
@@ -3684,7 +3987,92 @@
     });
     check('no-absolute-positioning', absOk, absOk ? 'all elements normal-flow' : 'found position:absolute');
 
-    // 10–15. Aspect-size checks: wide/short (1500×340) and narrow/tall (400×700)
+    // 10. Direction switcher valid-set per metric
+    (function() {
+      var mId = CONFIG.metricId;
+      var sw = document.getElementById('direction-switcher');
+      var HEADLINE = ['tam', 'cagr', 'mcon'];
+      if (HEADLINE.indexOf(mId) === -1) {
+        check('direction-switcher-not-shown-for-non-headline', !sw || sw.style.display === 'none',
+          'switcher hidden for non-headline metric');
+        return;
+      }
+      var expected = METRIC_CHARTS[mId] || [];
+      var btns = sw ? Array.prototype.slice.call(sw.querySelectorAll('button')) : [];
+      var btnTexts = btns.map(function(b) { return b.textContent; });
+      var LABELS = { 'ban_editorial': 'Editorial', 'ban_radial': 'Radial', 'ban_ledger': 'Ledger' };
+      var expectedLabels = expected.map(function(d) { return LABELS[d] || d; });
+      var countOk = btns.length === expected.length;
+      var labelsOk = expectedLabels.every(function(l) { return btnTexts.indexOf(l) !== -1; });
+      check('direction-switcher-valid-set', countOk && labelsOk,
+        'expected [' + expectedLabels.join(', ') + '] got [' + btnTexts.join(', ') + ']');
+
+      // Check active button matches CONFIG.chart
+      var activeBtns = btns.filter(function(b) { return b.className.indexOf('active') !== -1; });
+      var activeLabel = activeBtns.length ? activeBtns[0].textContent : '';
+      var expectedActive = LABELS[CONFIG.chart] || CONFIG.chart;
+      check('direction-switcher-active-matches-chart', activeLabel === expectedActive,
+        'active=' + activeLabel + ' chart=' + CONFIG.chart);
+    })();
+
+    // 11. No granularity toggle for point-in-time (aggregation=none) metrics
+    (function() {
+      var mId = CONFIG.metricId;
+      var isPointInTime = INDICATOR_AGGREGATION[mId] === 'none';
+      if (!isPointInTime) return; // only relevant for cagr/tam/mcon/ba
+      var pillsRow = document.getElementById('pills-row');
+      var hidden = !pillsRow || pillsRow.style.display === 'none';
+      check('no-granularity-toggle-for-point-in-time', hidden,
+        'pills-row display=' + (pillsRow ? pillsRow.style.display : 'no element'));
+    })();
+
+    // 12. Card title matches inline ban shell title (canonical METRIC_LABELS name)
+    (function() {
+      var mId = CONFIG.metricId;
+      var HEADLINE = ['tam', 'cagr', 'mcon'];
+      if (HEADLINE.indexOf(mId) === -1) return; // only check Headline metrics
+      var canonical = METRIC_LABELS[mId] || '';
+      var titleEls = chartEl ? chartEl.querySelectorAll('[data-ban-title]') : [];
+      var inlineTitle = titleEls.length ? titleEls[0].textContent : '(no title element)';
+      check('canonical-title-matches', inlineTitle === canonical,
+        'inline="' + inlineTitle + '" canonical="' + canonical + '"');
+    })();
+
+    // 13–15. Direction-switch checks: switch through all valid directions and verify
+    (function() {
+      var mId = CONFIG.metricId;
+      var HEADLINE = ['tam', 'cagr', 'mcon'];
+      if (HEADLINE.indexOf(mId) === -1) return;
+      var validDirs = METRIC_CHARTS[mId] || [];
+      var origChart = CONFIG.chart;
+      var PREVIEW_BAN = { cagr: 1.9, tam: 14.4, mcon: 2002 };
+      var numVal = PREVIEW_BAN[mId];
+      var brand = CONFIG.clientBrand;
+
+      validDirs.forEach(function(dir) {
+        CONFIG.chart = dir;
+        if (dir === 'ban_radial')  { renderBanRadial(chartEl, getBanShellContent(mId, numVal, brand)); }
+        else if (dir === 'ban_ledger') { renderBanLedger(chartEl, getBanShellContent(mId, numVal, brand)); }
+        else { renderBanShell(chartEl, getBanShellContent(mId, numVal, brand)); }
+
+        var pr = chartEl.querySelectorAll('[data-ban-pink-rule]');
+        var pm = chartEl.querySelectorAll('[data-ban-active-marker]');
+        check('dir-' + dir + '-guaranteed-pink', (pr.length + pm.length) > 0,
+          pr.length + ' rule, ' + pm.length + ' marker');
+
+        var tc = chartEl.querySelector('[data-ban-textcol]');
+        check('dir-' + dir + '-capped-measure', !!tc && !!tc.style.maxWidth && tc.style.maxWidth !== 'none',
+          tc ? 'max-width=' + tc.style.maxWidth : 'no textcol');
+      });
+
+      // Restore original
+      CONFIG.chart = origChart;
+      if (origChart === 'ban_radial')  { renderBanRadial(chartEl, getBanShellContent(mId, numVal, brand)); }
+      else if (origChart === 'ban_ledger') { renderBanLedger(chartEl, getBanShellContent(mId, numVal, brand)); }
+      else { renderBanShell(chartEl, getBanShellContent(mId, numVal, brand)); }
+    })();
+
+    // 22–27. Aspect-size checks: wide/short (1500×340) and narrow/tall (400×700)
     (function() {
       var HEADLINE_IDS = ['tam', 'cagr', 'mcon'];
       var mId = (typeof CONFIG !== 'undefined') ? CONFIG.metricId : '';
@@ -3824,8 +4212,8 @@
         { name:'Nespresso',     nps:8  },
       ],
     };
-    // Headline ban metrics return a scalar so renderBanShell gets a real preview value
-    if (chart === 'ban') {
+    // Headline ban metrics — all three directions use the same scalar preview value
+    if (chart === 'ban' || chart === 'ban_editorial' || chart === 'ban_radial' || chart === 'ban_ledger') {
       var PREVIEW_BAN = { cagr: 1.9, tam: 14.4, mcon: 2002 };
       var pv = PREVIEW_BAN[CONFIG.metricId];
       if (pv !== undefined) return pv;
@@ -3865,6 +4253,17 @@
       case 'bar':            renderBar(el, data, selectedBrand, dashboard, D.bar);               break;
       case 'line':           renderLine(el, data, selectedBrand, dashboard, D.line);             break;
       case 'ban':            renderBAN(el, data, selectedBrand, D.ban, CONFIG.metricId);         break;
+      case 'ban_editorial':
+      case 'ban_radial':
+      case 'ban_ledger':
+        var _banHit = Array.isArray(data) ? (data.find(function(d) { return d.name === selectedBrand; }) || data[0]) : null;
+        var _banVal = _banHit ? _banHit.value : (data && !Array.isArray(data) ? data : null);
+        var _banNv  = (_banVal !== null && _banVal !== undefined) ? parseFloat(_banVal) : null;
+        var _banCt  = getBanShellContent(CONFIG.metricId, _banNv, selectedBrand || CONFIG.clientBrand);
+        if (CONFIG.chart === 'ban_radial') { renderBanRadial(el, _banCt); }
+        else if (CONFIG.chart === 'ban_ledger') { renderBanLedger(el, _banCt); }
+        else { renderBanShell(el, _banCt); }
+        break;
       case 'bans':           renderBANs(el, data, selectedBrand, D.bans);                        break;
       case 'line-straight':  renderLineChart(el, chartData, selectedBrand, true);                break;
       case 'line-smooth':    renderLineChart(el, chartData, selectedBrand, false);               break;
