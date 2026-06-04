@@ -365,6 +365,8 @@ interpolated value (it is generic).
 - A genuinely absent *data-driven* element (a band scheme that doesn't exist, a funnel with
   no SAM/SOM) is handled by a **complete alternate layout** (hero + commentary), not by
   rendering an empty slot.
+- A disclaimer or note that describes a specific element (e.g. "bands follow…") renders ONLY
+  where that element is present. Band-referencing copy never appears on a band-less layout.
 
 ## Enforcement (what the harness / lint checks)
 - No `font-size` value that isn't one of the four roles or a Scorecard-section locked size

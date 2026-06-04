@@ -587,7 +587,7 @@
       prefix:      ctx.prefix || '',
       unitSuffix:  ctx.suffix || '',
       def:         INDICATOR_DEFINITION[metricId] || '',
-      disclaimer:  ctx.caveat || '',
+      disclaimer:  isBandMetric ? (ctx.caveat || '') : '',
       bands:       bands,
       isBandMetric: isBandMetric,
       verdict:     verdictMap[metricId] || 'This indicator informs the strategic picture for ' + brandName + '.',
@@ -3274,7 +3274,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-04.4';
+  const VERSION = '2026-06-04.5';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3354,7 +3354,7 @@
     cagr:    '%',
     svt:     '% / index',
     cat_pen: '%',
-    mcon:    '%',
+    mcon:    'index',
     cg_bg:   '%',
     asp_cat: 'USD',
     sam:     'USD',
@@ -3440,7 +3440,7 @@
   // thresholds: [lo, hi] — value < lo → cell 0; lo ≤ value ≤ hi → cell 1; > hi → cell 2.
   const INDICATOR_BAN_CONTEXT = {
     mcon: {
-      type: 'threshold', prefix: '', suffix: '',
+      type: 'threshold', prefix: '', suffix: 'HHI',
       cells: [
         { label: 'Unconcentrated',      range: '< 1,500',          note: 'DOJ/FTC 2023' },
         { label: 'Moderate',            range: '1,500 – 1,800', note: 'DOJ/FTC 2023' },
@@ -3716,7 +3716,8 @@
     var nameEl = document.getElementById('chart-name');
     if (nameEl) {
       var label = METRIC_LABELS[CONFIG.metricId] || CONFIG.metricId || '';
-      var unit  = CONFIG.showUnits !== 'false' ? METRIC_UNITS[CONFIG.metricId] : null;
+      var isHeadlineBan = ['tam', 'cagr', 'mcon'].indexOf(CONFIG.metricId) !== -1;
+      var unit  = (!isHeadlineBan && CONFIG.showUnits !== 'false') ? METRIC_UNITS[CONFIG.metricId] : null;
       nameEl.textContent = label + (unit ? ' (' + unit + ')' : '');
     }
     var srcEl = document.getElementById('chart-source');
@@ -4196,6 +4197,43 @@
       var readingSame = s500.reading === s900.reading;
       check('non-hero-type-constant', titleSame && readingSame,
         'title:' + s500.title + '/' + s900.title + ' reading:' + s500.reading + '/' + s900.reading);
+    })();
+
+    // no-band-copy-on-bandless: band-referencing disclaimer must not appear for band-less metrics.
+    (function() {
+      var HEADLINE = ['tam', 'cagr', 'mcon'];
+      if (HEADLINE.indexOf(CONFIG.metricId) === -1) {
+        check('no-band-copy-on-bandless', true, 'non-headline metric — skip'); return;
+      }
+      var PREVIEW_BAN = { cagr: 1.9, tam: 14.4, mcon: 2002 };
+      var brand = CONFIG.clientBrand;
+      var allOk = true;
+      var detail = '';
+      ['tam', 'mcon'].forEach(function(mid) {
+        var ct = getBanShellContent(mid, PREVIEW_BAN[mid], brand);
+        if (ct.disclaimer && /band/i.test(ct.disclaimer)) {
+          allOk = false;
+          detail += mid + ' has band-referencing disclaimer; ';
+        }
+      });
+      check('no-band-copy-on-bandless', allOk,
+        allOk ? 'tam+mcon: no band-referencing disclaimer' : detail);
+    })();
+
+    // card-title-matches-canonical: card header title equals METRIC_LABELS for headline ban metrics.
+    (function() {
+      var mId = CONFIG.metricId;
+      var HEADLINE = ['tam', 'cagr', 'mcon'];
+      if (HEADLINE.indexOf(mId) === -1) {
+        check('card-title-matches-canonical', true, 'non-headline metric — skip'); return;
+      }
+      var canonical = METRIC_LABELS[mId] || '';
+      var nameEl = document.getElementById('chart-name');
+      var cardTitle = nameEl ? nameEl.textContent : '(no chart-name el)';
+      var inlineTitle = getBanShellContent(mId, 0, CONFIG.clientBrand).title;
+      var ok = (cardTitle === canonical) && (inlineTitle === canonical);
+      check('card-title-matches-canonical', ok,
+        'card="' + cardTitle + '" inline="' + inlineTitle + '" canonical="' + canonical + '"');
     })();
 
     // Log results

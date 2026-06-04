@@ -136,9 +136,12 @@ Invariant carried: `nps` here is a **Likert mean, not true NPS** (`guardNpsRecal
 definition string must say so; cells are greyscale scale-bands, never RAG.
 
 ## Open items to resolve (known data/spec mismatches)
-- `tam` unit/scale unconfirmed (data `14.4`; the Figma `$12.4B` was placeholder) and `mcon`
-  scale unconfirmed (`2002`, possibly an HHI) — confirm before either earns a band scheme.
-  SAM/SOM absent from source, so the TAM funnel stays blocked.
+- `tam` unit/scale and `mcon` unit/scale are unconfirmed. `mcon` must NOT display as `%`; it is
+  a concentration index — confirm whether it is HHI. If HHI is confirmed, `mcon` gains the
+  standard merger-guideline concentration bands (a real, sourced scheme — verify current
+  thresholds) and moves to a band metric (Radial returns); until confirmed it stays band-less
+  with no band-referencing copy. `tam`: data `14.4`, Figma `$12.4B` was placeholder. SAM/SOM
+  absent → TAM funnel blocked.
 - `ba` and `cra` subgroup membership is now known from the mapping (`ba` → Narrative Power `ps`; `cra` → Strategic Strength `sbr`) — **verify against source** before relying on it. Their **data-shape class is still open** (`ba` is a single scalar per brand, so it cannot feed `multiscale`). Don't silently drop or invent a mapping.
 - `ba` in the data is a single scalar per brand, not the five attribute columns
   `multiscale` needs — so `ba → multiscale` cannot render from current data. Resolve the
