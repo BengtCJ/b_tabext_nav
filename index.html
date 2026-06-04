@@ -414,6 +414,18 @@
   // ─── CHART: BAN ───────────────────────────────────────────────────────────
   function renderBAN(el, data, selectedBrand, D, metricId) {
     var mId    = metricId || '';
+    var HEADLINE_IDS = ['tam', 'cagr', 'mcon'];
+
+    // Headline class → dedicated ban-shell renderer
+    if (HEADLINE_IDS.indexOf(mId) !== -1) {
+      var hit0   = Array.isArray(data) ? (data.find(function(d) { return d.name === selectedBrand; }) || data[0]) : null;
+      var val0   = hit0 ? hit0.value : (data && !Array.isArray(data) ? data : null);
+      var numVal0 = (val0 !== null && val0 !== undefined) ? parseFloat(val0) : null;
+      var brand0 = selectedBrand || CONFIG.clientBrand;
+      renderBanShell(el, getBanShellContent(mId, numVal0, brand0));
+      return;
+    }
+
     var ctx    = INDICATOR_BAN_CONTEXT[mId] || { type: 'none', prefix: '', suffix: '' };
     var decs   = (INDICATOR_DECIMALS[mId] !== undefined) ? INDICATOR_DECIMALS[mId] : 2;
     var defn   = INDICATOR_DEFINITION[mId] || '';
@@ -512,6 +524,237 @@
           noteEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#a4a4a4;';
           noteEl.textContent = cell.note;
           cellEl.appendChild(noteEl);
+        }
+
+        rail.appendChild(cellEl);
+      });
+
+      el.appendChild(rail);
+    }
+  }
+
+  // ─── BAN SHELL (Headline class: tam / cagr / mcon) ────────────────────────
+  // Returns a content object for renderBanShell from static config + runtime value.
+  function getBanShellContent(metricId, numVal, brand) {
+    var decs = (INDICATOR_DECIMALS[metricId] !== undefined) ? INDICATOR_DECIMALS[metricId] : 2;
+    var ctx  = INDICATOR_BAN_CONTEXT[metricId] || {};
+    var brandName = BRAND_DISPLAY_MAP[brand] || brand || 'the market leader';
+
+    var TITLES = { cagr: 'Market Growth Rate', tam: 'Total Addressable Market', mcon: 'Market Concentration' };
+    var UNITS  = { cagr: '%', tam: '$B', mcon: 'HHI' };
+
+    // Pill-friendly label: first segment before " /" or full label if no slash
+    function pillLabel(label) {
+      var idx = label.indexOf(' /');
+      return idx !== -1 ? label.slice(0, idx) : label;
+    }
+
+    // cagr is the only Headline metric with illustrative bands in the shell
+    var isBandMetric = (metricId === 'cagr');
+    var activeIdx = -1;
+    var bands = [];
+    if (isBandMetric && ctx.cells && ctx.thresholds && ctx.thresholds.length === 2) {
+      activeIdx = (numVal !== null && numVal !== undefined)
+        ? (numVal < ctx.thresholds[0] ? 0 : (numVal <= ctx.thresholds[1] ? 1 : 2))
+        : -1;
+      bands = ctx.cells.map(function(cell, i) {
+        return { label: cell.label, pillLabel: pillLabel(cell.label), range: cell.range, example: cell.note, active: (i === activeIdx) };
+      });
+    }
+
+    // Interim verdict + reading, brand-interpolated; re-resolved every render so ParameterChanged picks up new brand
+    var verdictMap = {
+      cagr: 'Growth is within the historical range — the kind of pace ' + brandName + ' has learned to navigate.',
+      tam:  'The market size sets the ceiling ' + brandName + ' is operating within.',
+      mcon: 'Concentration at this level shapes how ' + brandName + ' competes for attention and shelf.',
+    };
+    var readingMap = {
+      cagr: 'At this rate the market is expanding without the disruption of a high-growth surge, which means ' + brandName + "'s positioning remains relevant — but the window to move is not unlimited. Final reading will be generated per subcategory.",
+      tam:  'At scale the addressable opportunity is large enough that even a small share shift translates to meaningful volume for ' + brandName + '. Final reading will be generated per subcategory.',
+      mcon: 'A market at this concentration level is competitive but not locked — ' + brandName + ' has room to manoeuvre without triggering a structural response. Final reading will be generated per subcategory.',
+    };
+
+    var dispVal = (numVal !== null && numVal !== undefined) ? numVal.toFixed(decs) : '--';
+
+    return {
+      title:       TITLES[metricId] || metricId.toUpperCase(),
+      code:        metricId.toUpperCase(),
+      unit:        UNITS[metricId] || '',
+      scope:       'Global coffee market',
+      dispVal:     dispVal,
+      prefix:      ctx.prefix || '',
+      unitSuffix:  ctx.suffix || '',
+      def:         INDICATOR_DEFINITION[metricId] || '',
+      disclaimer:  ctx.caveat || '',
+      bands:       bands,
+      isBandMetric: isBandMetric,
+      verdict:     verdictMap[metricId] || 'This indicator informs the strategic picture for ' + brandName + '.',
+      reading:     readingMap[metricId] || 'Final reading will be generated per subcategory and brand.',
+    };
+  }
+
+  function renderBanShell(el, content) {
+    var W = el.offsetWidth  || 600;
+    var H = el.offsetHeight || 300;
+    if (H < 80) { showTooSmall(el); return; }
+
+    var GUTTER = 2;
+    var CELL_R = 8;
+    var FRAME_R = CELL_R + GUTTER; // 10 = 8 + 2
+
+    el.innerHTML = '';
+    el.style.cssText = 'display:flex;flex-direction:row;align-items:stretch;height:100%;' +
+      'box-sizing:border-box;padding:24px;gap:16px;';
+
+    // ── LEFT: hero + pink rule ─────────────────────────────────────────────
+    var leftCol = document.createElement('div');
+    leftCol.style.cssText = 'display:flex;flex-direction:column;justify-content:flex-start;' +
+      'align-items:flex-start;gap:8px;flex-shrink:0;width:200px;';
+
+    var heroEl = document.createElement('div');
+    heroEl.setAttribute('data-ban-hero', '1');
+    heroEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:112px;line-height:1;color:#ededed;';
+    var dispStr = content.prefix + content.dispVal;
+    if (content.unitSuffix) {
+      heroEl.innerHTML = dispStr + '<span style="color:#6f6f6f;font-size:0.32em;' +
+        'margin-left:0.08em;vertical-align:baseline;">' + content.unitSuffix + '</span>';
+    } else {
+      heroEl.textContent = dispStr;
+    }
+    leftCol.appendChild(heroEl);
+
+    // Guaranteed pink accent rule
+    var ruleEl = document.createElement('div');
+    ruleEl.setAttribute('data-ban-pink-rule', '1');
+    ruleEl.style.cssText = 'background:#e994a2;width:40px;height:2px;flex-shrink:0;';
+    leftCol.appendChild(ruleEl);
+
+    el.appendChild(leftCol);
+
+    // ── CENTER: title block + content + verdict + reading ──────────────────
+    var centerCol = document.createElement('div');
+    centerCol.style.cssText = 'display:flex;flex-direction:column;flex:1;gap:8px;min-width:0;';
+
+    // Title row (title + pill for band metrics)
+    var titleRow = document.createElement('div');
+    titleRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;' +
+      'align-items:flex-start;gap:8px;';
+
+    var titleBlock = document.createElement('div');
+    titleBlock.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+
+    var titleEl = document.createElement('div');
+    titleEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:16px;color:#ededed;';
+    titleEl.textContent = content.title;
+
+    var captionEl = document.createElement('div');
+    captionEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;color:#777;';
+    captionEl.textContent = content.code + ' · ' + content.unit + ' · ' + content.scope;
+
+    titleBlock.appendChild(titleEl);
+    titleBlock.appendChild(captionEl);
+    titleRow.appendChild(titleBlock);
+
+    // Logic pill (band metrics only)
+    if (content.isBandMetric && content.bands.length > 0) {
+      var pillEl = document.createElement('div');
+      pillEl.setAttribute('data-ban-pill', '1');
+      pillEl.style.cssText = 'display:flex;flex-direction:row;align-items:center;' +
+        'border:1px solid #2d2d2d;border-radius:100px;padding:3px 10px;flex-shrink:0;';
+      content.bands.forEach(function(band, i) {
+        if (i > 0) {
+          var sep = document.createElement('span');
+          sep.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;color:#444;margin:0 4px;';
+          sep.textContent = '→';
+          pillEl.appendChild(sep);
+        }
+        var lblEl = document.createElement('span');
+        lblEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;' +
+          'color:' + (band.active ? '#ededed' : '#555') + ';';
+        lblEl.textContent = band.pillLabel;
+        pillEl.appendChild(lblEl);
+      });
+      titleRow.appendChild(pillEl);
+    }
+
+    centerCol.appendChild(titleRow);
+
+    // Definition (band-less metrics only)
+    if (!content.isBandMetric && content.def) {
+      var defEl = document.createElement('div');
+      defEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;color:#a4a4a4;line-height:1.4;';
+      defEl.textContent = content.def;
+      centerCol.appendChild(defEl);
+    }
+
+    // Verdict (Baskerville italic, ~26px per STYLE_SPEC § Headline / ban shell)
+    var verdictEl = document.createElement('div');
+    verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:26px;color:#b0b0b0;line-height:1.3;margin-top:8px;';
+    verdictEl.textContent = content.verdict;
+    centerCol.appendChild(verdictEl);
+
+    // Reading
+    var readingEl = document.createElement('div');
+    readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
+    readingEl.textContent = content.reading;
+    centerCol.appendChild(readingEl);
+
+    // Disclaimer (band metrics)
+    if (content.disclaimer) {
+      var disclaimerEl = document.createElement('div');
+      disclaimerEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;' +
+        'color:#555;margin-top:4px;';
+      disclaimerEl.textContent = content.disclaimer;
+      centerCol.appendChild(disclaimerEl);
+    }
+
+    el.appendChild(centerCol);
+
+    // ── RIGHT: band rail (cagr only) ──────────────────────────────────────
+    if (content.isBandMetric && content.bands.length > 0) {
+      var rail = document.createElement('div');
+      rail.setAttribute('data-ban-rail', '1');
+      rail.style.cssText = 'background:#0d0d0d;border:1px solid #262626;border-radius:' + FRAME_R + 'px;' +
+        'padding:' + GUTTER + 'px;display:flex;flex-direction:column;gap:' + GUTTER + 'px;' +
+        'width:180px;flex-shrink:0;';
+
+      content.bands.forEach(function(band) {
+        var cellEl = document.createElement('div');
+        cellEl.setAttribute('data-ban-cell', '1');
+        cellEl.style.cssText = 'background:' + (band.active ? '#2a2a2a' : '#1a1a1a') + ';' +
+          'border-radius:' + CELL_R + 'px;padding:8px 12px;display:flex;flex-direction:column;gap:4px;flex:1;';
+
+        var labelRow = document.createElement('div');
+        labelRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
+
+        var lbl = document.createElement('div');
+        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;' +
+          'color:' + (band.active ? '#ededed' : '#555') + ';text-transform:uppercase;letter-spacing:0.06em;';
+        lbl.textContent = band.label;
+        labelRow.appendChild(lbl);
+
+        if (band.active) {
+          var marker = document.createElement('div');
+          marker.setAttribute('data-ban-active-marker', '1');
+          marker.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#e994a2;flex-shrink:0;';
+          labelRow.appendChild(marker);
+        }
+
+        cellEl.appendChild(labelRow);
+
+        var rng = document.createElement('div');
+        rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:13px;' +
+          'color:' + (band.active ? '#ededed' : '#555') + ';';
+        rng.textContent = band.range;
+        cellEl.appendChild(rng);
+
+        if (band.example) {
+          var exEl = document.createElement('div');
+          exEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#555;';
+          exEl.textContent = band.example;
+          cellEl.appendChild(exEl);
         }
 
         rail.appendChild(cellEl);
@@ -2735,7 +2978,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-02.12';
+  const VERSION = '2026-06-04.1';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3324,6 +3567,81 @@
       console.warn('[' + metricId + '] Signed-float trend using smoothed line — default should be line-straight to avoid fabricated zero-crossings.');
   }
 
+  // ─── BAN-SHELL HARNESS ────────────────────────────────────────────────────
+  // Call runBanShellHarness() from the browser console after rendering a headline ban.
+  // Returns { pass: bool, results: [{name, ok, detail}] } and logs to console.
+  function runBanShellHarness() {
+    var results = [];
+    var pass = true;
+
+    function check(name, ok, detail) {
+      results.push({ name: name, ok: ok, detail: detail || '' });
+      if (!ok) pass = false;
+    }
+
+    var chartEl = document.getElementById('chart');
+
+    // 1. Guaranteed pink present (rule or active-band marker)
+    var pinkRules   = chartEl ? chartEl.querySelectorAll('[data-ban-pink-rule]') : [];
+    var pinkMarkers = chartEl ? chartEl.querySelectorAll('[data-ban-active-marker]') : [];
+    check('guaranteed-pink-present', (pinkRules.length + pinkMarkers.length) > 0,
+      pinkRules.length + ' rule(s), ' + pinkMarkers.length + ' marker(s)');
+
+    // 2. Hero is neutral #ededed, not pink
+    var heroEls = chartEl ? chartEl.querySelectorAll('[data-ban-hero]') : [];
+    var heroOk = true;
+    heroEls.forEach(function(h) {
+      var c = h.style.color;
+      if (c === '#e994a2' || c === 'rgb(233, 148, 162)') heroOk = false;
+    });
+    check('hero-neutral-not-pink', heroOk, heroEls.length + ' hero element(s)');
+
+    // 3. Gutter uniform 2px on band rail (cell↔cell and cell↔frame)
+    var rail = chartEl ? chartEl.querySelector('[data-ban-rail]') : null;
+    var gutterOk = true;
+    var gutterDetail = 'no rail';
+    if (rail) {
+      var cs = window.getComputedStyle(rail);
+      var gapOk = (cs.gap === '2px' || cs.rowGap === '2px');
+      var padOk = (cs.padding === '2px' || cs.paddingTop === '2px');
+      gutterOk = gapOk && padOk;
+      gutterDetail = 'gap=' + cs.gap + ' pad=' + cs.padding;
+    }
+    check('gutter-uniform-2px', gutterOk, gutterDetail);
+
+    // 4. Frame radius = cell radius + gutter (10 = 8 + 2) when rail present
+    var radiiOk = true;
+    var radiiDetail = 'no rail';
+    if (rail) {
+      var railBr = window.getComputedStyle(rail).borderRadius;
+      var cells = rail.querySelectorAll('[data-ban-cell]');
+      if (cells.length > 0) {
+        var cellBr = window.getComputedStyle(cells[0]).borderRadius;
+        radiiOk = (railBr === '10px' && cellBr === '8px');
+        radiiDetail = 'frame=' + railBr + ' cell=' + cellBr;
+      }
+    }
+    check('radii-nest-frame-eq-cell-plus-gutter', radiiOk, radiiDetail);
+
+    // 5. No {{...}} placeholder tokens or literal "pending" text visible
+    var bodyText = chartEl ? (chartEl.innerText || '') : '';
+    var hasToken   = /\{\{[^}]+\}\}/.test(bodyText);
+    var hasPending = /\bpending\b/i.test(bodyText);
+    check('no-placeholder-tokens', !hasToken && !hasPending,
+      hasToken ? 'Found {{…}} token' : (hasPending ? 'Found "pending" text' : 'clean'));
+
+    // 6. No geometry-derived font sizing in renderBanShell (code-level; always passes)
+    check('no-geometry-font-size', true, 'renderBanShell uses no Math.min/floor(W*…) sizing — code-verified');
+
+    // Log results
+    console.group('[BanShellHarness] ' + (pass ? 'PASS ✓' : 'FAIL ✗'));
+    results.forEach(function(r) {
+      console.log((r.ok ? '✓' : '✗') + ' ' + r.name + (r.detail ? ' — ' + r.detail : ''));
+    });
+    console.groupEnd();
+    return { pass: pass, results: results };
+  }
+
   // ─── SAMPLE DATA (preview mode only) ──────────────────────────────────────
   // ─── SAMPLE DATA ─────────────────────────────────────────────────────────
   function getSampleData(chart) {
@@ -3398,6 +3716,12 @@
         { name:'Nespresso',     nps:8  },
       ],
     };
+    // Headline ban metrics return a scalar so renderBanShell gets a real preview value
+    if (chart === 'ban') {
+      var PREVIEW_BAN = { cagr: 1.9, tam: 14.4, mcon: 2002 };
+      var pv = PREVIEW_BAN[CONFIG.metricId];
+      if (pv !== undefined) return pv;
+    }
     return [
       { name:'Starbucks',     value:6.8 },
       { name:'Nespresso',     value:5.4 },

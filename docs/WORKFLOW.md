@@ -59,7 +59,17 @@ Learned from the scorecard round, which converged but took too many turns.
    (suffix placement; truncation risk on long values); and contrast of any text on a coloured
    fill. Reconcile each against the locked tokens. The recurring failure is reading structure
    ("table, header, commentary") but not these fine properties — most "way off" catches live
-   on this list. Prototype only the gaps the frame doesn't pin.
+   on this list.
+   **Also inventory the reference's *signature devices* and its *aesthetic direction* —
+   separately from the measurable properties above.** Name the distinctive devices that carry
+   its character (logic/breadcrumb pill, oversized italic annotation, verdict figure,
+   nested-circle motif, hairline-cell grid, etc.) and state the one-line direction (editorial /
+   luxury-dark / dense-system…). A prototype must *deploy the devices and commit to the
+   direction*, not replicate the box structure with neutral defaults. The recurring generation
+   failure mirrors the measurement one: reading a reference's structure but dropping its devices
+   and warmth, yielding competent-but-generic output. When offering options, make them diverge by
+   *concept* (different devices/direction), not by rearranging one safe layout.
+   Prototype only the gaps the frame doesn't pin.
    **Walk the inventory in tier order (coarse → fine, blocker → polish):**
    1. **Presence** — every required element there, and the right rows/columns present? (Row/column *membership* is a Tier-1 check but is verified on the data track, never asserted by eye or from memory — see CHART_SPEC Data sanity checklist; the cmoaf row miss came from skipping this.)
    2. **Placement** — position and order (column order, which column is the client, where the numeral sits).

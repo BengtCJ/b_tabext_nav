@@ -52,14 +52,25 @@ wanted; validate at the container size before final sign-off.
   regularised away unless one is genuinely intentional.
 - A short, **named** list of overrides for the few places that genuinely need them — each
   documented here so it reads as intentional, not drift:
-  - **Scorecard cell gutter = 2px** — the gap between scorecard cells, deliberately off the
-    4px grid so the dark frame shows through as a hairline; 4px reads clunky here.
+  - **Cell gutter = 2px** — the gap between adjacent cell-like elements, deliberately off the
+    4px grid so the dark frame shows through as a hairline; 4px reads clunky here. Applies to
+    **scorecard cells and any grouped cells on detail/chart pages alike** (e.g. ban reference
+    bands, scale segments, context chips). Cell↔cell wherever cells are grouped; where a cell
+    group sits inside a hugging frame, cell↔frame padding is also 2px and radii nest (frame
+    radius = cell radius + 2). Free cells inside a larger padded card use the 2px gutter
+    between themselves but inherit that card's padding, not a 2px inset.
 
 ## Colour (codify existing — not a friction point)
 - Primary / client highlight: `#e994a2` (pink). Used wherever the client brand is marked —
   charts and the scorecard client header cell alike (one constant, so it stays consistent).
   **Future:** this may be driven by a parameter for per-client theming — keep it read from
   one constant so that becomes an additive change, not a rewrite. Deliberate treatment.
+- **Guaranteed accent:** every chart/ban render carries at least one `#e994a2` accent to
+  anchor the eye, independent of available content. Content-driven pink (active-band marker,
+  ring dot, "you are here" dot) provides it where bands exist; where a metric has no bands, a
+  short pink rule tied to the hero figure provides it. A render must never appear with no pink
+  at all. The hero figure stays neutral-bright (`#ededed`) — pink anchors as an accent, it is
+  not the figure colour.
 - Neutral (other brands): grey per existing palette.
 - Status pills on the overview: STRONG = green, NEUTRAL = amber (match existing).
 - Scorecard-table cell fills and the client-column score RAG live in the Scorecard section
@@ -183,6 +194,30 @@ colour-coded (white text).
 - Locked vs review: placement + panel tokens (reused cell border/radius/fill) are locked;
   text sizes (16/13), colours, padding/gaps and line-height are build-and-review at 1421×773.
 
+## Headline / ban shell (Direction 1 — editorial dispatch)
+Shared layout for the Headline class (`tam`, `cagr`, `mcon`). One template fed per-indicator
+by a content object `{title, code, unit, scope, value, def, disclaimer, bands[], verdict,
+reading}`. Renders in the same contained card as the scorecard (`#0d0d0d`, 1px `#262626`,
+radius 16px); body transparent.
+- **Hero figure:** the value in Baskerville-italic (the sanctioned Hero override),
+  neutral-bright `#ededed`; unit as a reduced italic suffix (`0.32em`, muted). Anchored left;
+  a short `#e994a2` rule beneath it (the guaranteed accent).
+- **Title block:** `title` (Heading 16px) + caption subline `code · unit · scope` (Caption 11px `#777`).
+- **Logic pill (band metrics only):** the band chain arrow-joined (`Low → Mature → High`),
+  1px `#2d2d2d` border, pill radius; active label bright, rest muted. Top-right of title row.
+- **Band rail (band metrics only):** bands in a right-hand rail; active band marked (bright
+  text + pink marker). Band labels uppercase Tableau Light; range numerals Baskerville-italic;
+  `e.g.` examples Caption italic. Bands are illustrative copy (see Copy) and carry the
+  "illustrative, not a benchmark" disclaimer.
+- **Verdict + reading:** the scorecard commentary device reused — verdict (Baskerville-italic
+  ~26px) + reading (13px `#9a9a9a`), interim copy, brand-interpolated.
+- **Band-less metrics (`tam`, `mcon` today):** no pill, no rail — figure + definition +
+  verdict + reading is the complete layout; the pink hero rule still anchors.
+- **States:** honour too-small and no-data per global rules.
+Locked: the content model, the band vs band-less split, the guaranteed pink rule, Baskerville
+hero, neutral hero figure. Build-and-review at `1421 × 773`: hero size, rail/hero proportion,
+pill placement, verdict/reading sizes.
+
 ## Detail page header (above the card — extension-rendered)
 The page-level header that sits in the **transparent area above the card**, left-aligned
 to the card edge. **Distinct from** the Scorecard "Title block" (the `BULLETPROOF` SVG
@@ -280,6 +315,20 @@ Build-and-review at 1421×773: exact number/definition sizes, cell proportions, 
 only); value precision matches `INDICATOR_DECIMALS` with no thousands separator; the gutter is
 the uniform 2px and frame radius = cell radius + gutter; the definition string contains no
 interpolated value (it is generic).
+
+## Copy & interim text (all surfaces)
+- **Copy the layout depends on is always real static interim text — never a visible
+  placeholder token or an empty/"pending" state.** Where an element needs text to read as
+  complete (verdict, reading, definition, subtitle, band labels), ship a hardcoded interim
+  sentence — generic, brand-interpolated where natural — that renders cleanly now and is
+  swapped for a real source later (additive). Figma working-state tokens
+  (`{{.llm.interpretation}}` and the like) are never a render target.
+- **Bespoke via brand interpolation:** interim copy interpolates `CONFIG.clientBrand`
+  (≈ one mention per text block — enough to feel bespoke, not spammy), re-resolving on
+  `ParameterChanged`, same resolver as the question subtitle.
+- A genuinely absent *data-driven* element (a band scheme that doesn't exist, a funnel with
+  no SAM/SOM) is handled by a **complete alternate layout** (hero + commentary), not by
+  rendering an empty slot.
 
 ## Enforcement (what the harness / lint checks)
 - No `font-size` value that isn't one of the four roles or a Scorecard-section locked size

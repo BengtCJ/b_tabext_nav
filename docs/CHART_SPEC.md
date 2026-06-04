@@ -31,7 +31,7 @@ Human-readable metric names and units live in `INDICATOR_DISPLAY_NAMES` /
 ## Data-shape classes (this drives which charts are valid)
 | Class | Metrics | Shape | Charts |
 |---|---|---|---|
-| Headline | `tam`, `cagr`, `mcon` | one number | `ban` only |
+| Headline | `tam`, `cagr`, `mcon` | one number | `ban` shell (shared left-hero + verdict/reading; optional band rail) — fed per-indicator by a content object (STYLE_SPEC § Headline / ban shell). Band content is data-driven per metric: `cagr` = illustrative growth bands (active highlighted); `tam`/`mcon` = no band scheme yet → render hero-led (a complete layout, not a placeholder). The TAM/SAM/SOM funnel is a TAM-only specialisation BLOCKED until SAM/SOM are sourced. Headline figures use neutral emphasis with a guaranteed pink accent; `#e994a2` is never the figure colour. |
 | Ratio 0–1 | `eqr`, `ebl`, `sstsr` | per-brand per-month, 0–1 | snapshot **and** trend charts |
 | Compositional share | `sov`, `bss` | per-brand, brands ≈ 100% together | share charts (area-100, treemap-bar, stream, …) |
 | Signed float | `vom`, `svt` | can be negative | **trend charts only** — negatives break snapshot bars |
@@ -136,6 +136,9 @@ Invariant carried: `nps` here is a **Likert mean, not true NPS** (`guardNpsRecal
 definition string must say so; cells are greyscale scale-bands, never RAG.
 
 ## Open items to resolve (known data/spec mismatches)
+- `tam` unit/scale unconfirmed (data `14.4`; the Figma `$12.4B` was placeholder) and `mcon`
+  scale unconfirmed (`2002`, possibly an HHI) — confirm before either earns a band scheme.
+  SAM/SOM absent from source, so the TAM funnel stays blocked.
 - `ba` and `cra` subgroup membership is now known from the mapping (`ba` → Narrative Power `ps`; `cra` → Strategic Strength `sbr`) — **verify against source** before relying on it. Their **data-shape class is still open** (`ba` is a single scalar per brand, so it cannot feed `multiscale`). Don't silently drop or invent a mapping.
 - `ba` in the data is a single scalar per brand, not the five attribute columns
   `multiscale` needs — so `ba → multiscale` cannot render from current data. Resolve the
