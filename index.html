@@ -594,7 +594,6 @@
   }
 
   function renderBanShell(el, content) {
-    var W = el.offsetWidth  || 600;
     var H = el.offsetHeight || 300;
     if (H < 80) { showTooSmall(el); return; }
 
@@ -603,13 +602,20 @@
     var FRAME_R = CELL_R + GUTTER; // 10 = 8 + 2
 
     el.innerHTML = '';
-    el.style.cssText = 'display:flex;flex-direction:row;align-items:stretch;height:100%;' +
-      'box-sizing:border-box;padding:24px;gap:16px;';
+    // Card: flex column, centred both axes — the lockup is the bounded unit
+    el.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+      'padding:24px;box-sizing:border-box;height:100%;overflow:hidden;';
 
-    // ── LEFT: hero + pink rule ─────────────────────────────────────────────
-    var leftCol = document.createElement('div');
-    leftCol.style.cssText = 'display:flex;flex-direction:column;justify-content:flex-start;' +
-      'align-items:flex-start;gap:8px;flex-shrink:0;width:200px;';
+    // ── LOCKUP: bounded max-width, centred in the card ─────────────────────
+    // max-width wide enough for hero + text + rail (band); surplus becomes balanced margins.
+    var lockup = document.createElement('div');
+    lockup.setAttribute('data-ban-lockup', '1');
+    lockup.style.cssText = 'display:flex;flex-direction:row;align-items:flex-start;gap:16px;' +
+      'max-width:880px;width:100%;';
+
+    // ── HERO COL (left, content-sized) ─────────────────────────────────────
+    var heroCol = document.createElement('div');
+    heroCol.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:8px;flex-shrink:0;';
 
     var heroEl = document.createElement('div');
     heroEl.setAttribute('data-ban-hero', '1');
@@ -622,21 +628,21 @@
     } else {
       heroEl.textContent = dispStr;
     }
-    leftCol.appendChild(heroEl);
+    heroCol.appendChild(heroEl);
 
-    // Guaranteed pink accent rule
+    // Guaranteed pink accent rule (below hero)
     var ruleEl = document.createElement('div');
     ruleEl.setAttribute('data-ban-pink-rule', '1');
     ruleEl.style.cssText = 'background:#e994a2;width:40px;height:2px;flex-shrink:0;';
-    leftCol.appendChild(ruleEl);
+    heroCol.appendChild(ruleEl);
+    lockup.appendChild(heroCol);
 
-    el.appendChild(leftCol);
+    // ── TEXT COL: normal-flow, capped at ~60ch — no absolute positioning ───
+    var textCol = document.createElement('div');
+    textCol.setAttribute('data-ban-textcol', '1');
+    textCol.style.cssText = 'display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;max-width:60ch;';
 
-    // ── CENTER: title block + content + verdict + reading ──────────────────
-    var centerCol = document.createElement('div');
-    centerCol.style.cssText = 'display:flex;flex-direction:column;flex:1;gap:8px;min-width:0;';
-
-    // Title row (title + pill for band metrics)
+    // Title row (title block left + pill right for band metrics)
     var titleRow = document.createElement('div');
     titleRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;' +
       'align-items:flex-start;gap:8px;';
@@ -650,7 +656,7 @@
 
     var captionEl = document.createElement('div');
     captionEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;color:#777;';
-    captionEl.textContent = content.code + ' · ' + content.unit + ' · ' + content.scope;
+    captionEl.textContent = content.code + ' \xb7 ' + content.unit + ' \xb7 ' + content.scope;
 
     titleBlock.appendChild(titleEl);
     titleBlock.appendChild(captionEl);
@@ -661,7 +667,7 @@
       var pillEl = document.createElement('div');
       pillEl.setAttribute('data-ban-pill', '1');
       pillEl.style.cssText = 'display:flex;flex-direction:row;align-items:center;' +
-        'border:1px solid #2d2d2d;border-radius:100px;padding:3px 10px;flex-shrink:0;';
+        'border:1px solid #2d2d2d;border-radius:100px;padding:3px 10px;flex-shrink:0;gap:0;';
       content.bands.forEach(function(band, i) {
         if (i > 0) {
           var sep = document.createElement('span');
@@ -671,60 +677,64 @@
         }
         var lblEl = document.createElement('span');
         lblEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;' +
-          'color:' + (band.active ? '#ededed' : '#555') + ';';
+          'color:' + (band.active ? '#ededed' : '#555') + ';white-space:nowrap;';
         lblEl.textContent = band.pillLabel;
         pillEl.appendChild(lblEl);
       });
       titleRow.appendChild(pillEl);
     }
 
-    centerCol.appendChild(titleRow);
+    textCol.appendChild(titleRow);
 
-    // Definition (band-less metrics only)
+    // Definition (band-less metrics only — in normal flow, no absolute positioning)
     if (!content.isBandMetric && content.def) {
       var defEl = document.createElement('div');
       defEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;color:#a4a4a4;line-height:1.4;';
       defEl.textContent = content.def;
-      centerCol.appendChild(defEl);
+      textCol.appendChild(defEl);
     }
 
-    // Verdict (Baskerville italic, ~26px per STYLE_SPEC § Headline / ban shell)
+    // Verdict — always retained (never yields to crowding)
     var verdictEl = document.createElement('div');
     verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
       'font-size:26px;color:#b0b0b0;line-height:1.3;margin-top:8px;';
     verdictEl.textContent = content.verdict;
-    centerCol.appendChild(verdictEl);
+    textCol.appendChild(verdictEl);
 
-    // Reading
+    // Reading — optional (yields second under crowding)
     var readingEl = document.createElement('div');
+    readingEl.setAttribute('data-ban-reading', '1');
     readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
     readingEl.textContent = content.reading;
-    centerCol.appendChild(readingEl);
+    textCol.appendChild(readingEl);
 
-    // Disclaimer (band metrics)
+    // Disclaimer — optional (yields first under crowding)
+    var disclaimerEl = null;
     if (content.disclaimer) {
-      var disclaimerEl = document.createElement('div');
+      disclaimerEl = document.createElement('div');
+      disclaimerEl.setAttribute('data-ban-disclaimer', '1');
       disclaimerEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;' +
         'color:#555;margin-top:4px;';
       disclaimerEl.textContent = content.disclaimer;
-      centerCol.appendChild(disclaimerEl);
+      textCol.appendChild(disclaimerEl);
     }
 
-    el.appendChild(centerCol);
+    lockup.appendChild(textCol);
 
-    // ── RIGHT: band rail (cagr only) ──────────────────────────────────────
+    // ── RAIL: band metrics, right column, cells content-sized (no flex:1) ──
     if (content.isBandMetric && content.bands.length > 0) {
       var rail = document.createElement('div');
       rail.setAttribute('data-ban-rail', '1');
       rail.style.cssText = 'background:#0d0d0d;border:1px solid #262626;border-radius:' + FRAME_R + 'px;' +
         'padding:' + GUTTER + 'px;display:flex;flex-direction:column;gap:' + GUTTER + 'px;' +
-        'width:180px;flex-shrink:0;';
+        'width:180px;flex-shrink:0;align-self:flex-start;';
 
       content.bands.forEach(function(band) {
         var cellEl = document.createElement('div');
         cellEl.setAttribute('data-ban-cell', '1');
+        // No flex:1 — cells size to their content, not stretched to fill card height
         cellEl.style.cssText = 'background:' + (band.active ? '#2a2a2a' : '#1a1a1a') + ';' +
-          'border-radius:' + CELL_R + 'px;padding:8px 12px;display:flex;flex-direction:column;gap:4px;flex:1;';
+          'border-radius:' + CELL_R + 'px;padding:8px 12px;display:flex;flex-direction:column;gap:4px;';
 
         var labelRow = document.createElement('div');
         labelRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
@@ -741,7 +751,6 @@
           marker.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#e994a2;flex-shrink:0;';
           labelRow.appendChild(marker);
         }
-
         cellEl.appendChild(labelRow);
 
         var rng = document.createElement('div');
@@ -756,11 +765,26 @@
           exEl.textContent = band.example;
           cellEl.appendChild(exEl);
         }
-
         rail.appendChild(cellEl);
       });
 
-      el.appendChild(rail);
+      lockup.appendChild(rail);
+    }
+
+    el.appendChild(lockup);
+
+    // ── CROWDING PRIORITY: disclaimer → reading yield; type never changes ───
+    // avail = card height minus the 24px padding on each side
+    var avail = H - 48;
+    // Each offsetHeight read forces a synchronous reflow so the next check is current.
+    if (disclaimerEl && lockup.offsetHeight > avail) {
+      disclaimerEl.style.display = 'none';
+    }
+    if (readingEl && lockup.offsetHeight > avail) {
+      readingEl.style.display = 'none';
+    }
+    if (lockup.offsetHeight > avail) {
+      showTooSmall(el);
     }
   }
 
@@ -2978,7 +3002,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-04.1';
+  const VERSION = '2026-06-04.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3633,13 +3657,97 @@
     // 6. No geometry-derived font sizing in renderBanShell (code-level; always passes)
     check('no-geometry-font-size', true, 'renderBanShell uses no Math.min/floor(W*…) sizing — code-verified');
 
+    // 7. Text measure capped: [data-ban-textcol] has max-width set (~60ch)
+    var textColEl = chartEl ? chartEl.querySelector('[data-ban-textcol]') : null;
+    var textColMW = textColEl ? textColEl.style.maxWidth : '';
+    check('text-measure-capped-60ch', !!textColMW && textColMW !== 'none',
+      textColEl ? 'max-width=' + textColMW : 'no data-ban-textcol element found');
+
+    // 8. Band cells content-sized: no cell has flex:1 (which would stretch to card height)
+    var banCells = chartEl ? chartEl.querySelectorAll('[data-ban-cell]') : [];
+    var cellsOk = true;
+    var stretchedCount = 0;
+    Array.prototype.forEach.call(banCells, function(c) {
+      var f = c.style.flex;
+      if (f === '1' || f === '1 1 0%' || f === '1 1 auto' || f === '1 1 0px') {
+        cellsOk = false; stretchedCount++;
+      }
+    });
+    check('band-cells-content-sized', cellsOk,
+      banCells.length + ' cell(s)' + (stretchedCount ? ', ' + stretchedCount + ' stretched' : ', none stretched'));
+
+    // 9. No absolute positioning inside the ban shell (all text in normal flow)
+    var absEls = chartEl ? chartEl.querySelectorAll('[data-ban-lockup] *') : [];
+    var absOk = true;
+    Array.prototype.forEach.call(absEls, function(el) {
+      if (el.style.position === 'absolute') absOk = false;
+    });
+    check('no-absolute-positioning', absOk, absOk ? 'all elements normal-flow' : 'found position:absolute');
+
+    // 10–15. Aspect-size checks: wide/short (1500×340) and narrow/tall (400×700)
+    (function() {
+      var HEADLINE_IDS = ['tam', 'cagr', 'mcon'];
+      var mId = (typeof CONFIG !== 'undefined') ? CONFIG.metricId : '';
+      if (HEADLINE_IDS.indexOf(mId) === -1) {
+        check('aspect-checks-setup', false, 'not a headline metric — skip aspect checks');
+        return;
+      }
+      var PREVIEW_BAN = { cagr: 1.9, tam: 14.4, mcon: 2002 };
+      var numVal = PREVIEW_BAN[mId];
+      var brand  = (typeof CONFIG !== 'undefined') ? CONFIG.clientBrand : 'Illy Coffee';
+      var testEl = chartEl;
+
+      function runAtSize(label, w, h) {
+        var origStyle = testEl.style.cssText;
+        testEl.style.cssText = 'width:' + w + 'px;height:' + h + 'px;position:relative;overflow:hidden;';
+        renderBanShell(testEl, getBanShellContent(mId, numVal, brand));
+
+        // Pink guaranteed
+        var pr = testEl.querySelectorAll('[data-ban-pink-rule]');
+        var pm = testEl.querySelectorAll('[data-ban-active-marker]');
+        check(label + '-guaranteed-pink', (pr.length + pm.length) > 0,
+          pr.length + ' rule, ' + pm.length + ' marker');
+
+        // No overlap among visible text/hero elements
+        var nodes = Array.prototype.slice.call(
+          testEl.querySelectorAll('[data-ban-hero],[data-ban-pill],[data-ban-reading],[data-ban-disclaimer]')
+        ).filter(function(n) { return n.style.display !== 'none'; });
+        var overlapOk = true;
+        for (var i = 0; i < nodes.length && overlapOk; i++) {
+          for (var j = i + 1; j < nodes.length && overlapOk; j++) {
+            var ra = nodes[i].getBoundingClientRect(), rb = nodes[j].getBoundingClientRect();
+            if (ra.width > 0 && rb.width > 0 && ra.height > 0 && rb.height > 0) {
+              if (Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top) > 1 &&
+                  Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left) > 1) {
+                overlapOk = false;
+              }
+            }
+          }
+        }
+        check(label + '-no-overlap', overlapOk, 'checked ' + nodes.length + ' element(s)');
+
+        // Capped measure
+        var tc = testEl.querySelector('[data-ban-textcol]');
+        var mw = tc ? tc.style.maxWidth : '';
+        check(label + '-capped-measure', !!mw && mw !== 'none',
+          tc ? 'max-width=' + mw : 'no textcol');
+
+        testEl.style.cssText = origStyle;
+        renderBanShell(testEl, getBanShellContent(mId, numVal, brand));
+      }
+
+      runAtSize('wide-short-1500x340',  1500, 340);
+      runAtSize('narrow-tall-400x700',   400, 700);
+    })();
+
     // Log results
-    console.group('[BanShellHarness] ' + (pass ? 'PASS ✓' : 'FAIL ✗'));
+    var finalPass = results.every(function(r) { return r.ok; });
+    console.group('[BanShellHarness] ' + (finalPass ? 'PASS ✓' : 'FAIL ✗'));
     results.forEach(function(r) {
       console.log((r.ok ? '✓' : '✗') + ' ' + r.name + (r.detail ? ' — ' + r.detail : ''));
     });
     console.groupEnd();
-    return { pass: pass, results: results };
+    return { pass: finalPass, results: results };
   }
 
   // ─── SAMPLE DATA (preview mode only) ──────────────────────────────────────

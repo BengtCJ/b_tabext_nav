@@ -218,6 +218,24 @@ Locked: the content model, the band vs band-less split, the guaranteed pink rule
 hero, neutral hero figure. Build-and-review at `1421 × 773`: hero size, rail/hero proportion,
 pill placement, verdict/reading sizes.
 
+**Fluid layout & aspect robustness (fixed type, fluid layout).** Type never changes with the
+container — only layout flexes.
+- Hero + text are one coherent lockup, never detached islands with a dead gap. Bounded
+  max-width, centred in the card; surplus width becomes balanced margin, never a one-sided void.
+- Text measure is capped (~60ch reading) so prose never runs the full width of a wide card —
+  cap by max-width, never by shrinking type.
+- Stacked text (title, subline, definition, verdict, reading, disclaimer) is normal-flow with
+  explicit 4px-grid margins; it can never overlap at any height. No collidable absolute positioning.
+- Vertical: lockup centred with a min inset. **Crowding priority at short heights** — if content
+  can't fit, optional text yields in order (disclaimer → reading), keeping hero + title + verdict;
+  below that, the too-small state. Type never compresses.
+- **Cells are content-sized, not stretched.** Ban band cells (rail / ledger) size to their
+  content and the rail is centred as a group — they do NOT flex to fill the card height (unlike
+  scorecard rows, which do fill). The composition holds at any *size* of a given aspect, not
+  just `1421 × 773` — surplus space (horizontal or vertical) becomes balanced margin.
+- **Validate at size and aspect extremes, not only `1421 × 773`:** the same aspect scaled
+  larger, a wide/short strip, and a narrow/tall column. All go in the harness/manual checklist.
+
 ## Detail page header (above the card — extension-rendered)
 The page-level header that sits in the **transparent area above the card**, left-aligned
 to the card edge. **Distinct from** the Scorecard "Title block" (the `BULLETPROOF` SVG
