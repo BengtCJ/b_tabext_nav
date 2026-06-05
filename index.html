@@ -600,7 +600,7 @@
     };
   }
 
-  // ─── BAN EDITORIAL (Direction 1 — equal 3-col grid, open zones) ─────────────
+  // ─── BAN EDITORIAL (Direction 1 — 3-col grid, hero 2×2 block) ───────────────
   function renderBanShell(el, content) {
     var H = el.offsetHeight || 300;
     if (H < 80) { showTooSmall(el); return; }
@@ -611,10 +611,9 @@
 
     el.innerHTML = '';
     el.setAttribute('data-ban-lockup', '1');
-    // el IS the grid; dark bg makes 2px gaps read as hairlines (frame showing through)
     el.style.cssText = 'display:grid;' +
       'grid-template-columns:repeat(' + numCols + ',1fr);' +
-      'grid-template-rows:auto 1fr;' +
+      'grid-template-rows:auto' + (isBand ? ' 1fr 1fr 1fr' : ' 1fr') + ';' +
       'gap:' + GUTTER + 'px;' +
       'background:#0d0d0d;width:100%;height:100%;box-sizing:border-box;overflow:hidden;';
 
@@ -636,9 +635,11 @@
     titleCell.appendChild(captionEl);
     el.appendChild(titleCell);
 
-    // ── HERO ZONE (row 2, col 1, transparent) — fit-to-box SVG ────────────
+    // ── HERO ZONE (transparent, fit-to-box SVG) ────────────────────────────
+    // Band: 2×2 block cols 1-2 rows 2-3; band-less: col 1 row 2
     var heroZone = document.createElement('div');
-    heroZone.style.cssText = 'padding:8px 16px 16px;display:flex;flex-direction:column;' +
+    heroZone.style.cssText = (isBand ? 'grid-column:1/3;grid-row:2/4;' : '') +
+      'padding:8px 16px 16px;display:flex;flex-direction:column;' +
       'gap:8px;overflow:hidden;min-width:0;';
 
     var ns = 'http://www.w3.org/2000/svg';
@@ -653,7 +654,6 @@
     heroTxt.setAttribute('data-ban-hero', '1');
     heroTxt.setAttribute('x', '0');
     heroTxt.setAttribute('y', '0');
-    // font-size is the SVG measurement base; actual render size is set by viewBox scaling
     heroTxt.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
       'font-size:100px;fill:#ededed;';
     var dispStr = (content.prefix || '') + content.dispVal;
@@ -669,58 +669,61 @@
     heroSvg.appendChild(heroTxt);
     heroZone.appendChild(heroSvg);
 
-    // Guaranteed pink rule beneath hero (short #e994a2 accent)
+    // Guaranteed pink rule beneath hero (~120px, 1px, selectedColor)
     var ruleEl = document.createElement('div');
     ruleEl.setAttribute('data-ban-pink-rule', '1');
-    ruleEl.style.cssText = 'background:#e994a2;width:40px;height:2px;flex-shrink:0;';
+    ruleEl.style.cssText = 'background:#e994a2;width:120px;height:1px;flex-shrink:0;';
     heroZone.appendChild(ruleEl);
     el.appendChild(heroZone);
 
-    // ── TEXT ZONE (row 2, col 2, transparent) — verdict + reading ──────────
-    var textZone = document.createElement('div');
-    textZone.setAttribute('data-ban-textcol', '1');
-    textZone.style.cssText = 'padding:8px 16px 16px;display:flex;flex-direction:column;' +
-      'gap:8px;overflow:hidden;min-width:0;';
-
-    if (!isBand && content.def) {
-      var defEl = document.createElement('div');
-      defEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;color:#a4a4a4;line-height:1.4;';
-      defEl.textContent = content.def;
-      textZone.appendChild(defEl);
-    }
-
-    var verdictEl = document.createElement('div');
-    verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:26px;color:#b0b0b0;line-height:1.3;';
-    verdictEl.textContent = content.verdict;
-    textZone.appendChild(verdictEl);
-
-    var readingEl = document.createElement('div');
-    readingEl.setAttribute('data-ban-reading', '1');
-    readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
-    readingEl.textContent = content.reading;
-    textZone.appendChild(readingEl);
-    el.appendChild(textZone);
-
-    // ── BANDS ZONE (row 2, col 3) — band metrics only, cells fill column ───
     if (isBand) {
-      var bandsCol = document.createElement('div');
-      bandsCol.setAttribute('data-ban-rail', '1');
-      bandsCol.style.cssText = 'display:flex;flex-direction:column;gap:' + GUTTER + 'px;overflow:hidden;';
+      // ── VERDICT ZONE (col 1, row 4, transparent, top-aligned) ──────────
+      var verdictZone = document.createElement('div');
+      verdictZone.style.cssText = 'grid-column:1;grid-row:4;' +
+        'padding:8px 16px 8px;display:flex;flex-direction:column;gap:4px;overflow:hidden;min-width:0;';
 
-      content.bands.forEach(function(band) {
+      var verdictEl = document.createElement('div');
+      verdictEl.setAttribute('data-ban-verdict', '1');
+      verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+        'font-size:24px;color:#b0b0b0;line-height:1.3;';
+      verdictEl.textContent = content.verdict;
+      verdictZone.appendChild(verdictEl);
+      el.appendChild(verdictZone);
+
+      // ── READING ZONE (col 2, row 4, transparent, top-aligned) ──────────
+      var readingZone = document.createElement('div');
+      readingZone.setAttribute('data-ban-textcol', '1');
+      readingZone.style.cssText = 'grid-column:2;grid-row:4;' +
+        'padding:8px 16px 8px;display:flex;flex-direction:column;gap:4px;overflow:hidden;min-width:0;';
+
+      var readingEl = document.createElement('div');
+      readingEl.setAttribute('data-ban-reading', '1');
+      readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
+      readingEl.textContent = content.reading;
+      readingZone.appendChild(readingEl);
+
+      if (content.disclaimer) {
+        var discEl = document.createElement('div');
+        discEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#555;margin-top:4px;';
+        discEl.textContent = content.disclaimer;
+        readingZone.appendChild(discEl);
+      }
+      el.appendChild(readingZone);
+
+      // ── BAND CELLS (col 3, rows 2/3/4; benchmark numerals 40px) ────────
+      content.bands.forEach(function(band, i) {
         var cellEl = document.createElement('div');
         cellEl.setAttribute('data-ban-cell', '1');
-        // flex:1 in a column grid zone = equal vertical share (grid-fills-frame intent)
-        cellEl.style.cssText = 'background:' + (band.active ? '#3a3a3a' : '#242424') + ';' +
-          'border-radius:' + CELL_R + 'px;padding:8px 12px;flex:1;' +
+        cellEl.style.cssText = 'grid-column:3;grid-row:' + (i + 2) + ';' +
+          'background:' + (band.active ? '#3a3a3a' : '#242424') + ';' +
+          'border-radius:' + CELL_R + 'px;padding:8px 12px;' +
           'display:flex;flex-direction:column;gap:4px;overflow:hidden;';
 
         var labelRow = document.createElement('div');
         labelRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
 
         var lbl = document.createElement('div');
-        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;' +
+        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;' +
           'color:' + (band.active ? '#ededed' : '#555') + ';text-transform:uppercase;letter-spacing:0.06em;';
         lbl.textContent = band.label;
         labelRow.appendChild(lbl);
@@ -728,14 +731,14 @@
         if (band.active) {
           var marker = document.createElement('div');
           marker.setAttribute('data-ban-active-marker', '1');
-          marker.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#e994a2;flex-shrink:0;';
+          marker.style.cssText = 'width:7px;height:7px;border-radius:50%;background:#e994a2;flex-shrink:0;';
           labelRow.appendChild(marker);
         }
         cellEl.appendChild(labelRow);
 
-        // Editorial benchmark numerals ~28px
         var rng = document.createElement('div');
-        rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:28px;' +
+        rng.setAttribute('data-ban-numeral', '1');
+        rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:40px;' +
           'color:' + (band.active ? '#ededed' : '#555') + ';line-height:1;';
         rng.textContent = band.range;
         cellEl.appendChild(rng);
@@ -746,12 +749,39 @@
           exEl.textContent = band.example;
           cellEl.appendChild(exEl);
         }
-        bandsCol.appendChild(cellEl);
+        el.appendChild(cellEl);
       });
-      el.appendChild(bandsCol);
+
+    } else {
+      // ── TEXT ZONE (col 2, row 2, transparent) — band-less: def + verdict + reading ─
+      var textZone = document.createElement('div');
+      textZone.setAttribute('data-ban-textcol', '1');
+      textZone.style.cssText = 'padding:8px 16px 16px;display:flex;flex-direction:column;' +
+        'gap:8px;overflow:hidden;min-width:0;';
+
+      if (content.def) {
+        var defEl = document.createElement('div');
+        defEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;color:#a4a4a4;line-height:1.4;';
+        defEl.textContent = content.def;
+        textZone.appendChild(defEl);
+      }
+
+      var verdictEl = document.createElement('div');
+      verdictEl.setAttribute('data-ban-verdict', '1');
+      verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+        'font-size:24px;color:#b0b0b0;line-height:1.3;';
+      verdictEl.textContent = content.verdict;
+      textZone.appendChild(verdictEl);
+
+      var readingEl = document.createElement('div');
+      readingEl.setAttribute('data-ban-reading', '1');
+      readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
+      readingEl.textContent = content.reading;
+      textZone.appendChild(readingEl);
+      el.appendChild(textZone);
     }
 
-    // Set SVG viewBox from getBBox so hero scales to fill its zone (fit-to-box)
+    // Fit-to-box: set SVG viewBox after fonts load so getBBox measures correctly
     (function() {
       function setVB() {
         var bb = heroTxt.getBBox();
@@ -765,7 +795,7 @@
     })();
   }
 
-  // ─── BAN RADIAL (Direction 2 — equal 2-col grid, band metrics only) ─────────
+  // ─── BAN RADIAL (Direction 2 — 2-col grid, rings span rows, band metrics only) ──
   function renderBanRadial(el, content) {
     var H = el.offsetHeight || 300;
     if (H < 80) { showTooSmall(el); return; }
@@ -783,11 +813,11 @@
     el.setAttribute('data-ban-lockup', '1');
     el.style.cssText = 'display:grid;' +
       'grid-template-columns:1fr 1fr;' +
-      'grid-template-rows:auto 1fr;' +
+      'grid-template-rows:auto 1fr 1fr;' +
       'gap:' + GUTTER + 'px;' +
       'background:#0d0d0d;width:100%;height:100%;box-sizing:border-box;overflow:hidden;';
 
-    // ── TITLE STRIP (row 1, spans both cols) ────────────────────────────────
+    // ── TITLE STRIP (row 1, spans both cols) ─────────────────────────────────
     var titleCell = document.createElement('div');
     titleCell.style.cssText = 'grid-column:1/-1;padding:12px 16px 8px;' +
       'display:flex;flex-direction:column;gap:4px;';
@@ -805,9 +835,9 @@
     titleCell.appendChild(captionEl);
     el.appendChild(titleCell);
 
-    // ── RINGS ZONE (row 2, col 1) — SVG scales to fill its zone ─────────────
+    // ── RINGS ZONE (col 1, rows 2-3) — decorative, not a value arc ───────────
     var ringsZone = document.createElement('div');
-    ringsZone.style.cssText = 'display:flex;align-items:center;justify-content:center;overflow:hidden;';
+    ringsZone.style.cssText = 'grid-row:2/4;display:flex;align-items:center;justify-content:center;overflow:hidden;';
 
     var svgEl = document.createElementNS(ns, 'svg');
     svgEl.setAttribute('width', '100%');
@@ -818,21 +848,19 @@
     svgEl.style.cssText = 'display:block;overflow:visible;';
 
     var CX = 100, CY = 100;
-    var RADII = [36, 60, 84]; // inner→outer = band 0→2 in SVG user units
-    var HERO_SZ = 32;         // hero font size in SVG user units; SVG scales proportionally
+    var RADII = [36, 60, 84];
+    var HERO_SZ = 32;
 
     content.bands.forEach(function(band, i) {
       var r = RADII[i];
       var ring = document.createElementNS(ns, 'circle');
       ring.setAttribute('cx', CX); ring.setAttribute('cy', CY); ring.setAttribute('r', r);
       ring.setAttribute('fill', 'none');
-      // Active ring stroked pink per spec; inactive dark
       ring.setAttribute('stroke', band.active ? '#e994a2' : '#222');
       ring.setAttribute('stroke-width', band.active ? '2' : '1');
       svgEl.appendChild(ring);
 
       if (band.active) {
-        // Small pink dot (~r5) at 12-o'clock on the active ring
         var dot = document.createElementNS(ns, 'circle');
         dot.setAttribute('data-ban-active-marker', '1');
         dot.setAttribute('cx', CX); dot.setAttribute('cy', CY - r); dot.setAttribute('r', '5');
@@ -841,7 +869,6 @@
       }
     });
 
-    // Hero figure centred in rings (scales with SVG)
     var heroTxt = document.createElementNS(ns, 'text');
     heroTxt.setAttribute('data-ban-hero', '1');
     heroTxt.setAttribute('x', CX); heroTxt.setAttribute('y', CY);
@@ -872,11 +899,10 @@
     ringsZone.appendChild(svgEl);
     el.appendChild(ringsZone);
 
-    // ── LEGEND + COMMENTARY (row 2, col 2) ──────────────────────────────────
+    // ── LEGEND ZONE (col 2, row 2) — band table; numerals 40px ───────────────
     var legendZone = document.createElement('div');
-    legendZone.setAttribute('data-ban-textcol', '1');
-    legendZone.style.cssText = 'display:flex;flex-direction:column;padding:8px 16px 16px;' +
-      'gap:0;overflow:hidden;min-width:0;';
+    legendZone.style.cssText = 'grid-column:2;grid-row:2;' +
+      'display:flex;flex-direction:column;padding:8px 16px 8px;gap:0;overflow:hidden;min-width:0;';
 
     content.bands.forEach(function(band, i) {
       if (i > 0) {
@@ -888,7 +914,7 @@
       row.style.cssText = 'display:flex;flex-direction:row;align-items:flex-start;gap:8px;';
 
       var bullet = document.createElement('div');
-      bullet.style.cssText = 'width:6px;height:6px;border-radius:50%;margin-top:4px;flex-shrink:0;' +
+      bullet.style.cssText = 'width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0;' +
         'background:' + (band.active ? '#e994a2' : '#2a2a2a') + ';';
       if (band.active) bullet.setAttribute('data-ban-active-marker', '1');
       row.appendChild(bullet);
@@ -897,13 +923,13 @@
       info.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
 
       var bName = document.createElement('div');
-      bName.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;text-transform:uppercase;' +
+      bName.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;text-transform:uppercase;' +
         'letter-spacing:0.06em;color:' + (band.active ? '#ededed' : '#555') + ';';
       bName.textContent = band.label;
 
-      // Radial legend benchmark numerals ~24px
       var rng = document.createElement('div');
-      rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:24px;' +
+      rng.setAttribute('data-ban-numeral', '1');
+      rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:40px;' +
         'color:' + (band.active ? '#ededed' : '#555') + ';';
       rng.textContent = band.range;
 
@@ -919,28 +945,36 @@
       row.appendChild(info);
       legendZone.appendChild(row);
     });
+    el.appendChild(legendZone);
 
-    // Commentary (verdict + reading) below band legend, separated by a hairline
-    var commentarySep = document.createElement('div');
-    commentarySep.style.cssText = 'height:1px;background:#1e1e1e;margin:16px 0 8px;';
-    legendZone.appendChild(commentarySep);
+    // ── COMMENTARY ZONE (col 2, row 3) — verdict + reading, top-justified ────
+    var commentaryZone = document.createElement('div');
+    commentaryZone.setAttribute('data-ban-textcol', '1');
+    commentaryZone.style.cssText = 'grid-column:2;grid-row:3;' +
+      'display:flex;flex-direction:column;padding:8px 16px 16px;gap:4px;' +
+      'justify-content:flex-start;overflow:hidden;min-width:0;';
+
+    var commentSep = document.createElement('div');
+    commentSep.style.cssText = 'height:1px;background:#1e1e1e;margin-bottom:8px;flex-shrink:0;';
+    commentaryZone.appendChild(commentSep);
 
     var verdictEl = document.createElement('div');
+    verdictEl.setAttribute('data-ban-verdict', '1');
     verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:16px;color:#b0b0b0;line-height:1.3;';
+      'font-size:24px;color:#b0b0b0;line-height:1.3;';
     verdictEl.textContent = content.verdict;
-    legendZone.appendChild(verdictEl);
+    commentaryZone.appendChild(verdictEl);
 
     var readingEl = document.createElement('div');
     readingEl.setAttribute('data-ban-reading', '1');
     readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;margin-top:4px;';
     readingEl.textContent = content.reading;
-    legendZone.appendChild(readingEl);
+    commentaryZone.appendChild(readingEl);
 
-    el.appendChild(legendZone);
+    el.appendChild(commentaryZone);
   }
 
-  // ─── BAN LEDGER (Direction 3 — equal 3-col grid, equal rows, celled) ────────
+  // ─── BAN LEDGER (Direction 3 — 3-col grid; --panel top row, bands bottom) ────
   function renderBanLedger(el, content) {
     var H = el.offsetHeight || 300;
     if (H < 80) { showTooSmall(el); return; }
@@ -952,14 +986,13 @@
 
     el.innerHTML = '';
     el.setAttribute('data-ban-lockup', '1');
-    // Equal rows: title strip auto, then content rows 1fr each (2 rows for band, 1 for band-less)
     el.style.cssText = 'display:grid;' +
       'grid-template-columns:1fr 1fr 1fr;' +
       'grid-template-rows:auto 1fr' + (isBand ? ' 1fr' : '') + ';' +
       'gap:' + GUTTER + 'px;' +
       'background:#0d0d0d;width:100%;height:100%;box-sizing:border-box;overflow:hidden;';
 
-    // ── TITLE STRIP (row 1, all 3 cols) ─────────────────────────────────────
+    // ── TITLE STRIP (row 1, all 3 cols) ──────────────────────────────────────
     var titleCell = document.createElement('div');
     titleCell.style.cssText = 'grid-column:1/-1;padding:12px 16px 8px;' +
       'display:flex;flex-direction:column;gap:4px;';
@@ -977,10 +1010,10 @@
     titleCell.appendChild(captionEl);
     el.appendChild(titleCell);
 
-    // ── ROW 2, COL 1: HERO CELL (fit-to-box) ────────────────────────────────
+    // ── ROW 2, COL 1: HERO CELL (--panel, generous padding, fit-to-box, NO rule) ─
     var heroCell = document.createElement('div');
-    heroCell.style.cssText = 'background:#242424;border-radius:' + CELL_R + 'px;' +
-      'padding:12px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;';
+    heroCell.style.cssText = 'background:#181818;border-radius:' + CELL_R + 'px;' +
+      'padding:16px 20px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;';
 
     var heroSvg = document.createElementNS(ns, 'svg');
     heroSvg.setAttribute('width', '100%');
@@ -1007,33 +1040,33 @@
     }
     heroSvg.appendChild(heroTxt);
     heroCell.appendChild(heroSvg);
-
-    // Pink rule in hero cell for band-less (band metrics get the dot in band cells below)
-    if (!isBand) {
-      var pinkRule = document.createElement('div');
-      pinkRule.setAttribute('data-ban-pink-rule', '1');
-      pinkRule.style.cssText = 'background:#e994a2;width:40px;height:2px;flex-shrink:0;';
-      heroCell.appendChild(pinkRule);
-    }
     el.appendChild(heroCell);
 
-    // ── ROW 2, COL 2: VERDICT CELL (headline Baskerville italic) ────────────
+    // ── ROW 2, COL 2: VERDICT CELL (--panel, pink rule above, centred) ────────
     var verdictCell = document.createElement('div');
-    verdictCell.style.cssText = 'background:#242424;border-radius:' + CELL_R + 'px;' +
-      'padding:12px 16px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;';
+    verdictCell.style.cssText = 'background:#181818;border-radius:' + CELL_R + 'px;' +
+      'padding:12px 16px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;' +
+      'justify-content:center;';
+
+    var pinkRuleV = document.createElement('div');
+    pinkRuleV.setAttribute('data-ban-pink-rule', '1');
+    pinkRuleV.style.cssText = 'background:#e994a2;width:120px;height:1px;flex-shrink:0;';
+    verdictCell.appendChild(pinkRuleV);
 
     var verdictEl = document.createElement('div');
+    verdictEl.setAttribute('data-ban-verdict', '1');
     verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:26px;color:#b0b0b0;line-height:1.3;';
+      'font-size:24px;color:#b0b0b0;line-height:1.3;';
     verdictEl.textContent = content.verdict;
     verdictCell.appendChild(verdictEl);
     el.appendChild(verdictCell);
 
-    // ── ROW 2, COL 3: READING CELL ───────────────────────────────────────────
+    // ── ROW 2, COL 3: READING CELL (--panel, centred as block) ───────────────
     var readingCell = document.createElement('div');
     readingCell.setAttribute('data-ban-textcol', '1');
-    readingCell.style.cssText = 'background:#242424;border-radius:' + CELL_R + 'px;' +
-      'padding:12px 16px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;';
+    readingCell.style.cssText = 'background:#181818;border-radius:' + CELL_R + 'px;' +
+      'padding:12px 16px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;' +
+      'justify-content:center;';
 
     if (!isBand && content.def) {
       var defEl = document.createElement('div');
@@ -1047,9 +1080,16 @@
     readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
     readingEl.textContent = content.reading;
     readingCell.appendChild(readingEl);
+
+    if (isBand && content.disclaimer) {
+      var discEl = document.createElement('div');
+      discEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#555;';
+      discEl.textContent = content.disclaimer;
+      readingCell.appendChild(discEl);
+    }
     el.appendChild(readingCell);
 
-    // ── ROW 3: BAND CELLS (band metrics only; benchmark numerals ~42px) ──────
+    // ── ROW 3: BAND CELLS (band metrics only; benchmark numerals 40px) ────────
     if (isBand) {
       content.bands.forEach(function(band) {
         var bandCell = document.createElement('div');
@@ -1062,7 +1102,7 @@
         labelRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
 
         var lbl = document.createElement('div');
-        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;' +
+        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;' +
           'color:' + (band.active ? '#ededed' : '#555') + ';text-transform:uppercase;letter-spacing:0.06em;';
         lbl.textContent = band.label;
         labelRow.appendChild(lbl);
@@ -1070,14 +1110,14 @@
         if (band.active) {
           var dot = document.createElement('div');
           dot.setAttribute('data-ban-active-marker', '1');
-          dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#e994a2;flex-shrink:0;';
+          dot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:#e994a2;flex-shrink:0;';
           labelRow.appendChild(dot);
         }
         bandCell.appendChild(labelRow);
 
-        // Ledger benchmark numerals ~42px
         var rng = document.createElement('div');
-        rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:42px;' +
+        rng.setAttribute('data-ban-numeral', '1');
+        rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:40px;' +
           'color:' + (band.active ? '#ededed' : '#555') + ';line-height:1;';
         rng.textContent = band.range;
         bandCell.appendChild(rng);
@@ -1092,7 +1132,7 @@
       });
     }
 
-    // Set SVG viewBox from getBBox so hero scales to fill its cell (fit-to-box)
+    // Fit-to-box: set SVG viewBox after fonts load so getBBox measures correctly
     (function() {
       function setVB() {
         var bb = heroTxt.getBBox();
@@ -3321,7 +3361,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-05.2';
+  const VERSION = '2026-06-05.3';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -4370,6 +4410,83 @@
       var titleEls = chartEl ? chartEl.querySelectorAll('[data-ban-title]') : [];
       check('single-title', titleEls.length === 1,
         titleEls.length + ' [data-ban-title] element(s) — expected exactly 1');
+    })();
+
+    // ban-locked-verdict-24: verdict is exactly 24px in all directions
+    (function() {
+      var HEADLINE = ['tam', 'cagr', 'mcon'];
+      if (HEADLINE.indexOf(CONFIG.metricId) === -1) {
+        check('ban-locked-verdict-24', true, 'non-headline metric — skip'); return;
+      }
+      var PREVIEW_BAN = { cagr: 1.9, tam: 14.4, mcon: 2002 };
+      var numVal = PREVIEW_BAN[CONFIG.metricId];
+      var brand = CONFIG.clientBrand;
+      var testEl = chartEl;
+      var allOk = true;
+      var detail = '';
+
+      var dirs = METRIC_CHARTS[CONFIG.metricId] || ['ban_editorial'];
+      dirs.forEach(function(dir) {
+        var origStyle = testEl.style.cssText;
+        testEl.style.cssText = 'width:800px;height:500px;position:relative;overflow:hidden;';
+        if (dir === 'ban_radial') { renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+        else if (dir === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+        else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+
+        var vEls = testEl.querySelectorAll('[data-ban-verdict]');
+        vEls && Array.prototype.forEach.call(vEls, function(v) {
+          var fs = v.style.fontSize;
+          if (fs !== '24px') { allOk = false; detail += dir + ':verdict-fontSize=' + fs + ' '; }
+        });
+        if (!vEls || !vEls.length) { allOk = false; detail += dir + ':no-verdict-el '; }
+
+        testEl.style.cssText = origStyle;
+      });
+
+      if (CONFIG.chart === 'ban_radial') { renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+      else if (CONFIG.chart === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+      else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+
+      check('ban-locked-verdict-24', allOk, allOk ? 'verdict=24px in all directions' : detail.trim());
+    })();
+
+    // ban-locked-numerals-40: benchmark numerals are exactly 40px in band directions
+    (function() {
+      var HEADLINE = ['cagr']; // only band metric has numerals
+      if (HEADLINE.indexOf(CONFIG.metricId) === -1) {
+        check('ban-locked-numerals-40', true, 'band-less metric — no numerals to check'); return;
+      }
+      var numVal = 1.9;
+      var brand = CONFIG.clientBrand;
+      var testEl = chartEl;
+      var allOk = true;
+      var detail = '';
+
+      var dirs = METRIC_CHARTS['cagr'] || ['ban_editorial'];
+      dirs.forEach(function(dir) {
+        var origStyle = testEl.style.cssText;
+        testEl.style.cssText = 'width:800px;height:500px;position:relative;overflow:hidden;';
+        if (dir === 'ban_radial') { renderBanRadial(testEl, getBanShellContent('cagr', numVal, brand)); }
+        else if (dir === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent('cagr', numVal, brand)); }
+        else { renderBanShell(testEl, getBanShellContent('cagr', numVal, brand)); }
+
+        var nEls = testEl.querySelectorAll('[data-ban-numeral]');
+        if (!nEls || !nEls.length) { allOk = false; detail += dir + ':no-numeral-els '; }
+        else {
+          Array.prototype.forEach.call(nEls, function(n) {
+            var fs = n.style.fontSize;
+            if (fs !== '40px') { allOk = false; detail += dir + ':numeral-fontSize=' + fs + ' '; }
+          });
+        }
+
+        testEl.style.cssText = origStyle;
+      });
+
+      if (CONFIG.chart === 'ban_radial') { renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+      else if (CONFIG.chart === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+      else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+
+      check('ban-locked-numerals-40', allOk, allOk ? 'numerals=40px in all band directions' : detail.trim());
     })();
 
     // Log results

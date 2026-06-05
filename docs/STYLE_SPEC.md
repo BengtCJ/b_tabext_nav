@@ -199,45 +199,75 @@ colour-coded (white text).
 - Locked vs review: placement + panel tokens (reused cell border/radius/fill) are locked;
   text sizes (16/13), colours, padding/gaps and line-height are build-and-review at 1421×773.
 
-## Headline / ban shell
-### Section model — all directions are full-frame grids
-Every direction partitions the card into zones tiling the whole frame (2px hairline gutters
-throughout; non-hero content anchored top-aligned, fixed type; hero fit-to-box). Active band =
-`#3a3a3a` + bright text + small pink dot; inactive bands `#242424`, muted text. Single canonical
-title. Generous spacing at sans↔serif seams.
-- **Editorial (equal 3-col, open):** zones `title / hero / verdict / reading / bandL,M,H`. Hero
-  fills the full-height left column; verdict + reading the middle column; the three bands stack
-  right. Zones transparent (open); only band cells carry the `#242424`/`#3a3a3a` fills.
-- **Ledger (equal 3-col, equal rows; celled):** title strip, then row 1 = `hero | headline(verdict)
-  | text(reading)`, row 2 = the three bands beneath. All cells dark grey `#242424` (active band
-  `#3a3a3a`); benchmark numerals ~42px.
-- **Radial (equal 2-col):** zones `title / rings / legend / commentary`. The rings SVG scales to
-  fill its zone; the active band's ring is stroked `#e994a2` with a small dot (~r5) at its 12
-  o'clock; the legend lists the bands (text rows; active row bright text + pink bullet); verdict +
-  reading in commentary.
-- **Band-less metrics:** drop the band zones — `title / hero / verdict / reading` still tile the
-  frame; no band-referencing copy (§ Copy).
+## Headline / ban shell — Editorial · Radial · Ledger (locked layout + type)
 
-**Fluid layout & aspect robustness (fixed type, fluid layout).** Type never changes with the
-container — only layout flexes.
-- Hero + text are one coherent lockup, never detached islands with a dead gap. Bounded
-  max-width, centred in the card; the composition FILLS the container: the hero figure and any chart graphic scale up to fill
-  (bounded), and the layout distributes to use the space. Only a small residual is balanced
-  margin — the content is never a tiny island in a large canvas. Cells still never stretch to
-  absurd empty heights (Task 020); fill comes from the scaled hero/graphic + distributed layout.
-- Text measure is capped (~60ch reading) so prose never runs the full width of a wide card —
-  cap by max-width, never by shrinking type.
-- Stacked text (title, subline, definition, verdict, reading, disclaimer) is normal-flow with
-  explicit 4px-grid margins; it can never overlap at any height. No collidable absolute positioning.
-- Vertical: lockup centred with a min inset. **Crowding priority at short heights** — if content
-  can't fit, optional text yields in order (disclaimer → reading), keeping hero + title + verdict;
-  below that, the too-small state. Type never compresses.
-- **Cells are content-sized, not stretched.** Ban band cells (rail / ledger) size to their
-  content and the rail is centred as a group — they do NOT flex to fill the card height (unlike
-  scorecard rows, which do fill). The composition holds at any *size* of a given aspect, not
-  just `1421 × 773` — surplus space (horizontal or vertical) becomes balanced margin.
-- **Validate at size and aspect extremes, not only `1421 × 773`:** the same aspect scaled
-  larger, a wide/short strip, and a narrow/tall column. All go in the harness/manual checklist.
+The Headline class (`cagr`, `tam`, `mcon`) renders as a ban shell with three switchable
+directions (EDITORIAL / RADIAL / LEDGER — wiring per CHART_SPEC `METRIC_CHARTS`, not re-specced
+here). All three inherit the frame chrome, 2px gutter, radius nesting, fills and states from the
+Scorecard frame rules above; each is a small layout delta over that shared base.
+
+**Shared (all directions)**
+- Hero number — Baskerville italic; the ONLY geometry-responsive size (see Type roles).
+  Fit-to-box via SVG `getBBox`→`viewBox` in Editorial & Ledger; a fixed hero override sized to
+  sit inside the ring in Radial (Radial is band-metric-only, so the value is short/bounded).
+  Suffix (`%` for `cagr`) ~0.43em, muted grey, baseline-aligned; suffix/unit text per CHART_SPEC
+  + Task 0023, not here.
+- Pink accent is guaranteed in every direction: Editorial = a short pink rule beneath the hero;
+  Ledger = a short pink rule above the verdict cell only; Radial = the pink emphasis ring + dot.
+  1px, `selectedColor`, ~120px where a rule.
+- Active band = `--active` (#3a3a3a) fill + bright text + a 7px `selectedColor` dot at the band
+  header's right edge. Inactive bands = `--cell` (#242424) + muted text, no dot. Never a pink
+  fill, never white-on-pink. (Radial legend: active row = pink dot + bright text; others muted.)
+- Verdict (lead serif sentence) = 24px Baskerville italic — the same size in all three directions.
+  Reading paragraph = 13px (Label). Disclaimer (`Ranges are illustrative…`) = 11px (Caption)
+  italic, BAND-METRIC ONLY (it references ranges; absent on band-less metrics).
+- Benchmark numerals (band range figures, e.g. `< 3%`) = 40px Baskerville italic, identical
+  across all three directions.
+- All other text maps to the four Type roles: indicator title = Heading 16; band label = Label 13
+  (uppercase); subline / `e.g.` / explainer = Caption 11. No off-role sizes; no geometry-derived
+  size except the hero.
+
+**Editorial — 3×3 (band metric)** — grid: 3 columns × (title row + 3 content rows):
+    title   title    title
+    hero    hero     bandL
+    hero    hero     bandM
+    verdict reading  bandH
+- Hero = a 2×2 block (cols 1–2, content rows 1–2), transparent, fit-to-box number + pink rule beneath.
+- Verdict (col 1, row 3) and Reading (col 2, row 3): transparent, top-aligned beneath the hero.
+- Bands fill the full-height right column (col 3).
+
+**Editorial — band-less (`tam`,`mcon`)**: no band column; hero + verdict + reading fill the card
+(hero dominant); no band cells, no ranges-disclaimer. Exact split build-and-review.
+
+**Radial — 2 columns (band metric only; not offered band-less)** — grid: 2 columns × (title row +
+2 content rows):
+    title  title
+    rings  legend
+    rings  commentary
+- Rings (col 1, spanning both content rows): a faint outer ring + a `selectedColor` emphasis ring
+  + the centred hero number + a dot on the emphasis ring. DECORATIVE — NOT value-proportional:
+  `cagr` is not a 0–1 ratio, so the ring is never a progress arc of the value (cf. CHART_SPEC
+  no-progress-ring for non-ratios). The active band is shown by the legend, not ring geometry.
+- Legend (col 2, row 1): the 3-row band table, active row highlighted; benchmark numerals 40px.
+- Commentary (col 2, row 2): verdict + reading, top-justified.
+
+**Ledger — 3×2 (band metric)** — grid: 3 columns × (title row + 2 content rows):
+    title  title    title
+    hero   verdict  reading
+    bandL  bandM    bandH
+- Top row is a uniform `--panel` (#181818): hero, verdict and reading cells all `--panel`.
+- Hero: fit-to-box number, generous interior padding so the figure is inset from the cell edges
+  (loose end of the cell-padding range); NO pink rule.
+- Verdict (middle): a short pink rule ABOVE the text, then the verdict; content vertically centred.
+- Reading (right): NO rule; reading + disclaimer centred together as one block (not floor-pinned).
+- Bottom row: the three band cells, each distributing label (top) / numeral (middle) /
+  explainer + `e.g.` (bottom). Benchmark numerals 40px.
+
+**Ledger — band-less (`tam`,`mcon`)**: drop the bottom band row; the top row (hero | verdict |
+reading) fills the card height; no ranges-disclaimer.
+
+**States** — too-small and no-data inherited from the shared rules; band-less is a normal render,
+not a degraded state. Validate at `1421 × 773` and at the host `1600 × 900` (PowerPoint).
 
 ## Detail page header (above the card — extension-rendered)
 The page-level header that sits in the **transparent area above the card**, left-aligned
@@ -356,6 +386,9 @@ interpolated value (it is generic).
 ## Enforcement (what the harness / lint checks)
 - No `font-size` value that isn't one of the four roles or a Scorecard-section locked size
   (hero override excepted).
+- Ban-shell locked sizes (allowed in addition to the four roles + the hero fit-to-box override):
+  verdict 24px and benchmark numerals 40px, both Baskerville italic. No other ban-shell text
+  leaves the four roles.
 - No font size computed from element geometry.
 - No gap/margin off the 4px base unit, except the named overrides (incl. the 2px gutter).
 - Type sizes identical for the same role across all charts.
