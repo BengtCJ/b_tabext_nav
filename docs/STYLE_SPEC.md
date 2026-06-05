@@ -236,8 +236,18 @@ Scorecard frame rules above; each is a small layout delta over that shared base.
 - Verdict (col 1, row 3) and Reading (col 2, row 3): transparent, top-aligned beneath the hero.
 - Bands fill the full-height right column (col 3).
 
-**Editorial — band-less (`tam`,`mcon`)**: no band column; hero + verdict + reading fill the card
-(hero dominant); no band cells, no ranges-disclaimer. Exact split build-and-review.
+**Editorial — band-less (`tam`,`mcon`)** — a **two-column grid that tiles the card full
+height**, never free placement (no number stranded in a corner with a centre void — the
+failure this rule fixes). Tracks `minmax(0, 5fr)` | `minmax(0, 7fr)`; the `minmax(0, …)`
+clamp is what lets the fit-to-box hero scale to its track instead of overflowing into the
+rail. **Left track = hero**, vertically centred in its track: the fit-to-box number with the
+short pink rule **beneath** it (per the shared pink-accent rule). **Right track = text rail**,
+vertically centred: **definition → verdict → reading**, each in its existing role/colour
+(definition & reading = Label; verdict = 24px Baskerville italic), separated by the `section`
+gap. No band cells, no ranges-disclaimer (band-less). **Locked:** grid-tiles-full-height,
+the `minmax(0,…)` track clamp, fit-to-box hero, pink rule beneath the hero. **Build-and-review
+at 1421×773:** the 5/7 track ratio, the inter-track gap, and whether the hero is centred vs
+bottom-anchored in its track.
 
 **Radial — 2 columns (band metric only; not offered band-less)** — grid: 2 columns × (title row +
 2 content rows):
