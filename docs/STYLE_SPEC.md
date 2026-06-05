@@ -28,11 +28,13 @@ wanted; validate at the container size before final sign-off.
 | **Label** | Tableau Light (brands UPPERCASE) / Regular (values) | brand names, value labels | 13px |
 | **Caption** | Tableau Light | axis ticks, legend, small notes | 11px |
 
-- **Hero is the only sanctioned size override, and the only geometry-responsive size.** It may
-  be sized per chart AND may scale with the container (bounded min/max) so the focal figure
-  fills the canvas. No OTHER type derives its size from geometry — the ban on geometry-driven
-  font size (`Math.min(11, cellW*0.22)` and similar) still binds every non-hero element.
-  Chart graphics (e.g. radial rings) are not type and scale freely to fill.
+- **Hero is the only sanctioned size override, and the only geometry-responsive size: it is
+  fit-to-box.** The focal figure scales to fit its zone (so `1.9`, `2002`, `14.4` each fill the
+  same box), implemented without vw/vh (measure the glyphs and scale — e.g. SVG `getBBox` →
+  `viewBox`, after fonts load). Every OTHER element keeps a fixed role size — the ban on
+  geometry-driven font size still binds all non-hero type. Optional: a shared min/max bound so the
+  hero doesn't diverge wildly in size between directions (build-and-review). Chart graphics (radial
+  rings) are not type and scale freely.
 - **A chart-view title uses the Heading role (Tableau Light), never Baskerville.**
   Baskerville italic is hero numerals only; an indicator name shown as a chart
   title is a Heading, not a hero. If 16px reads with too little title contrast at
@@ -197,41 +199,24 @@ colour-coded (white text).
 - Locked vs review: placement + panel tokens (reused cell border/radius/fill) are locked;
   text sizes (16/13), colours, padding/gaps and line-height are build-and-review at 1421×773.
 
-## Headline / ban shell (Direction 1 — editorial dispatch)
-Shared layout for the Headline class (`tam`, `cagr`, `mcon`). One template fed per-indicator
-by a content object `{title, code, unit, scope, value, def, disclaimer, bands[], verdict,
-reading}`. Renders in the same contained card as the scorecard (`#0d0d0d`, 1px `#262626`,
-radius 16px); body transparent.
-- **Hero figure:** the value in Baskerville-italic (the sanctioned Hero override),
-  neutral-bright `#ededed`; unit as a reduced italic suffix (`0.32em`, muted). Anchored left;
-  a short `#e994a2` rule beneath it (the guaranteed accent).
-- **Title block:** `title` (Heading 16px) + caption subline `code · unit · scope` (Caption 11px `#777`).
-- **Logic pill (band metrics only):** the band chain arrow-joined (`Low → Mature → High`),
-  1px `#2d2d2d` border, pill radius; active label bright, rest muted. Top-right of title row.
-- **Band rail (band metrics only):** bands in a right-hand rail; active band marked (bright
-  text + pink marker). Band labels uppercase Tableau Light; range numerals Baskerville-italic;
-  `e.g.` examples Caption italic. Bands are illustrative copy (see Copy) and carry the
-  "illustrative, not a benchmark" disclaimer.
-- **Verdict + reading:** the scorecard commentary device reused — verdict (Baskerville-italic
-  ~26px) + reading (13px `#9a9a9a`), interim copy, brand-interpolated.
-- **Band-less metrics (`tam`, `mcon` today):** no pill, no rail — figure + definition +
-  verdict + reading is the complete layout; the pink hero rule still anchors.
-- **States:** honour too-small and no-data per global rules.
-Locked: the content model, the band vs band-less split, the guaranteed pink rule, Baskerville
-hero, neutral hero figure. Build-and-review at `1421 × 773`: hero size, rail/hero proportion,
-pill placement, verdict/reading sizes.
-
-### Direction 2 — Radial (band metrics only)
-Concentric rings encode the bands (inner→outer by the band order); the hero figure sits centred
-in the rings; a pink dot marks the active band's ring (the guaranteed accent). A right-hand
-legend lists the bands — serif-italic ranges, `e.g.` examples, bullet markers, hairline
-dividers. Offered only where bands exist; not shown for band-less metrics. Honours the
-size-&-aspect rules: rings + legend centred and bounded, never stretched.
-### Direction 3 — Ledger (scorecard sibling)
-Hero in a cell plus the bands as hairline 2px cells (the scorecard cell system); active band in
-the emphasis fill (`#3a3a3a`) with a pink "you are here" dot; a verdict + reading commentary
-panel below in the scorecard commentary style. Band-less metrics render hero cell + commentary
-(complete, not empty). Cells content-sized per the size-&-aspect rules.
+## Headline / ban shell
+### Section model — all directions are full-frame grids
+Every direction partitions the card into zones tiling the whole frame (2px hairline gutters
+throughout; non-hero content anchored top-aligned, fixed type; hero fit-to-box). Active band =
+`#3a3a3a` + bright text + small pink dot; inactive bands `#242424`, muted text. Single canonical
+title. Generous spacing at sans↔serif seams.
+- **Editorial (equal 3-col, open):** zones `title / hero / verdict / reading / bandL,M,H`. Hero
+  fills the full-height left column; verdict + reading the middle column; the three bands stack
+  right. Zones transparent (open); only band cells carry the `#242424`/`#3a3a3a` fills.
+- **Ledger (equal 3-col, equal rows; celled):** title strip, then row 1 = `hero | headline(verdict)
+  | text(reading)`, row 2 = the three bands beneath. All cells dark grey `#242424` (active band
+  `#3a3a3a`); benchmark numerals ~42px.
+- **Radial (equal 2-col):** zones `title / rings / legend / commentary`. The rings SVG scales to
+  fill its zone; the active band's ring is stroked `#e994a2` with a small dot (~r5) at its 12
+  o'clock; the legend lists the bands (text rows; active row bright text + pink bullet); verdict +
+  reading in commentary.
+- **Band-less metrics:** drop the band zones — `title / hero / verdict / reading` still tile the
+  frame; no band-referencing copy (§ Copy).
 
 **Fluid layout & aspect robustness (fixed type, fluid layout).** Type never changes with the
 container — only layout flexes.

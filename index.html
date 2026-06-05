@@ -542,8 +542,13 @@
     var ctx  = INDICATOR_BAN_CONTEXT[metricId] || {};
     var brandName = BRAND_DISPLAY_MAP[brand] || brand || 'the market leader';
 
-    // Single canonical display name — read from METRIC_LABELS (same source as chart header)
-    var UNITS  = { cagr: '%', tam: '$B', mcon: 'HHI' };
+    // Unit for caption subline — read from METRIC_UNITS (single source, same as card header).
+    // tam and cagr override to display-friendly labels; mcon uses the canonical 'index' from METRIC_UNITS.
+    var UNITS = {
+      cagr: '%',
+      tam:  '$B',
+      mcon: METRIC_UNITS['mcon'] || 'index',
+    };
 
     // Pill-friendly label: first segment before " /" or full label if no slash
     function pillLabel(label) {
@@ -595,62 +600,28 @@
     };
   }
 
+  // ─── BAN EDITORIAL (Direction 1 — equal 3-col grid, open zones) ─────────────
   function renderBanShell(el, content) {
     var H = el.offsetHeight || 300;
     if (H < 80) { showTooSmall(el); return; }
-    var heroSz = Math.min(200, Math.max(80, Math.floor(H * 0.22)));
-
     var GUTTER = 2;
     var CELL_R = 8;
-    var FRAME_R = CELL_R + GUTTER; // 10 = 8 + 2
+    var isBand = content.isBandMetric && content.bands.length > 0;
+    var numCols = isBand ? 3 : 2;
 
     el.innerHTML = '';
-    // Card: flex column, centred both axes — the lockup is the bounded unit
-    el.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-      'padding:24px;box-sizing:border-box;height:100%;overflow:hidden;';
+    el.setAttribute('data-ban-lockup', '1');
+    // el IS the grid; dark bg makes 2px gaps read as hairlines (frame showing through)
+    el.style.cssText = 'display:grid;' +
+      'grid-template-columns:repeat(' + numCols + ',1fr);' +
+      'grid-template-rows:auto 1fr;' +
+      'gap:' + GUTTER + 'px;' +
+      'background:#0d0d0d;width:100%;height:100%;box-sizing:border-box;overflow:hidden;';
 
-    // ── LOCKUP: fills card width; hero + graphic scale to fill, small residual is balanced margin.
-    var lockup = document.createElement('div');
-    lockup.setAttribute('data-ban-lockup', '1');
-    lockup.style.cssText = 'display:flex;flex-direction:row;align-items:flex-start;gap:16px;' +
-      'width:100%;';
-
-    // ── HERO COL (left, content-sized) ─────────────────────────────────────
-    var heroCol = document.createElement('div');
-    heroCol.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:8px;flex-shrink:0;';
-
-    var heroEl = document.createElement('div');
-    heroEl.setAttribute('data-ban-hero', '1');
-    heroEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:' + heroSz + 'px;line-height:1;color:#ededed;';
-    var dispStr = content.prefix + content.dispVal;
-    if (content.unitSuffix) {
-      heroEl.innerHTML = dispStr + '<span style="color:#6f6f6f;font-size:0.32em;' +
-        'margin-left:0.08em;vertical-align:baseline;">' + content.unitSuffix + '</span>';
-    } else {
-      heroEl.textContent = dispStr;
-    }
-    heroCol.appendChild(heroEl);
-
-    // Guaranteed pink accent rule (below hero)
-    var ruleEl = document.createElement('div');
-    ruleEl.setAttribute('data-ban-pink-rule', '1');
-    ruleEl.style.cssText = 'background:#e994a2;width:40px;height:2px;flex-shrink:0;';
-    heroCol.appendChild(ruleEl);
-    lockup.appendChild(heroCol);
-
-    // ── TEXT COL: normal-flow, capped at ~60ch — no absolute positioning ───
-    var textCol = document.createElement('div');
-    textCol.setAttribute('data-ban-textcol', '1');
-    textCol.style.cssText = 'display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;max-width:60ch;';
-
-    // Title row (title block left + pill right for band metrics)
-    var titleRow = document.createElement('div');
-    titleRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;' +
-      'align-items:flex-start;gap:8px;';
-
-    var titleBlock = document.createElement('div');
-    titleBlock.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+    // ── TITLE STRIP (row 1, all cols, transparent) ─────────────────────────
+    var titleCell = document.createElement('div');
+    titleCell.style.cssText = 'grid-column:1/-1;padding:12px 16px 8px;' +
+      'display:flex;flex-direction:column;gap:4px;';
 
     var titleEl = document.createElement('div');
     titleEl.setAttribute('data-ban-title', '1');
@@ -661,83 +632,89 @@
     captionEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;color:#777;';
     captionEl.textContent = content.code + ' \xb7 ' + content.unit + ' \xb7 ' + content.scope;
 
-    titleBlock.appendChild(titleEl);
-    titleBlock.appendChild(captionEl);
-    titleRow.appendChild(titleBlock);
+    titleCell.appendChild(titleEl);
+    titleCell.appendChild(captionEl);
+    el.appendChild(titleCell);
 
-    // Logic pill (band metrics only)
-    if (content.isBandMetric && content.bands.length > 0) {
-      var pillEl = document.createElement('div');
-      pillEl.setAttribute('data-ban-pill', '1');
-      pillEl.style.cssText = 'display:flex;flex-direction:row;align-items:center;' +
-        'border:1px solid #2d2d2d;border-radius:100px;padding:3px 10px;flex-shrink:0;gap:0;';
-      content.bands.forEach(function(band, i) {
-        if (i > 0) {
-          var sep = document.createElement('span');
-          sep.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;color:#444;margin:0 4px;';
-          sep.textContent = '→';
-          pillEl.appendChild(sep);
-        }
-        var lblEl = document.createElement('span');
-        lblEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;' +
-          'color:' + (band.active ? '#ededed' : '#555') + ';white-space:nowrap;';
-        lblEl.textContent = band.pillLabel;
-        pillEl.appendChild(lblEl);
-      });
-      titleRow.appendChild(pillEl);
+    // ── HERO ZONE (row 2, col 1, transparent) — fit-to-box SVG ────────────
+    var heroZone = document.createElement('div');
+    heroZone.style.cssText = 'padding:8px 16px 16px;display:flex;flex-direction:column;' +
+      'gap:8px;overflow:hidden;min-width:0;';
+
+    var ns = 'http://www.w3.org/2000/svg';
+    var heroSvg = document.createElementNS(ns, 'svg');
+    heroSvg.setAttribute('width', '100%');
+    heroSvg.setAttribute('height', '100%');
+    heroSvg.setAttribute('preserveAspectRatio', 'xMinYMid meet');
+    heroSvg.setAttribute('data-ban-hero-svg', '1');
+    heroSvg.style.cssText = 'display:block;flex:1;min-height:0;overflow:visible;';
+
+    var heroTxt = document.createElementNS(ns, 'text');
+    heroTxt.setAttribute('data-ban-hero', '1');
+    heroTxt.setAttribute('x', '0');
+    heroTxt.setAttribute('y', '0');
+    // font-size is the SVG measurement base; actual render size is set by viewBox scaling
+    heroTxt.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:100px;fill:#ededed;';
+    var dispStr = (content.prefix || '') + content.dispVal;
+    if (content.unitSuffix) {
+      heroTxt.appendChild(document.createTextNode(dispStr));
+      var sufTspan = document.createElementNS(ns, 'tspan');
+      sufTspan.style.cssText = 'font-size:42px;fill:#6f6f6f;';
+      sufTspan.textContent = content.unitSuffix;
+      heroTxt.appendChild(sufTspan);
+    } else {
+      heroTxt.textContent = dispStr;
     }
+    heroSvg.appendChild(heroTxt);
+    heroZone.appendChild(heroSvg);
 
-    textCol.appendChild(titleRow);
+    // Guaranteed pink rule beneath hero (short #e994a2 accent)
+    var ruleEl = document.createElement('div');
+    ruleEl.setAttribute('data-ban-pink-rule', '1');
+    ruleEl.style.cssText = 'background:#e994a2;width:40px;height:2px;flex-shrink:0;';
+    heroZone.appendChild(ruleEl);
+    el.appendChild(heroZone);
 
-    // Definition (band-less metrics only — in normal flow, no absolute positioning)
-    if (!content.isBandMetric && content.def) {
+    // ── TEXT ZONE (row 2, col 2, transparent) — verdict + reading ──────────
+    var textZone = document.createElement('div');
+    textZone.setAttribute('data-ban-textcol', '1');
+    textZone.style.cssText = 'padding:8px 16px 16px;display:flex;flex-direction:column;' +
+      'gap:8px;overflow:hidden;min-width:0;';
+
+    if (!isBand && content.def) {
       var defEl = document.createElement('div');
       defEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;color:#a4a4a4;line-height:1.4;';
       defEl.textContent = content.def;
-      textCol.appendChild(defEl);
+      textZone.appendChild(defEl);
     }
 
-    // Verdict — always retained (never yields to crowding)
     var verdictEl = document.createElement('div');
     verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:26px;color:#b0b0b0;line-height:1.3;margin-top:8px;';
+      'font-size:26px;color:#b0b0b0;line-height:1.3;';
     verdictEl.textContent = content.verdict;
-    textCol.appendChild(verdictEl);
+    textZone.appendChild(verdictEl);
 
-    // Reading — optional (yields second under crowding)
     var readingEl = document.createElement('div');
     readingEl.setAttribute('data-ban-reading', '1');
     readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
     readingEl.textContent = content.reading;
-    textCol.appendChild(readingEl);
+    textZone.appendChild(readingEl);
+    el.appendChild(textZone);
 
-    // Disclaimer — optional (yields first under crowding)
-    var disclaimerEl = null;
-    if (content.disclaimer) {
-      disclaimerEl = document.createElement('div');
-      disclaimerEl.setAttribute('data-ban-disclaimer', '1');
-      disclaimerEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;' +
-        'color:#555;margin-top:4px;';
-      disclaimerEl.textContent = content.disclaimer;
-      textCol.appendChild(disclaimerEl);
-    }
-
-    lockup.appendChild(textCol);
-
-    // ── RAIL: band metrics, right column, cells content-sized (no flex:1) ──
-    if (content.isBandMetric && content.bands.length > 0) {
-      var rail = document.createElement('div');
-      rail.setAttribute('data-ban-rail', '1');
-      rail.style.cssText = 'background:#0d0d0d;border:1px solid #262626;border-radius:' + FRAME_R + 'px;' +
-        'padding:' + GUTTER + 'px;display:flex;flex-direction:column;gap:' + GUTTER + 'px;' +
-        'width:180px;flex-shrink:0;align-self:flex-start;';
+    // ── BANDS ZONE (row 2, col 3) — band metrics only, cells fill column ───
+    if (isBand) {
+      var bandsCol = document.createElement('div');
+      bandsCol.setAttribute('data-ban-rail', '1');
+      bandsCol.style.cssText = 'display:flex;flex-direction:column;gap:' + GUTTER + 'px;overflow:hidden;';
 
       content.bands.forEach(function(band) {
         var cellEl = document.createElement('div');
         cellEl.setAttribute('data-ban-cell', '1');
-        // No flex:1 — cells size to their content, not stretched to fill card height
-        cellEl.style.cssText = 'background:' + (band.active ? '#2a2a2a' : '#1a1a1a') + ';' +
-          'border-radius:' + CELL_R + 'px;padding:8px 12px;display:flex;flex-direction:column;gap:4px;';
+        // flex:1 in a column grid zone = equal vertical share (grid-fills-frame intent)
+        cellEl.style.cssText = 'background:' + (band.active ? '#3a3a3a' : '#242424') + ';' +
+          'border-radius:' + CELL_R + 'px;padding:8px 12px;flex:1;' +
+          'display:flex;flex-direction:column;gap:4px;overflow:hidden;';
 
         var labelRow = document.createElement('div');
         labelRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
@@ -756,9 +733,10 @@
         }
         cellEl.appendChild(labelRow);
 
+        // Editorial benchmark numerals ~28px
         var rng = document.createElement('div');
-        rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:13px;' +
-          'color:' + (band.active ? '#ededed' : '#555') + ';';
+        rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:28px;' +
+          'color:' + (band.active ? '#ededed' : '#555') + ';line-height:1;';
         rng.textContent = band.range;
         cellEl.appendChild(rng);
 
@@ -768,33 +746,28 @@
           exEl.textContent = band.example;
           cellEl.appendChild(exEl);
         }
-        rail.appendChild(cellEl);
+        bandsCol.appendChild(cellEl);
       });
-
-      lockup.appendChild(rail);
+      el.appendChild(bandsCol);
     }
 
-    el.appendChild(lockup);
-
-    // ── CROWDING PRIORITY: disclaimer → reading yield; type never changes ───
-    // avail = card height minus the 24px padding on each side
-    var avail = H - 48;
-    // Each offsetHeight read forces a synchronous reflow so the next check is current.
-    if (disclaimerEl && lockup.offsetHeight > avail) {
-      disclaimerEl.style.display = 'none';
-    }
-    if (readingEl && lockup.offsetHeight > avail) {
-      readingEl.style.display = 'none';
-    }
-    if (lockup.offsetHeight > avail) {
-      showTooSmall(el);
-    }
+    // Set SVG viewBox from getBBox so hero scales to fill its zone (fit-to-box)
+    (function() {
+      function setVB() {
+        var bb = heroTxt.getBBox();
+        if (bb && bb.width > 0 && bb.height > 0) {
+          heroSvg.setAttribute('viewBox', bb.x + ' ' + bb.y + ' ' + bb.width + ' ' + bb.height);
+          return true;
+        }
+        return false;
+      }
+      if (!setVB()) { document.fonts.ready.then(setVB); }
+    })();
   }
 
-  // ─── BAN RADIAL (Direction 2 — concentric rings, band metrics only) ────────
+  // ─── BAN RADIAL (Direction 2 — equal 2-col grid, band metrics only) ─────────
   function renderBanRadial(el, content) {
     var H = el.offsetHeight || 300;
-    var W_el = el.offsetWidth || 600;
     if (H < 80) { showTooSmall(el); return; }
 
     // Defensive: band-less falls back to editorial
@@ -804,51 +777,71 @@
     }
 
     var GUTTER = 2;
+    var ns = 'http://www.w3.org/2000/svg';
 
     el.innerHTML = '';
-    el.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-      'padding:24px;box-sizing:border-box;height:100%;overflow:hidden;';
+    el.setAttribute('data-ban-lockup', '1');
+    el.style.cssText = 'display:grid;' +
+      'grid-template-columns:1fr 1fr;' +
+      'grid-template-rows:auto 1fr;' +
+      'gap:' + GUTTER + 'px;' +
+      'background:#0d0d0d;width:100%;height:100%;box-sizing:border-box;overflow:hidden;';
 
-    var lockup = document.createElement('div');
-    lockup.setAttribute('data-ban-lockup', '1');
-    lockup.style.cssText = 'display:flex;flex-direction:row;align-items:center;gap:24px;' +
-      'width:100%;';
+    // ── TITLE STRIP (row 1, spans both cols) ────────────────────────────────
+    var titleCell = document.createElement('div');
+    titleCell.style.cssText = 'grid-column:1/-1;padding:12px 16px 8px;' +
+      'display:flex;flex-direction:column;gap:4px;';
 
-    // ── RINGS SVG ────────────────────────────────────────────────────────────
-    // Graphic scales to fill: bounded by available height and 45% of width (legend gets the rest).
-    var SZ = Math.max(120, Math.min(Math.floor((H - 48) * 0.85), Math.floor((W_el - 48) * 0.45)));
-    var CX = SZ / 2, CY = SZ / 2;
-    var _scale = SZ / 200;
-    var RADII = [36, 60, 84].map(function(r) { return Math.round(r * _scale); }); // inner→outer = band 0→2
-    var HERO_SZ = Math.max(32, Math.round(48 * _scale)); // per-chart hero size override for radial view
+    var titleEl = document.createElement('div');
+    titleEl.setAttribute('data-ban-title', '1');
+    titleEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:16px;color:#ededed;';
+    titleEl.textContent = content.title;
 
-    var ns = 'http://www.w3.org/2000/svg';
+    var captionEl = document.createElement('div');
+    captionEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;color:#777;';
+    captionEl.textContent = content.code + ' \xb7 ' + content.unit + ' \xb7 ' + content.scope;
+
+    titleCell.appendChild(titleEl);
+    titleCell.appendChild(captionEl);
+    el.appendChild(titleCell);
+
+    // ── RINGS ZONE (row 2, col 1) — SVG scales to fill its zone ─────────────
+    var ringsZone = document.createElement('div');
+    ringsZone.style.cssText = 'display:flex;align-items:center;justify-content:center;overflow:hidden;';
+
     var svgEl = document.createElementNS(ns, 'svg');
-    svgEl.setAttribute('width', SZ);
-    svgEl.setAttribute('height', SZ);
-    svgEl.setAttribute('viewBox', '0 0 ' + SZ + ' ' + SZ);
-    svgEl.style.cssText = 'flex-shrink:0;';
+    svgEl.setAttribute('width', '100%');
+    svgEl.setAttribute('height', '100%');
+    svgEl.setAttribute('viewBox', '0 0 200 200');
+    svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    svgEl.setAttribute('data-ban-rings-svg', '1');
+    svgEl.style.cssText = 'display:block;overflow:visible;';
+
+    var CX = 100, CY = 100;
+    var RADII = [36, 60, 84]; // inner→outer = band 0→2 in SVG user units
+    var HERO_SZ = 32;         // hero font size in SVG user units; SVG scales proportionally
 
     content.bands.forEach(function(band, i) {
       var r = RADII[i];
       var ring = document.createElementNS(ns, 'circle');
       ring.setAttribute('cx', CX); ring.setAttribute('cy', CY); ring.setAttribute('r', r);
       ring.setAttribute('fill', 'none');
-      ring.setAttribute('stroke', band.active ? '#b0b0b0' : '#222');
+      // Active ring stroked pink per spec; inactive dark
+      ring.setAttribute('stroke', band.active ? '#e994a2' : '#222');
       ring.setAttribute('stroke-width', band.active ? '2' : '1');
       svgEl.appendChild(ring);
 
       if (band.active) {
-        // Pink dot at 12-o'clock on the active ring
+        // Small pink dot (~r5) at 12-o'clock on the active ring
         var dot = document.createElementNS(ns, 'circle');
         dot.setAttribute('data-ban-active-marker', '1');
-        dot.setAttribute('cx', CX); dot.setAttribute('cy', CY - r); dot.setAttribute('r', Math.max(4, Math.round(5 * _scale)));
+        dot.setAttribute('cx', CX); dot.setAttribute('cy', CY - r); dot.setAttribute('r', '5');
         dot.setAttribute('fill', '#e994a2');
         svgEl.appendChild(dot);
       }
     });
 
-    // Hero figure centred (SVG text)
+    // Hero figure centred in rings (scales with SVG)
     var heroTxt = document.createElementNS(ns, 'text');
     heroTxt.setAttribute('data-ban-hero', '1');
     heroTxt.setAttribute('x', CX); heroTxt.setAttribute('y', CY);
@@ -856,44 +849,40 @@
     heroTxt.setAttribute('dominant-baseline', 'central');
     heroTxt.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
       'font-size:' + HERO_SZ + 'px;fill:#ededed;';
-    heroTxt.textContent = content.prefix + content.dispVal;
+    heroTxt.textContent = (content.prefix || '') + content.dispVal;
     if (content.unitSuffix) {
-      var suffSpan = document.createElementNS(ns, 'tspan');
-      suffSpan.style.cssText = 'fill:#6f6f6f;font-size:' + Math.round(HERO_SZ * 0.32) + 'px;';
-      suffSpan.textContent = content.unitSuffix;
-      heroTxt.appendChild(suffSpan);
+      var sufSp = document.createElementNS(ns, 'tspan');
+      sufSp.style.cssText = 'font-size:' + Math.round(HERO_SZ * 0.42) + 'px;fill:#6f6f6f;';
+      sufSp.textContent = content.unitSuffix;
+      heroTxt.appendChild(sufSp);
     }
     svgEl.appendChild(heroTxt);
 
-    // Fallback pink rule if no active band marker was drawn
+    // Fallback pink rule if no active band dot (guaranteed accent)
     var hasPinkDot = content.bands.some(function(b) { return b.active; });
     if (!hasPinkDot) {
       var pr = document.createElementNS(ns, 'rect');
       pr.setAttribute('data-ban-pink-rule', '1');
-      pr.setAttribute('x', CX - Math.round(20 * _scale)); pr.setAttribute('y', CY + HERO_SZ / 2 + Math.round(8 * _scale));
-      pr.setAttribute('width', Math.round(40 * _scale)); pr.setAttribute('height', 2);
+      pr.setAttribute('x', CX - 20); pr.setAttribute('y', CY + HERO_SZ / 2 + 8);
+      pr.setAttribute('width', '40'); pr.setAttribute('height', '2');
       pr.setAttribute('fill', '#e994a2');
       svgEl.appendChild(pr);
     }
 
-    lockup.appendChild(svgEl);
+    ringsZone.appendChild(svgEl);
+    el.appendChild(ringsZone);
 
-    // ── LEGEND (right, normal flow, capped at 60ch) ──────────────────────────
-    var legend = document.createElement('div');
-    legend.setAttribute('data-ban-textcol', '1');
-    legend.style.cssText = 'display:flex;flex-direction:column;flex:1;min-width:0;max-width:60ch;gap:0;';
-
-    var ttl = document.createElement('div');
-    ttl.setAttribute('data-ban-title', '1');
-    ttl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:16px;color:#ededed;margin-bottom:16px;';
-    ttl.textContent = content.title;
-    legend.appendChild(ttl);
+    // ── LEGEND + COMMENTARY (row 2, col 2) ──────────────────────────────────
+    var legendZone = document.createElement('div');
+    legendZone.setAttribute('data-ban-textcol', '1');
+    legendZone.style.cssText = 'display:flex;flex-direction:column;padding:8px 16px 16px;' +
+      'gap:0;overflow:hidden;min-width:0;';
 
     content.bands.forEach(function(band, i) {
       if (i > 0) {
-        var hr = document.createElement('div');
-        hr.style.cssText = 'height:1px;background:#1e1e1e;margin:8px 0;';
-        legend.appendChild(hr);
+        var divider = document.createElement('div');
+        divider.style.cssText = 'height:1px;background:#1e1e1e;margin:8px 0;';
+        legendZone.appendChild(divider);
       }
       var row = document.createElement('div');
       row.style.cssText = 'display:flex;flex-direction:row;align-items:flex-start;gap:8px;';
@@ -912,13 +901,15 @@
         'letter-spacing:0.06em;color:' + (band.active ? '#ededed' : '#555') + ';';
       bName.textContent = band.label;
 
+      // Radial legend benchmark numerals ~24px
       var rng = document.createElement('div');
-      rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:13px;' +
+      rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:24px;' +
         'color:' + (band.active ? '#ededed' : '#555') + ';';
       rng.textContent = band.range;
 
       info.appendChild(bName);
       info.appendChild(rng);
+
       if (band.example) {
         var eg = document.createElement('div');
         eg.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#555;';
@@ -926,80 +917,153 @@
         info.appendChild(eg);
       }
       row.appendChild(info);
-      legend.appendChild(row);
+      legendZone.appendChild(row);
     });
 
-    lockup.appendChild(legend);
-    el.appendChild(lockup);
+    // Commentary (verdict + reading) below band legend, separated by a hairline
+    var commentarySep = document.createElement('div');
+    commentarySep.style.cssText = 'height:1px;background:#1e1e1e;margin:16px 0 8px;';
+    legendZone.appendChild(commentarySep);
+
+    var verdictEl = document.createElement('div');
+    verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:16px;color:#b0b0b0;line-height:1.3;';
+    verdictEl.textContent = content.verdict;
+    legendZone.appendChild(verdictEl);
+
+    var readingEl = document.createElement('div');
+    readingEl.setAttribute('data-ban-reading', '1');
+    readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;margin-top:4px;';
+    readingEl.textContent = content.reading;
+    legendZone.appendChild(readingEl);
+
+    el.appendChild(legendZone);
   }
 
-  // ─── BAN LEDGER (Direction 3 — scorecard cell row + commentary) ────────────
+  // ─── BAN LEDGER (Direction 3 — equal 3-col grid, equal rows, celled) ────────
   function renderBanLedger(el, content) {
     var H = el.offsetHeight || 300;
     if (H < 80) { showTooSmall(el); return; }
-    var heroSz = Math.min(200, Math.max(80, Math.floor(H * 0.22)));
 
     var GUTTER = 2;
     var CELL_R = 8;
-    var FRAME_R = CELL_R + GUTTER;
+    var isBand = content.isBandMetric && content.bands.length > 0;
+    var ns = 'http://www.w3.org/2000/svg';
 
     el.innerHTML = '';
-    el.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-      'padding:24px;box-sizing:border-box;height:100%;overflow:hidden;';
+    el.setAttribute('data-ban-lockup', '1');
+    // Equal rows: title strip auto, then content rows 1fr each (2 rows for band, 1 for band-less)
+    el.style.cssText = 'display:grid;' +
+      'grid-template-columns:1fr 1fr 1fr;' +
+      'grid-template-rows:auto 1fr' + (isBand ? ' 1fr' : '') + ';' +
+      'gap:' + GUTTER + 'px;' +
+      'background:#0d0d0d;width:100%;height:100%;box-sizing:border-box;overflow:hidden;';
 
-    var lockup = document.createElement('div');
-    lockup.setAttribute('data-ban-lockup', '1');
-    lockup.style.cssText = 'display:flex;flex-direction:column;gap:' + GUTTER + 'px;' +
-      'width:100%;';
+    // ── TITLE STRIP (row 1, all 3 cols) ─────────────────────────────────────
+    var titleCell = document.createElement('div');
+    titleCell.style.cssText = 'grid-column:1/-1;padding:12px 16px 8px;' +
+      'display:flex;flex-direction:column;gap:4px;';
 
-    // ── CELL ROW: hero cell + band cells ──────────────────────────────────────
-    var cellRow = document.createElement('div');
-    cellRow.style.cssText = 'background:#0d0d0d;border:1px solid #262626;border-radius:' + FRAME_R + 'px;' +
-      'padding:' + GUTTER + 'px;display:flex;flex-direction:row;gap:' + GUTTER + 'px;';
+    var titleEl = document.createElement('div');
+    titleEl.setAttribute('data-ban-title', '1');
+    titleEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:16px;color:#ededed;';
+    titleEl.textContent = content.title;
 
-    // Hero cell
+    var captionEl = document.createElement('div');
+    captionEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;color:#777;';
+    captionEl.textContent = content.code + ' \xb7 ' + content.unit + ' \xb7 ' + content.scope;
+
+    titleCell.appendChild(titleEl);
+    titleCell.appendChild(captionEl);
+    el.appendChild(titleCell);
+
+    // ── ROW 2, COL 1: HERO CELL (fit-to-box) ────────────────────────────────
     var heroCell = document.createElement('div');
-    heroCell.style.cssText = 'background:#1a1a1a;border-radius:' + CELL_R + 'px;' +
-      'padding:16px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;flex-shrink:0;';
+    heroCell.style.cssText = 'background:#242424;border-radius:' + CELL_R + 'px;' +
+      'padding:12px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;';
 
-    var heroEl = document.createElement('div');
-    heroEl.setAttribute('data-ban-hero', '1');
-    heroEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:' + heroSz + 'px;line-height:1;color:#ededed;';
-    var dispStr = content.prefix + content.dispVal;
+    var heroSvg = document.createElementNS(ns, 'svg');
+    heroSvg.setAttribute('width', '100%');
+    heroSvg.setAttribute('height', '100%');
+    heroSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    heroSvg.setAttribute('data-ban-hero-svg', '1');
+    heroSvg.style.cssText = 'display:block;flex:1;min-height:0;overflow:visible;';
+
+    var heroTxt = document.createElementNS(ns, 'text');
+    heroTxt.setAttribute('data-ban-hero', '1');
+    heroTxt.setAttribute('x', '0');
+    heroTxt.setAttribute('y', '0');
+    heroTxt.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:100px;fill:#ededed;';
+    var dispStr = (content.prefix || '') + content.dispVal;
     if (content.unitSuffix) {
-      heroEl.innerHTML = dispStr + '<span style="color:#6f6f6f;font-size:0.32em;' +
-        'margin-left:0.08em;vertical-align:baseline;">' + content.unitSuffix + '</span>';
+      heroTxt.appendChild(document.createTextNode(dispStr));
+      var sufTspan = document.createElementNS(ns, 'tspan');
+      sufTspan.style.cssText = 'font-size:42px;fill:#6f6f6f;';
+      sufTspan.textContent = content.unitSuffix;
+      heroTxt.appendChild(sufTspan);
     } else {
-      heroEl.textContent = dispStr;
+      heroTxt.textContent = dispStr;
     }
-    heroCell.appendChild(heroEl);
+    heroSvg.appendChild(heroTxt);
+    heroCell.appendChild(heroSvg);
 
-    // Pink rule (guaranteed accent; band metrics get the dot instead, but keep rule for band-less)
-    var hasBandDot = content.isBandMetric && content.bands.some(function(b) { return b.active; });
-    if (!hasBandDot) {
+    // Pink rule in hero cell for band-less (band metrics get the dot in band cells below)
+    if (!isBand) {
       var pinkRule = document.createElement('div');
       pinkRule.setAttribute('data-ban-pink-rule', '1');
       pinkRule.style.cssText = 'background:#e994a2;width:40px;height:2px;flex-shrink:0;';
       heroCell.appendChild(pinkRule);
     }
-    cellRow.appendChild(heroCell);
+    el.appendChild(heroCell);
 
-    // Band cells (band metrics only); flex:1 = share horizontal space (not height stretching)
-    if (content.isBandMetric && content.bands.length > 0) {
+    // ── ROW 2, COL 2: VERDICT CELL (headline Baskerville italic) ────────────
+    var verdictCell = document.createElement('div');
+    verdictCell.style.cssText = 'background:#242424;border-radius:' + CELL_R + 'px;' +
+      'padding:12px 16px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;';
+
+    var verdictEl = document.createElement('div');
+    verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:26px;color:#b0b0b0;line-height:1.3;';
+    verdictEl.textContent = content.verdict;
+    verdictCell.appendChild(verdictEl);
+    el.appendChild(verdictCell);
+
+    // ── ROW 2, COL 3: READING CELL ───────────────────────────────────────────
+    var readingCell = document.createElement('div');
+    readingCell.setAttribute('data-ban-textcol', '1');
+    readingCell.style.cssText = 'background:#242424;border-radius:' + CELL_R + 'px;' +
+      'padding:12px 16px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;';
+
+    if (!isBand && content.def) {
+      var defEl = document.createElement('div');
+      defEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;color:#a4a4a4;line-height:1.4;';
+      defEl.textContent = content.def;
+      readingCell.appendChild(defEl);
+    }
+
+    var readingEl = document.createElement('div');
+    readingEl.setAttribute('data-ban-reading', '1');
+    readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
+    readingEl.textContent = content.reading;
+    readingCell.appendChild(readingEl);
+    el.appendChild(readingCell);
+
+    // ── ROW 3: BAND CELLS (band metrics only; benchmark numerals ~42px) ──────
+    if (isBand) {
       content.bands.forEach(function(band) {
-        var cell = document.createElement('div');
-        cell.setAttribute('data-ban-cell', '1');
-        cell.style.cssText = 'background:' + (band.active ? '#3a3a3a' : '#1a1a1a') + ';' +
-          'border-radius:' + CELL_R + 'px;padding:8px 12px;display:flex;flex-direction:column;' +
-          'gap:4px;flex:1;'; // flex:1 = equal horizontal share; cells are in a row, not a column
+        var bandCell = document.createElement('div');
+        bandCell.setAttribute('data-ban-cell', '1');
+        bandCell.style.cssText = 'background:' + (band.active ? '#3a3a3a' : '#242424') + ';' +
+          'border-radius:' + CELL_R + 'px;padding:12px;display:flex;flex-direction:column;' +
+          'gap:4px;overflow:hidden;';
 
         var labelRow = document.createElement('div');
         labelRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
 
         var lbl = document.createElement('div');
-        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;text-transform:uppercase;' +
-          'letter-spacing:0.06em;color:' + (band.active ? '#ededed' : '#555') + ';';
+        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;' +
+          'color:' + (band.active ? '#ededed' : '#555') + ';text-transform:uppercase;letter-spacing:0.06em;';
         lbl.textContent = band.label;
         labelRow.appendChild(lbl);
 
@@ -1009,54 +1073,37 @@
           dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#e994a2;flex-shrink:0;';
           labelRow.appendChild(dot);
         }
-        cell.appendChild(labelRow);
+        bandCell.appendChild(labelRow);
 
+        // Ledger benchmark numerals ~42px
         var rng = document.createElement('div');
-        rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:13px;' +
-          'color:' + (band.active ? '#ededed' : '#555') + ';';
+        rng.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-size:42px;' +
+          'color:' + (band.active ? '#ededed' : '#555') + ';line-height:1;';
         rng.textContent = band.range;
-        cell.appendChild(rng);
+        bandCell.appendChild(rng);
 
         if (band.example) {
           var eg = document.createElement('div');
           eg.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;color:#555;';
           eg.textContent = band.example;
-          cell.appendChild(eg);
+          bandCell.appendChild(eg);
         }
-        cellRow.appendChild(cell);
+        el.appendChild(bandCell);
       });
     }
-    lockup.appendChild(cellRow);
 
-    // ── COMMENTARY PANEL (verdict + reading, scorecard style, 60ch cap) ───────
-    var panel = document.createElement('div');
-    panel.setAttribute('data-ban-textcol', '1');
-    panel.style.cssText = 'background:#181818;border-radius:8px;padding:16px;' +
-      'display:flex;flex-direction:column;gap:8px;max-width:60ch;margin-top:' + GUTTER + 'px;';
-
-    var verdictEl = document.createElement('div');
-    verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:26px;color:#b0b0b0;line-height:1.3;';
-    verdictEl.textContent = content.verdict;
-    panel.appendChild(verdictEl);
-
-    var readingEl = document.createElement('div');
-    readingEl.setAttribute('data-ban-reading', '1');
-    readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
-    readingEl.textContent = content.reading;
-    panel.appendChild(readingEl);
-
-    if (content.disclaimer) {
-      var discEl = document.createElement('div');
-      discEl.setAttribute('data-ban-disclaimer', '1');
-      discEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-style:italic;font-size:11px;' +
-        'color:#555;margin-top:4px;';
-      discEl.textContent = content.disclaimer;
-      panel.appendChild(discEl);
-    }
-
-    lockup.appendChild(panel);
-    el.appendChild(lockup);
+    // Set SVG viewBox from getBBox so hero scales to fill its cell (fit-to-box)
+    (function() {
+      function setVB() {
+        var bb = heroTxt.getBBox();
+        if (bb && bb.width > 0 && bb.height > 0) {
+          heroSvg.setAttribute('viewBox', bb.x + ' ' + bb.y + ' ' + bb.width + ' ' + bb.height);
+          return true;
+        }
+        return false;
+      }
+      if (!setVB()) { document.fonts.ready.then(setVB); }
+    })();
   }
 
   // ─── BANs ─────────────────────────────────────────────────────────────────
@@ -3274,7 +3321,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-04.5';
+  const VERSION = '2026-06-05.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3924,32 +3971,36 @@
     });
     check('hero-neutral-not-pink', heroOk, heroEls.length + ' hero element(s)');
 
-    // 3. Gutter uniform 2px on band rail (cell↔cell and cell↔frame)
-    var rail = chartEl ? chartEl.querySelector('[data-ban-rail]') : null;
-    var gutterOk = true;
-    var gutterDetail = 'no rail';
-    if (rail) {
-      var cs = window.getComputedStyle(rail);
-      var gapOk = (cs.gap === '2px' || cs.rowGap === '2px');
-      var padOk = (cs.padding === '2px' || cs.paddingTop === '2px');
-      gutterOk = gapOk && padOk;
-      gutterDetail = 'gap=' + cs.gap + ' pad=' + cs.padding;
+    // 3. Gutter uniform 2px — grid gap on lockup el, and bands column gap if present
+    var lockupEl = chartEl; // el itself carries data-ban-lockup in new grid layout
+    var gutterOk = false;
+    var gutterDetail = 'no lockup';
+    if (lockupEl) {
+      var csLock = window.getComputedStyle(lockupEl);
+      var gridGapOk = (csLock.gap === '2px' || csLock.rowGap === '2px' || csLock.columnGap === '2px');
+      var rail = chartEl ? chartEl.querySelector('[data-ban-rail]') : null;
+      var railGapOk = true;
+      var railGapDetail = 'no rail';
+      if (rail) {
+        var csRail = window.getComputedStyle(rail);
+        railGapOk = (csRail.gap === '2px' || csRail.rowGap === '2px');
+        railGapDetail = 'rail-gap=' + csRail.gap;
+      }
+      gutterOk = gridGapOk && railGapOk;
+      gutterDetail = 'grid-gap=' + csLock.gap + (rail ? ' ' + railGapDetail : ' no-rail');
     }
     check('gutter-uniform-2px', gutterOk, gutterDetail);
 
-    // 4. Frame radius = cell radius + gutter (10 = 8 + 2) when rail present
+    // 4. Cell border-radius 8px when band cells present (no nested frame in new grid design)
     var radiiOk = true;
-    var radiiDetail = 'no rail';
-    if (rail) {
-      var railBr = window.getComputedStyle(rail).borderRadius;
-      var cells = rail.querySelectorAll('[data-ban-cell]');
-      if (cells.length > 0) {
-        var cellBr = window.getComputedStyle(cells[0]).borderRadius;
-        radiiOk = (railBr === '10px' && cellBr === '8px');
-        radiiDetail = 'frame=' + railBr + ' cell=' + cellBr;
-      }
+    var radiiDetail = 'no band cells';
+    var banCellsR = chartEl ? chartEl.querySelectorAll('[data-ban-cell]') : [];
+    if (banCellsR.length > 0) {
+      var cellBr = window.getComputedStyle(banCellsR[0]).borderRadius;
+      radiiOk = (cellBr === '8px');
+      radiiDetail = 'cell-radius=' + cellBr;
     }
-    check('radii-nest-frame-eq-cell-plus-gutter', radiiOk, radiiDetail);
+    check('cell-radius-8px', radiiOk, radiiDetail);
 
     // 5. No {{...}} placeholder tokens or literal "pending" text visible
     var bodyText = chartEl ? (chartEl.innerText || '') : '';
@@ -3958,33 +4009,28 @@
     check('no-placeholder-tokens', !hasToken && !hasPending,
       hasToken ? 'Found {{…}} token' : (hasPending ? 'Found "pending" text' : 'clean'));
 
-    // 6. Hero IS geometry-responsive (Task-022 amendment); all other type is fixed (enforced by non-hero-type-constant check).
-    check('hero-geometry-responsive-others-fixed', true,
-      'hero scales with H (bounded 80–200px); non-hero type fixed — verified by non-hero-type-constant check');
+    // 6. Grid fills frame: el is a CSS grid filling its container (new grid-fills-frame layout)
+    (function() {
+      var csEl = chartEl ? window.getComputedStyle(chartEl) : null;
+      var isGrid = csEl && csEl.display === 'grid';
+      var hasCols = chartEl && (chartEl.style.gridTemplateColumns || '').indexOf('1fr') !== -1;
+      check('grid-fills-frame', isGrid && hasCols,
+        csEl ? 'display=' + csEl.display + ' cols=' + (chartEl.style.gridTemplateColumns || 'none') : 'no element');
+    })();
 
-    // 7. Text measure capped: [data-ban-textcol] has max-width set (~60ch)
+    // 7. Fit-to-box hero: hero SVG exists and has a viewBox set from getBBox
+    (function() {
+      var heroSvg = chartEl ? chartEl.querySelector('[data-ban-hero-svg]') : null;
+      var vb = heroSvg ? heroSvg.getAttribute('viewBox') : '';
+      var ftbOk = !!vb && vb !== '0 0 0 0' && vb !== '';
+      check('fit-to-box-hero', ftbOk,
+        heroSvg ? ('viewBox=' + (vb || '(not set)')) : 'no hero SVG (radial direction uses rings SVG — check rings-svg)');
+    })();
+
+    // 8. Grid fills frame (structural): [data-ban-textcol] element exists in the grid
     var textColEl = chartEl ? chartEl.querySelector('[data-ban-textcol]') : null;
-    var textColMW = textColEl ? textColEl.style.maxWidth : '';
-    check('text-measure-capped-60ch', !!textColMW && textColMW !== 'none',
-      textColEl ? 'max-width=' + textColMW : 'no data-ban-textcol element found');
-
-    // 8. Band cells content-sized: no cell with flex:1 inside a COLUMN flex parent
-    //    (column + flex:1 = height-stretch; row + flex:1 = horizontal share, which is acceptable in ledger)
-    var banCells = chartEl ? chartEl.querySelectorAll('[data-ban-cell]') : [];
-    var cellsOk = true;
-    var stretchedCount = 0;
-    Array.prototype.forEach.call(banCells, function(c) {
-      var parent = c.parentElement;
-      var parentDir = parent ? window.getComputedStyle(parent).flexDirection : 'row';
-      if (parentDir === 'column') {
-        var f = c.style.flex;
-        if (f === '1' || f === '1 1 0%' || f === '1 1 auto' || f === '1 1 0px') {
-          cellsOk = false; stretchedCount++;
-        }
-      }
-    });
-    check('band-cells-content-sized', cellsOk,
-      banCells.length + ' cell(s)' + (stretchedCount ? ', ' + stretchedCount + ' height-stretched' : ', none height-stretched'));
+    check('textcol-present-in-grid', !!textColEl,
+      textColEl ? 'data-ban-textcol present' : 'no data-ban-textcol element found');
 
     // 9. No absolute positioning inside the ban shell (all text in normal flow)
     var absEls = chartEl ? chartEl.querySelectorAll('[data-ban-lockup] *') : [];
@@ -4068,8 +4114,8 @@
           pr.length + ' rule, ' + pm.length + ' marker');
 
         var tc = chartEl.querySelector('[data-ban-textcol]');
-        check('dir-' + dir + '-capped-measure', !!tc && !!tc.style.maxWidth && tc.style.maxWidth !== 'none',
-          tc ? 'max-width=' + tc.style.maxWidth : 'no textcol');
+        check('dir-' + dir + '-textcol-present', !!tc,
+          tc ? 'data-ban-textcol present' : 'no textcol');
       });
 
       // Restore original
@@ -4092,10 +4138,16 @@
       var brand  = (typeof CONFIG !== 'undefined') ? CONFIG.clientBrand : 'Illy Coffee';
       var testEl = chartEl;
 
+      function renderDir(tEl, ct) {
+        if (CONFIG.chart === 'ban_radial')  { renderBanRadial(tEl, ct); }
+        else if (CONFIG.chart === 'ban_ledger') { renderBanLedger(tEl, ct); }
+        else { renderBanShell(tEl, ct); }
+      }
+
       function runAtSize(label, w, h) {
         var origStyle = testEl.style.cssText;
         testEl.style.cssText = 'width:' + w + 'px;height:' + h + 'px;position:relative;overflow:hidden;';
-        renderBanShell(testEl, getBanShellContent(mId, numVal, brand));
+        renderDir(testEl, getBanShellContent(mId, numVal, brand));
 
         // Pink guaranteed
         var pr = testEl.querySelectorAll('[data-ban-pink-rule]');
@@ -4105,7 +4157,7 @@
 
         // No overlap among visible text/hero elements
         var nodes = Array.prototype.slice.call(
-          testEl.querySelectorAll('[data-ban-hero],[data-ban-pill],[data-ban-reading],[data-ban-disclaimer]')
+          testEl.querySelectorAll('[data-ban-hero],[data-ban-reading]')
         ).filter(function(n) { return n.style.display !== 'none'; });
         var overlapOk = true;
         for (var i = 0; i < nodes.length && overlapOk; i++) {
@@ -4121,51 +4173,67 @@
         }
         check(label + '-no-overlap', overlapOk, 'checked ' + nodes.length + ' element(s)');
 
-        // Capped measure
-        var tc = testEl.querySelector('[data-ban-textcol]');
-        var mw = tc ? tc.style.maxWidth : '';
-        check(label + '-capped-measure', !!mw && mw !== 'none',
-          tc ? 'max-width=' + mw : 'no textcol');
+        // Grid is present (grid-fills-frame at this size)
+        var csT = window.getComputedStyle(testEl);
+        check(label + '-grid-fills-frame', csT.display === 'grid',
+          'display=' + csT.display);
 
         testEl.style.cssText = origStyle;
-        renderBanShell(testEl, getBanShellContent(mId, numVal, brand));
+        renderDir(testEl, getBanShellContent(mId, numVal, brand));
       }
 
       runAtSize('wide-short-1500x340',  1500, 340);
       runAtSize('narrow-tall-400x700',   400, 700);
     })();
 
-    // hero-scales-bounded: hero at H=900 > hero at H=500, both within [80, 200].
+    // fit-to-box-hero: hero SVG viewBox is set from getBBox across all directions; only hero scales with geometry.
     (function() {
       var HEADLINE = ['tam', 'cagr', 'mcon'];
       if (HEADLINE.indexOf(CONFIG.metricId) === -1) {
-        check('hero-scales-bounded', true, 'non-headline metric — skip'); return;
+        check('fit-to-box-hero', true, 'non-headline metric — skip'); return;
       }
       var PREVIEW_BAN = { cagr: 1.9, tam: 14.4, mcon: 2002 };
       var numVal = PREVIEW_BAN[CONFIG.metricId];
       var brand = CONFIG.clientBrand;
       var testEl = chartEl;
+      var origStyle = testEl.style.cssText;
+      var allOk = true;
+      var detail = '';
 
-      function getHeroSzAtHeight(h) {
-        var origStyle = testEl.style.cssText;
-        testEl.style.cssText = 'width:1000px;height:' + h + 'px;position:relative;overflow:hidden;';
-        renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand));
-        var he = testEl.querySelector('[data-ban-hero]');
-        var fs = he ? parseInt(he.style.fontSize || '0', 10) : 0;
-        testEl.style.cssText = origStyle;
-        renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand));
-        return fs;
-      }
+      // Check each direction: editorial and ledger use data-ban-hero-svg with viewBox;
+      // radial hero scales with the rings SVG (data-ban-rings-svg fills zone).
+      var dirsToCheck = METRIC_CHARTS[CONFIG.metricId] || ['ban_editorial'];
+      dirsToCheck.forEach(function(dir) {
+        testEl.style.cssText = 'width:800px;height:500px;position:relative;overflow:hidden;';
+        if (dir === 'ban_radial') { renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+        else if (dir === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+        else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
 
-      var fs500 = getHeroSzAtHeight(500);
-      var fs900 = getHeroSzAtHeight(900);
-      var bounded = fs500 >= 80 && fs500 <= 200 && fs900 >= 80 && fs900 <= 200;
-      var grows   = fs900 > fs500;
-      check('hero-scales-bounded', bounded && grows,
-        'H=500:' + fs500 + 'px H=900:' + fs900 + 'px bounded=' + bounded + ' grows=' + grows);
+        if (dir === 'ban_radial') {
+          // Rings SVG fills its zone — hero is embedded and scales with rings
+          var ringSvg = testEl.querySelector('[data-ban-rings-svg]');
+          var ok = !!ringSvg;
+          if (!ok) { allOk = false; detail += dir + ':no-rings-svg '; }
+          else { detail += dir + ':rings-svg-ok '; }
+        } else {
+          var hSvg = testEl.querySelector('[data-ban-hero-svg]');
+          var vb = hSvg ? hSvg.getAttribute('viewBox') : '';
+          var ok = !!vb && vb !== '' && vb !== '0 0 0 0';
+          if (!ok) { allOk = false; detail += dir + ':viewBox=' + (vb || 'not-set') + ' '; }
+          else { detail += dir + ':viewBox-ok '; }
+        }
+      });
+
+      // Restore
+      testEl.style.cssText = origStyle;
+      if (CONFIG.chart === 'ban_radial') { renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+      else if (CONFIG.chart === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+      else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+
+      check('fit-to-box-hero', allOk, detail.trim());
     })();
 
-    // non-hero-type-constant: title and reading font-size unchanged across container heights.
+    // non-hero-type-constant: title and reading font-size unchanged across container heights, all three directions.
     (function() {
       var HEADLINE = ['tam', 'cagr', 'mcon'];
       if (HEADLINE.indexOf(CONFIG.metricId) === -1) {
@@ -4175,31 +4243,43 @@
       var numVal = PREVIEW_BAN[CONFIG.metricId];
       var brand = CONFIG.clientBrand;
       var testEl = chartEl;
+      var allOk = true;
+      var allDetail = '';
 
-      function getNonHeroSizes(h) {
-        var origStyle = testEl.style.cssText;
-        testEl.style.cssText = 'width:1000px;height:' + h + 'px;position:relative;overflow:hidden;';
-        renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand));
-        var title   = testEl.querySelector('[data-ban-title]');
-        var reading = testEl.querySelector('[data-ban-reading]');
-        var result = {
-          title:   title   ? title.style.fontSize   : 'n/a',
-          reading: reading ? reading.style.fontSize : 'n/a'
-        };
-        testEl.style.cssText = origStyle;
-        renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand));
-        return result;
-      }
+      var dirsNH = METRIC_CHARTS[CONFIG.metricId] || ['ban_editorial'];
+      dirsNH.forEach(function(dir) {
+        function getSizesAtH(h) {
+          var origStyle = testEl.style.cssText;
+          testEl.style.cssText = 'width:1000px;height:' + h + 'px;position:relative;overflow:hidden;';
+          if (dir === 'ban_radial') { renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+          else if (dir === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+          else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+          var title   = testEl.querySelector('[data-ban-title]');
+          var reading = testEl.querySelector('[data-ban-reading]');
+          var result = {
+            title:   title   ? title.style.fontSize   : 'n/a',
+            reading: reading ? reading.style.fontSize : 'n/a'
+          };
+          testEl.style.cssText = origStyle;
+          return result;
+        }
+        var s500 = getSizesAtH(500);
+        var s900 = getSizesAtH(900);
+        var ok = s500.title === s900.title && s500.reading === s900.reading;
+        if (!ok) allOk = false;
+        allDetail += dir + '(title:' + s500.title + '/' + s900.title + ' reading:' + s500.reading + '/' + s900.reading + ') ';
+      });
 
-      var s500 = getNonHeroSizes(500);
-      var s900 = getNonHeroSizes(900);
-      var titleSame   = s500.title   === s900.title;
-      var readingSame = s500.reading === s900.reading;
-      check('non-hero-type-constant', titleSame && readingSame,
-        'title:' + s500.title + '/' + s900.title + ' reading:' + s500.reading + '/' + s900.reading);
+      // Restore
+      if (CONFIG.chart === 'ban_radial') { renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+      else if (CONFIG.chart === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+      else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+
+      check('non-hero-type-constant', allOk, allDetail.trim());
     })();
 
     // no-band-copy-on-bandless: band-referencing disclaimer must not appear for band-less metrics.
+    // Checks both the content object AND the rendered DOM for tam and mcon.
     (function() {
       var HEADLINE = ['tam', 'cagr', 'mcon'];
       if (HEADLINE.indexOf(CONFIG.metricId) === -1) {
@@ -4209,18 +4289,67 @@
       var brand = CONFIG.clientBrand;
       var allOk = true;
       var detail = '';
+
+      // 1. Content-object check: disclaimer field must not contain band-referencing text
       ['tam', 'mcon'].forEach(function(mid) {
         var ct = getBanShellContent(mid, PREVIEW_BAN[mid], brand);
         if (ct.disclaimer && /band/i.test(ct.disclaimer)) {
           allOk = false;
-          detail += mid + ' has band-referencing disclaimer; ';
+          detail += mid + ':content-obj-has-band-disclaimer ';
         }
       });
+
+      // 2. DOM check: render each band-less metric and confirm no band-referencing copy visible
+      var testEl = chartEl;
+      ['tam', 'mcon'].forEach(function(mid) {
+        var origStyle = testEl.style.cssText;
+        testEl.style.cssText = 'width:800px;height:500px;position:relative;overflow:hidden;';
+        // Band-less metrics only use editorial or ledger (no radial)
+        var dirs = METRIC_CHARTS[mid] || ['ban_editorial'];
+        dirs.forEach(function(dir) {
+          if (dir === 'ban_radial') return; // skipped for band-less by design
+          if (dir === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(mid, PREVIEW_BAN[mid], brand)); }
+          else { renderBanShell(testEl, getBanShellContent(mid, PREVIEW_BAN[mid], brand)); }
+          var domText = testEl.innerText || '';
+          // Check for band-referencing keywords that must not appear on a band-less layout
+          if (/bands follow|merger guideline|DOJ.*FTC|unconcentrated|moderate.*concentration|highly concentrated/i.test(domText)) {
+            allOk = false;
+            detail += mid + ':' + dir + ':band-copy-in-dom ';
+          }
+        });
+        testEl.style.cssText = origStyle;
+      });
+
+      // Restore current render
+      if (CONFIG.chart === 'ban_radial') { renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, PREVIEW_BAN[CONFIG.metricId], brand)); }
+      else if (CONFIG.chart === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, PREVIEW_BAN[CONFIG.metricId], brand)); }
+      else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, PREVIEW_BAN[CONFIG.metricId] || 0, brand)); }
+
       check('no-band-copy-on-bandless', allOk,
-        allOk ? 'tam+mcon: no band-referencing disclaimer' : detail);
+        allOk ? 'tam+mcon: no band-referencing copy in content or DOM' : detail.trim());
     })();
 
-    // card-title-matches-canonical: card header title equals METRIC_LABELS for headline ban metrics.
+    // title-source-single-name: card title and inline title both derive from METRIC_LABELS;
+    // neither carries a unit suffix; both match across all headline directions.
+    (function() {
+      var mId = CONFIG.metricId;
+      var HEADLINE = ['tam', 'cagr', 'mcon'];
+      if (HEADLINE.indexOf(mId) === -1) {
+        check('title-source-single-name', true, 'non-headline metric — skip'); return;
+      }
+      var canonical = METRIC_LABELS[mId] || '';
+      var nameEl = document.getElementById('chart-name');
+      var cardTitle = nameEl ? nameEl.textContent : '(no chart-name el)';
+      var inlineTitle = getBanShellContent(mId, 0, CONFIG.clientBrand).title;
+
+      // Both must equal METRIC_LABELS; neither must have a trailing unit like (%) or (index)
+      var cardOk    = (cardTitle === canonical) && !/\(/.test(cardTitle);
+      var inlineOk  = (inlineTitle === canonical);
+      check('title-source-single-name', cardOk && inlineOk,
+        'card="' + cardTitle + '" inline="' + inlineTitle + '" canonical="' + canonical + '"');
+    })();
+
+    // card-title-matches-canonical: kept for backwards compat; delegates to title-source-single-name.
     (function() {
       var mId = CONFIG.metricId;
       var HEADLINE = ['tam', 'cagr', 'mcon'];
@@ -4234,6 +4363,13 @@
       var ok = (cardTitle === canonical) && (inlineTitle === canonical);
       check('card-title-matches-canonical', ok,
         'card="' + cardTitle + '" inline="' + inlineTitle + '" canonical="' + canonical + '"');
+    })();
+
+    // single-title: exactly one [data-ban-title] element per render
+    (function() {
+      var titleEls = chartEl ? chartEl.querySelectorAll('[data-ban-title]') : [];
+      check('single-title', titleEls.length === 1,
+        titleEls.length + ' [data-ban-title] element(s) — expected exactly 1');
     })();
 
     // Log results
