@@ -40,6 +40,19 @@ Per-task work orders and the chat↔Code handoff follow **`WORKFLOW.md`**.
 - **Config** persists via the Tableau Settings API. Read exact field/parameter names
   from `CONFIG` / `DEFAULTS` in `index.html` — do not hardcode them from memory.
 
+## Sibling extensions
+
+This repo hosts multiple sibling extensions sharing the same specs (`CHART_SPEC.md`,
+`STYLE_SPEC.md`, `TABLEAU_API_REALITY.md`). Current extensions:
+- **`index.html` + `indicator_nav.trex`** — indicator table + D3 charts (dark theme).
+- **`solutions_nav.html` + `solutions_nav.trex`** — per-construct solution grid + pills (light theme).
+
+Each extension is a self-contained single HTML file + `.trex` manifest. Specs are shared; no code
+is shared between extension files.
+
+**TODO (§4 cross-ref — HELD):** once the engine signals §4 locked, add the solutions view column
+names to `TABLEAU_API_REALITY.md` and wire the adapter in `solutions_nav.html`.
+
 ## Migration direction
 Native overview now; the extension gradually absorbs more and may eventually render the
 overview cards itself (Pattern B), becoming the app. Keep subgroup resolution and the

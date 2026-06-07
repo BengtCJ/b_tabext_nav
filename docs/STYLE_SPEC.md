@@ -413,6 +413,61 @@ interpolated value (it is generic).
   - Value digits are uniform: every digit of a value (including the post-decimal digit) renders at the same size and on the same baseline; only the `/5` suffix may be `0.5em`.
   - Numerals are inset from the cell edge (padding > 0 — not hugging the corner).
 
+## Solutions surface
+
+### Theme options (assigned per surface, not a runtime toggle)
+
+This project supports two surface themes — **dark** (existing scorecard and chart surfaces) and
+**light** (solutions surface). Theme is assigned to a surface type in code; there is no runtime
+user-toggle between themes. The dark token set is the existing Scorecard / BAN shell sections
+above.
+
+### Light-theme tokens
+
+| Token | Value | Notes |
+|---|---|---|
+| Card background | `#FFFFFF` | White card; host dashboard transparent behind |
+| Card border / gutter | `~#CCCCCC` | Indicative — **confirm-against-Figma** |
+| Title text (near-black) | indicative | **confirm-against-Figma** |
+| Body text (dark-grey) | indicative | **confirm-against-Figma** |
+| Tier-3 pill text + border (grey) | indicative | **confirm-against-Figma** |
+
+Spacing, type-role sizes (Heading 16px, Label 13px, Caption 11px), and face stack are shared with
+the dark theme. Tokens marked **confirm-against-Figma** are indicative; finalise on the first
+Figma cross-check.
+
+### Solution-pill component
+
+Pill style: **outlined** (transparent fill, coloured border + text). **No red pill.** No filled
+pill. Text colour follows the border colour — the "black text on coloured fill" rule does
+**not** apply here (the pill has no fill).
+
+Tier-to-colour mapping:
+
+| Tier | Light hex | Dark hex | Label |
+|---|---|---|---|
+| 1 (best) | `#4ADE80` | `#57bf6a` | green |
+| 2 | `#F5AF00` | `#e0992e` | amber |
+| 3 | neutral grey | neutral grey | grey-outline |
+
+Full light RAG palette (for reference): `#E42F4D` / `#F5AF00` / `#4ADE80`. Red (`#E42F4D`) is
+defined for completeness but **not used on this surface** — see pink-accent exemption below.
+Full dark RAG palette (for reference): `#e0584f` / `#e0992e` / `#57bf6a` (matching existing
+Scorecard RAG constants).
+
+### Grid (fixed order, N-robust)
+
+Card grid renders solutions in `display_order` (fixed; never re-sorted by tier or any other
+field). Layout uses `auto-fill` with a `minmax` column floor so it is robust to any N ≥ 2
+solutions — **never hardcode a 3×2 or 5-in-6 grid**. Grid column count adjusts with container
+width.
+
+### Pink-accent exemption
+
+The **solutions surface carries no pink accent** — it is fully exempt from the
+guaranteed-pink-accent rule (§ Colour above). `#e994a2` does not appear anywhere on this
+surface. Documented as intentional; do not add a pink rule or dot to solutions renders.
+
 ## TODO before this is final
 - Validate the type scale + spacing at `1421 × 773` (and adjust if the client reacts).
 - Confirm the Detail page header question size (19px) and gaps (8 / 24) on the first

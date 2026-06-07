@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>BP Solutions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ── Light-theme tokens (STYLE_SPEC § Solutions surface) ─────────────────
+       Values marked confirm-against-Figma are indicative; finalise on first
+       Figma cross-check.                                                       */
+    :root {
+      --card-bg:       #FFFFFF;
+      --card-border:   #CCCCCC;   /* indicative — confirm-against-Figma */
+      --title-color:   #1A1A1A;   /* near-black — confirm-against-Figma */
+      --body-color:    #4A4A4A;   /* dark-grey — confirm-against-Figma */
+      --t3-color:      #8A8A8A;   /* tier-3 / muted — confirm-against-Figma */
+      --panel-bg:      #F5F5F5;
+      /* Solution-pill RAG — light theme. Red (#E42F4D) defined but not used. */
+      --pill-t1:       #4ADE80;   /* tier 1 — green */
+      --pill-t2:       #F5AF00;   /* tier 2 — amber */
+      --pill-t3:       #8A8A8A;   /* tier 3 — grey  */
+      /* Spacing: 4px base unit */
+      --sp-tight:    4px;
+      --sp-default:  8px;
+      --sp-section: 16px;
+      --sp-loose:   24px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: transparent;
+      font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    #root {
+      width: 100%; height: 100%;
+      overflow-y: auto;
+      padding: var(--sp-section);
+    }
+
+    /* ── State panels (too-small / no-data) ─────────────────────────────── */
+    .state-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      font-size: 11px;   /* Caption */
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      color: var(--t3-color);
+    }
+
+    /* ── Construct header ────────────────────────────────────────────────── */
+    .construct-header {
+      margin-bottom: var(--sp-section);
+    }
+    .construct-title {
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 16px;   /* Heading */
+      color: var(--title-color);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Solution grid — auto-fill, N-robust (STYLE_SPEC § Grid) ────────── */
+    .sol-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: var(--sp-default);
+    }
+
+    /* ── Solution card ───────────────────────────────────────────────────── */
+    .sol-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: var(--sp-section);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-default);
+    }
+
+    .sol-name {
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 16px;   /* Heading */
+      color: var(--title-color);
+      line-height: 1.3;
+    }
+
+    .sol-desc {
+      font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
+      font-size: 13px;   /* Label */
+      color: var(--body-color);
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    /* ── Solution pill — outlined, no fill, no red (STYLE_SPEC § Pill) ──── */
+    .sol-pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 4px;
+      border: 1px solid;
+      padding: 2px 8px;
+      font-size: 11px;   /* Caption */
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      letter-spacing: 0.05em;
+      background: transparent;
+      text-transform: uppercase;
+    }
+    .sol-pill-t1 { border-color: var(--pill-t1); color: var(--pill-t1); }
+    .sol-pill-t2 { border-color: var(--pill-t2); color: var(--pill-t2); }
+    .sol-pill-t3 { border-color: var(--pill-t3); color: var(--pill-t3); }
+
+    /* ── In Practice panel ───────────────────────────────────────────────── */
+    .in-practice {
+      margin-top: var(--sp-section);
+      background: var(--panel-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: var(--sp-section);
+    }
+    .in-practice-label {
+      font-size: 11px;   /* Caption */
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      color: var(--t3-color);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: var(--sp-default);
+    }
+    .in-practice-body {
+      font-size: 13px;   /* Label */
+      font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
+      color: var(--body-color);
+      line-height: 1.5;
+    }
+
+    /* ── Configure button ────────────────────────────────────────────────── */
+    #configure-btn {
+      position: fixed;
+      bottom: var(--sp-default);
+      right: var(--sp-default);
+      background: rgba(255,255,255,0.85);
+      border: 1px solid var(--card-border);
+      color: var(--t3-color);
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1;
+      z-index: 100;
+      transition: color 0.12s;
+    }
+    #configure-btn:hover { color: var(--title-color); }
+
+    /* ── Settings panel ──────────────────────────────────────────────────── */
+    #settings-panel {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.97);
+      z-index: 200;
+      padding: var(--sp-section);
+      flex-direction: column;
+      gap: var(--sp-default);
+    }
+    #settings-panel.visible { display: flex; }
+
+    .settings-title {
+      font-size: 16px;   /* Heading */
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      color: var(--title-color);
+      margin-bottom: var(--sp-tight);
+    }
+    .settings-row {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-tight);
+    }
+    .settings-row label {
+      font-size: 11px;   /* Caption */
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      color: var(--t3-color);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .settings-row input {
+      font-size: 13px;
+      font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
+      border: 1px solid var(--card-border);
+      border-radius: 4px;
+      padding: 6px 8px;
+      color: var(--title-color);
+      background: var(--card-bg);
+    }
+    .settings-btns {
+      display: flex;
+      gap: var(--sp-default);
+      margin-top: var(--sp-tight);
+    }
+    .btn-primary {
+      font-size: 13px;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      padding: 6px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      background: var(--title-color);
+      color: #fff;
+      border: none;
+    }
+    .btn-cancel {
+      font-size: 13px;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      padding: 6px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      background: transparent;
+      color: var(--t3-color);
+      border: 1px solid var(--card-border);
+    }
+    .settings-version {
+      font-size: 11px;
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      color: var(--t3-color);
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <button id="configure-btn" title="Configure">&#9881;</button>
+  <div id="settings-panel">
+    <div class="settings-title">BP Solutions — Settings</div>
+    <div class="settings-row">
+      <label>Worksheet name</label>
+      <input id="cfg-worksheet" type="text" placeholder="(leave empty to use sample data)">
+    </div>
+    <div class="settings-row">
+      <label>Client brand name</label>
+      <input id="cfg-brand" type="text" placeholder="e.g. Nespresso">
+    </div>
+    <div class="settings-btns">
+      <button class="btn-primary" id="cfg-save">Save</button>
+      <button class="btn-cancel"  id="cfg-cancel">Cancel</button>
+    </div>
+    <div class="settings-version" id="settings-version"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
+  <script>
+  // ─── VERSION ──────────────────────────────────────────────────────────────
+  var VERSION = '2026-06-07.1';
+
+  // ─── FONTS ────────────────────────────────────────────────────────────────
+  var FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
+  var FONT_LIGHT = "'Tableau Light', 'Helvetica Neue', Arial, sans-serif";
+  var FONT_BODY  = "'Tableau Regular', 'Helvetica Neue', Arial, sans-serif";
+
+  // ─── CONSTRUCT MAP ────────────────────────────────────────────────────────
+  // Maps dashboard.name (trimmed, lowercased) → canonical construct id.
+  // Extend here to add name aliases — do not put logic anywhere else.
+  var CONSTRUCT_MAP = {
+    'growth':   'growth',
+    'standout': 'standout',
+    'fandom':   'fandom',
+  };
+
+  // ─── CONFIG / DEFAULTS ───────────────────────────────────────────────────
+  var DEFAULTS = {
+    worksheet: '',   // worksheet name for live §4 data (empty = sample fixture)
+    brandName: '',   // client brand name for In Practice interpolation
+  };
+  var CONFIG = Object.assign({}, DEFAULTS);
+
+  // ─── STATE ────────────────────────────────────────────────────────────────
+  var _dashboard   = null;
+  var _construct   = null;   // 'growth' | 'standout' | 'fandom' | null
+  var _solutions   = null;   // current solution list (render model)
+  var _resizeTimer = null;
+
+  // ─── SAMPLE FIXTURE ───────────────────────────────────────────────────────
+  // PROVISIONAL — five solutions across three constructs for one run/client.
+  // The read-adapter (adaptSolutionsView) is the ONLY place §4 column names appear.
+  var SAMPLE_SOLUTIONS = [
+    {
+      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
+      solution_id: 'sol_001',
+      name: 'Category Penetration Play',
+      description: 'Increase trial rate among lapsed category buyers through targeted sampling and occasion-led messaging.',
+      display_order: 1, tier: 1, source: 'bp_engine', menu_version: '2.0', construct: 'growth'
+    },
+    {
+      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
+      solution_id: 'sol_002',
+      name: 'Premium Pricing Leverage',
+      description: 'Unlock price elasticity headroom by reinforcing quality cues and reducing promotional dependency.',
+      display_order: 2, tier: 2, source: 'bp_engine', menu_version: '2.0', construct: 'growth'
+    },
+    {
+      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
+      solution_id: 'sol_003',
+      name: 'Distinctive Asset Investment',
+      description: 'Strengthen visual and verbal identifiers that drive brand recognition in crowded shelf and social environments.',
+      display_order: 3, tier: 1, source: 'bp_engine', menu_version: '2.0', construct: 'standout'
+    },
+    {
+      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
+      solution_id: 'sol_004',
+      name: 'Tone Sharpening',
+      description: 'Tighten verbal distinctiveness across key touchpoints to improve recognisability and reduce tonal drift.',
+      display_order: 4, tier: 3, source: 'bp_engine', menu_version: '2.0', construct: 'standout'
+    },
+    {
+      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
+      solution_id: 'sol_005',
+      name: 'Advocacy Activation',
+      description: 'Convert high-preference buyers into active brand advocates through targeted community and referral mechanics.',
+      display_order: 5, tier: 2, source: 'bp_engine', menu_version: '2.0', construct: 'fandom'
+    },
+  ];
+
+  // ─── READ ADAPTER ─────────────────────────────────────────────────────────
+  // PROVISIONAL §4 column names — engine owns final names.
+  // This is the ONLY function that knows the §4 view's column names.
+  // Live-view swap = point getSummaryDataAsync rows at this function (one line).
+  function adaptSolutionsView(rows) {
+    return rows.map(function(r) {
+      return {
+        run_id:        String(r['run_id']        || ''),
+        business_id:   String(r['business_id']   || ''),
+        brand_name:    String(r['brand_name']     || ''),
+        solution_id:   String(r['solution_id']   || ''),
+        name:          String(r['name']           || ''),
+        description:   String(r['description']   || ''),
+        display_order: Number(r['display_order']) || 0,
+        tier:          Number(r['tier'])          || 3,
+        source:        String(r['source']         || ''),
+        menu_version:  String(r['menu_version']  || ''),
+        construct:     String(r['construct']      || ''),
+      };
+    });
+  }
+
+  // ─── CONSTRUCT RESOLUTION ─────────────────────────────────────────────────
+  // Single function, documented precedence — future branches are additive.
+  function resolveConstruct() {
+    // Branch 1: in-extension selection (future) — not wired
+    // Branch 2: parameter (future) — not wired
+    // Branch 3: dashboard.name (live, confirmed [tested] 2026-05-29 b_tabext_nav)
+    var name = _dashboard && _dashboard.name ? _dashboard.name.trim().toLowerCase() : null;
+    return name ? (CONSTRUCT_MAP[name] || null) : null;
+  }
+
+  // ─── IN PRACTICE RESOLVER ─────────────────────────────────────────────────
+  // Static interim copy — brand-interpolated. One function = one swap to a real source.
+  function resolveInPractice(brand, construct) {
+    var b = brand || 'the brand';
+    var copy = {
+      growth:
+        'Growth solutions for ' + b + ' target the levers that increase category ' +
+        'participation and commercial return — from penetration and shelf presence to ' +
+        'pricing architecture and occasion breadth.',
+      standout:
+        'Standout solutions for ' + b + ' strengthen the signals that drive ' +
+        'differentiation — distinctive assets, tonal sharpness, and the consistency ' +
+        'that turns recognition into recall.',
+      fandom:
+        'Fandom solutions for ' + b + ' convert brand preference into lasting advocacy — ' +
+        'deepening the emotional contract and building the rituals and communities ' +
+        'that keep buyers close.',
+    };
+    return (construct && copy[construct]) ||
+      'Solutions for ' + b + ' provide a structured pathway to measurable brand ' +
+      'improvement across the dimensions that matter most at this stage.';
+  }
+
+  // ─── HELPERS ──────────────────────────────────────────────────────────────
+  function escHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ─── RENDER ───────────────────────────────────────────────────────────────
+  var MIN_W = 280;
+  var MIN_H = 160;
+
+  function render() {
+    var root = document.getElementById('root');
+    var w    = root.offsetWidth;
+    var h    = root.offsetHeight;
+
+    // Too-small state
+    if (w < MIN_W || h < MIN_H) {
+      root.innerHTML = '<div class="state-panel">Container too small</div>';
+      return;
+    }
+
+    var solutions = _solutions || [];
+    var construct = _construct;
+    var brand     = CONFIG.brandName ||
+      (solutions.length && solutions[0].brand_name ? solutions[0].brand_name : 'the brand');
+
+    // Filter to current construct; no construct resolved = graceful no-op (show all)
+    var shown = construct
+      ? solutions.filter(function(s) { return s.construct === construct; })
+      : solutions;
+
+    // Fixed display_order sort (never re-sort by tier)
+    shown = shown.slice().sort(function(a, b) { return a.display_order - b.display_order; });
+
+    // No-data / empty-construct state
+    if (!shown.length) {
+      root.innerHTML = '<div class="state-panel">No solutions available' +
+        (construct ? ' for ' + escHtml(construct) : '') + '</div>';
+      return;
+    }
+
+    var constructLabel = construct
+      ? construct.charAt(0).toUpperCase() + construct.slice(1)
+      : 'Solutions';
+
+    var html = '<div class="construct-header">' +
+      '<div class="construct-title">' + escHtml(constructLabel) + '</div>' +
+      '</div>';
+
+    html += '<div class="sol-grid">';
+    shown.forEach(function(sol) {
+      var pillCls = sol.tier === 1 ? 'sol-pill-t1' :
+                    sol.tier === 2 ? 'sol-pill-t2' : 'sol-pill-t3';
+      html +=
+        '<div class="sol-card">' +
+          '<div class="sol-name">' + escHtml(sol.name) + '</div>' +
+          '<div class="sol-desc">' + escHtml(sol.description) + '</div>' +
+          '<div>' +
+            '<span class="sol-pill ' + pillCls + '">Solution &middot; ' +
+              escHtml(String(sol.tier)) +
+            '</span>' +
+          '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+
+    html +=
+      '<div class="in-practice">' +
+        '<div class="in-practice-label">In Practice</div>' +
+        '<div class="in-practice-body">' +
+          escHtml(resolveInPractice(brand, construct)) +
+        '</div>' +
+      '</div>';
+
+    root.innerHTML = html;
+  }
+
+  // ─── SETTINGS ─────────────────────────────────────────────────────────────
+  function showSettings() {
+    document.getElementById('cfg-worksheet').value = CONFIG.worksheet || '';
+    document.getElementById('cfg-brand').value     = CONFIG.brandName || '';
+    document.getElementById('settings-version').textContent = 'v' + VERSION;
+    document.getElementById('settings-panel').classList.add('visible');
+  }
+
+  function hideSettings() {
+    document.getElementById('settings-panel').classList.remove('visible');
+  }
+
+  document.getElementById('configure-btn').addEventListener('click', showSettings);
+  document.getElementById('cfg-cancel').addEventListener('click', hideSettings);
+  document.getElementById('cfg-save').addEventListener('click', function() {
+    CONFIG.worksheet = document.getElementById('cfg-worksheet').value.trim();
+    CONFIG.brandName = document.getElementById('cfg-brand').value.trim();
+    if (typeof tableau !== 'undefined' && tableau.extensions && tableau.extensions.settings) {
+      tableau.extensions.settings.set('worksheet', CONFIG.worksheet);
+      tableau.extensions.settings.set('brandName', CONFIG.brandName);
+      tableau.extensions.settings.saveAsync().then(function() {
+        hideSettings();
+        render();
+      });
+    } else {
+      hideSettings();
+      render();
+    }
+  });
+
+  // ─── RESIZE ───────────────────────────────────────────────────────────────
+  var resizeObserver = new ResizeObserver(function() {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(render, 150);
+  });
+  resizeObserver.observe(document.getElementById('root'));
+
+  // ─── INIT ─────────────────────────────────────────────────────────────────
+  if (typeof tableau === 'undefined') {
+    // Preview / dev mode — no Tableau present; use sample fixture.
+    // ?construct=<name> overrides which construct to display.
+    var urlParams = new URLSearchParams(location.search);
+    var urlConst  = urlParams.get('construct');
+    _construct    = urlConst
+      ? (CONSTRUCT_MAP[urlConst.trim().toLowerCase()] || null)
+      : 'growth';
+    _solutions    = SAMPLE_SOLUTIONS;
+    render();
+  } else {
+    tableau.extensions.initializeAsync({
+      configure: function() { showSettings(); },
+    }).then(function() {
+      _dashboard = tableau.extensions.dashboardContent.dashboard;
+
+      // Load persisted settings
+      var settings = tableau.extensions.settings;
+      Object.keys(DEFAULTS).forEach(function(k) {
+        var val = settings.get(k);
+        if (val) CONFIG[k] = val;
+      });
+
+      _construct = resolveConstruct();
+      _solutions = SAMPLE_SOLUTIONS;
+
+      // TODO §4 live-view wiring (HELD — pending engine §4 lock):
+      // When ready, replace the SAMPLE_SOLUTIONS line above with:
+      //   var ws = _dashboard.worksheets.find(function(w) {
+      //     return w.name === CONFIG.worksheet;
+      //   });
+      //   if (ws) {
+      //     ws.getSummaryDataAsync({ maxRows: 5000 }).then(function(dt) {
+      //       _solutions = adaptSolutionsView(dt.data.map(function(row) {
+      //         var obj = {};
+      //         dt.columns.forEach(function(col, i) { obj[col.fieldName] = row[i].value; });
+      //         return obj;
+      //       }));
+      //       render();
+      //     });
+      //   }
+
+      render();
+    }).catch(function(err) {
+      console.error('[solutions_nav] initializeAsync failed:', err);
+      _solutions = SAMPLE_SOLUTIONS;
+      render();
+    });
+  }
+  </script>
+</body>
+</html>
