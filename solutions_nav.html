@@ -256,21 +256,17 @@
   <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-06-07.1';
+  var VERSION = '2026-06-07.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   var FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
   var FONT_LIGHT = "'Tableau Light', 'Helvetica Neue', Arial, sans-serif";
   var FONT_BODY  = "'Tableau Regular', 'Helvetica Neue', Arial, sans-serif";
 
-  // ─── CONSTRUCT MAP ────────────────────────────────────────────────────────
-  // Maps dashboard.name (trimmed, lowercased) → canonical construct id.
-  // Extend here to add name aliases — do not put logic anywhere else.
-  var CONSTRUCT_MAP = {
-    'growth':   'growth',
-    'standout': 'standout',
-    'fandom':   'fandom',
-  };
+  // ─── CONSTRUCT TOKENS ────────────────────────────────────────────────────
+  // The three canonical construct ids. All construct resolution draws from this
+  // one constant — do not hardcode tokens anywhere else.
+  var CONSTRUCT_TOKENS = ['growth', 'standout', 'fandom'];
 
   // ─── CONFIG / DEFAULTS ───────────────────────────────────────────────────
   var DEFAULTS = {
@@ -350,12 +346,19 @@
 
   // ─── CONSTRUCT RESOLUTION ─────────────────────────────────────────────────
   // Single function, documented precedence — future branches are additive.
+  // Scans dashboard.name for CONSTRUCT_TOKENS (case-insensitive, substring).
+  // Exactly one token present → that construct.
+  // Zero or two+ tokens → null (unresolved; graceful no-op).
+  // This means "Brand Growth — Opportunities" → growth, "FANDOM" → fandom,
+  // "Growth vs Standout" → null (ambiguous; fail-safe).
   function resolveConstruct() {
     // Branch 1: in-extension selection (future) — not wired
     // Branch 2: parameter (future) — not wired
     // Branch 3: dashboard.name (live, confirmed [tested] 2026-05-29 b_tabext_nav)
     var name = _dashboard && _dashboard.name ? _dashboard.name.trim().toLowerCase() : null;
-    return name ? (CONSTRUCT_MAP[name] || null) : null;
+    if (!name) return null;
+    var hits = CONSTRUCT_TOKENS.filter(function(t) { return name.indexOf(t) !== -1; });
+    return hits.length === 1 ? hits[0] : null;
   }
 
   // ─── IN PRACTICE RESOLVER ─────────────────────────────────────────────────
@@ -504,9 +507,13 @@
     // ?construct=<name> overrides which construct to display.
     var urlParams = new URLSearchParams(location.search);
     var urlConst  = urlParams.get('construct');
-    _construct    = urlConst
-      ? (CONSTRUCT_MAP[urlConst.trim().toLowerCase()] || null)
-      : 'growth';
+    if (urlConst) {
+      var lower    = urlConst.trim().toLowerCase();
+      var urlHits  = CONSTRUCT_TOKENS.filter(function(t) { return lower.indexOf(t) !== -1; });
+      _construct   = urlHits.length === 1 ? urlHits[0] : null;
+    } else {
+      _construct = 'growth';   // default for plain ?chart= / no-param preview
+    }
     _solutions    = SAMPLE_SOLUTIONS;
     render();
   } else {
