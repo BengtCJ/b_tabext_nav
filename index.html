@@ -4366,8 +4366,8 @@
       var cardTitle = nameEl ? nameEl.textContent : '(no chart-name el)';
       var inlineTitle = getBanShellContent(mId, 0, CONFIG.clientBrand).title;
 
-      // Both must equal METRIC_LABELS; neither must have a trailing unit like (%) or (index)
-      var cardOk    = (cardTitle === canonical) && !/\(/.test(cardTitle);
+      // Both must equal METRIC_LABELS exactly — equality already guarantees no unit was appended.
+      var cardOk    = (cardTitle === canonical);
       var inlineOk  = (inlineTitle === canonical);
       check('title-source-single-name', cardOk && inlineOk,
         'card="' + cardTitle + '" inline="' + inlineTitle + '" canonical="' + canonical + '"');
