@@ -27,6 +27,7 @@ wanted; validate at the container size before final sign-off.
 | **Heading** | Tableau Light | table indicator names, section labels | 16px |
 | **Label** | Tableau Light (brands UPPERCASE) / Regular (values) | brand names, value labels | 13px |
 | **Caption** | Tableau Light | axis ticks, legend, small notes | 11px |
+| **Display** | Baskerville italic (stack in Faces) | construct page title — solutions surface only | 40px |
 
 - **Hero is the only sanctioned size override, and the only geometry-responsive size: it is
   fit-to-box.** The focal figure scales to fit its zone (so `1.9`, `2002`, `14.4` each fill the
@@ -41,6 +42,11 @@ wanted; validate at the container size before final sign-off.
   1421×773, bump Heading to 18 per the Heading note — do not switch the face.
 - No other element sets its own font size. In particular, **no font size derived from
   geometry** (`Math.min(11, cellW * 0.22)` and similar must go).
+- **Display is the solutions-surface exception to the Baskerville-as-numerals rule.** The
+  construct page title on the solutions surface uses Baskerville italic, Title-case, 40px — the
+  only sanctioned use of Baskerville for non-numeral text. Scope: solutions surface only. Do not
+  apply Display to chart titles, indicator names, or any dark-theme surface. 40px is locked;
+  build-and-review at 1421×773 whether tracking is needed.
 - Below the documented **minimum container size**, a chart shows its "too small" state
   rather than shrinking text. Minimum size: `‹px ×px›` — separate from the validation
   size above; derive it from where a chart actually breaks, not from the current canvas.
@@ -444,11 +450,11 @@ pill. Text colour follows the border colour — the "black text on coloured fill
 
 Tier-to-colour mapping:
 
-| Tier | Light hex | Dark hex | Label |
-|---|---|---|---|
-| 1 (best) | `#4ADE80` | `#57bf6a` | green |
-| 2 | `#F5AF00` | `#e0992e` | amber |
-| 3 | neutral grey | neutral grey | grey-outline |
+| Tier | Light hex | Dark hex | Colour name | Pill label text |
+|---|---|---|---|---|
+| 1 (best) | `#4ADE80` | `#57bf6a` | green | Essential |
+| 2 | `#F5AF00` | `#e0992e` | amber | Important |
+| 3 | neutral grey | neutral grey | grey-outline | Optional |
 
 Full light RAG palette (for reference): `#E42F4D` / `#F5AF00` / `#4ADE80`. Red (`#E42F4D`) is
 defined for completeness but **not used on this surface** — see pink-accent exemption below.
