@@ -684,7 +684,7 @@
     // Guaranteed pink rule beneath hero (~120px, 1px, selectedColor)
     var ruleEl = document.createElement('div');
     ruleEl.setAttribute('data-ban-pink-rule', '1');
-    ruleEl.style.cssText = 'background:#e994a2;width:120px;height:1px;flex-shrink:0;';
+    ruleEl.style.cssText = 'background:' + CONFIG.selectedColor + ';width:120px;height:1px;flex-shrink:0;';
     heroZone.appendChild(ruleEl);
     el.appendChild(heroZone);
 
@@ -743,7 +743,7 @@
         if (band.active) {
           var marker = document.createElement('div');
           marker.setAttribute('data-ban-active-marker', '1');
-          marker.style.cssText = 'width:7px;height:7px;border-radius:50%;background:#e994a2;flex-shrink:0;';
+          marker.style.cssText = 'width:7px;height:7px;border-radius:50%;background:' + CONFIG.selectedColor + ';flex-shrink:0;';
           labelRow.appendChild(marker);
         }
         cellEl.appendChild(labelRow);
@@ -862,7 +862,7 @@
       var ring = document.createElementNS(ns, 'circle');
       ring.setAttribute('cx', CX); ring.setAttribute('cy', CY); ring.setAttribute('r', r);
       ring.setAttribute('fill', 'none');
-      ring.setAttribute('stroke', band.active ? '#e994a2' : '#222');
+      ring.setAttribute('stroke', band.active ? CONFIG.selectedColor : '#222');
       ring.setAttribute('stroke-width', band.active ? '2' : '1');
       svgEl.appendChild(ring);
 
@@ -870,7 +870,7 @@
         var dot = document.createElementNS(ns, 'circle');
         dot.setAttribute('data-ban-active-marker', '1');
         dot.setAttribute('cx', CX); dot.setAttribute('cy', CY - r); dot.setAttribute('r', '5');
-        dot.setAttribute('fill', '#e994a2');
+        dot.setAttribute('fill', CONFIG.selectedColor);
         svgEl.appendChild(dot);
       }
     });
@@ -898,7 +898,7 @@
       pr.setAttribute('data-ban-pink-rule', '1');
       pr.setAttribute('x', CX - 20); pr.setAttribute('y', CY + HERO_SZ / 2 + 8);
       pr.setAttribute('width', '40'); pr.setAttribute('height', '2');
-      pr.setAttribute('fill', '#e994a2');
+      pr.setAttribute('fill', CONFIG.selectedColor);
       svgEl.appendChild(pr);
     }
 
@@ -921,7 +921,7 @@
 
       var bullet = document.createElement('div');
       bullet.style.cssText = 'width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0;' +
-        'background:' + (band.active ? '#e994a2' : '#2a2a2a') + ';';
+        'background:' + (band.active ? CONFIG.selectedColor : '#2a2a2a') + ';';
       if (band.active) bullet.setAttribute('data-ban-active-marker', '1');
       row.appendChild(bullet);
 
@@ -1050,7 +1050,7 @@
 
     var pinkRuleV = document.createElement('div');
     pinkRuleV.setAttribute('data-ban-pink-rule', '1');
-    pinkRuleV.style.cssText = 'background:#e994a2;width:120px;height:1px;flex-shrink:0;';
+    pinkRuleV.style.cssText = 'background:' + CONFIG.selectedColor + ';width:120px;height:1px;flex-shrink:0;';
     verdictCell.appendChild(pinkRuleV);
 
     var verdictEl = document.createElement('div');
@@ -1110,7 +1110,7 @@
         if (band.active) {
           var dot = document.createElement('div');
           dot.setAttribute('data-ban-active-marker', '1');
-          dot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:#e994a2;flex-shrink:0;';
+          dot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:' + CONFIG.selectedColor + ';flex-shrink:0;';
           labelRow.appendChild(dot);
         }
         bandCell.appendChild(labelRow);
