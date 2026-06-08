@@ -622,16 +622,10 @@
     titleCell.style.cssText = 'grid-column:1/-1;padding:12px 16px 8px;' +
       'display:flex;flex-direction:column;gap:4px;';
 
-    var titleEl = document.createElement('div');
-    titleEl.setAttribute('data-ban-title', '1');
-    titleEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:16px;color:#ededed;';
-    titleEl.textContent = content.title;
-
     var captionEl = document.createElement('div');
     captionEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;color:#777;';
     captionEl.textContent = content.code + ' \xb7 ' + content.unit + ' \xb7 ' + content.scope;
 
-    titleCell.appendChild(titleEl);
     titleCell.appendChild(captionEl);
     el.appendChild(titleCell);
 
@@ -822,16 +816,10 @@
     titleCell.style.cssText = 'grid-column:1/-1;padding:12px 16px 8px;' +
       'display:flex;flex-direction:column;gap:4px;';
 
-    var titleEl = document.createElement('div');
-    titleEl.setAttribute('data-ban-title', '1');
-    titleEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:16px;color:#ededed;';
-    titleEl.textContent = content.title;
-
     var captionEl = document.createElement('div');
     captionEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;color:#777;';
     captionEl.textContent = content.code + ' \xb7 ' + content.unit + ' \xb7 ' + content.scope;
 
-    titleCell.appendChild(titleEl);
     titleCell.appendChild(captionEl);
     el.appendChild(titleCell);
 
@@ -997,16 +985,10 @@
     titleCell.style.cssText = 'grid-column:1/-1;padding:12px 16px 8px;' +
       'display:flex;flex-direction:column;gap:4px;';
 
-    var titleEl = document.createElement('div');
-    titleEl.setAttribute('data-ban-title', '1');
-    titleEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:16px;color:#ededed;';
-    titleEl.textContent = content.title;
-
     var captionEl = document.createElement('div');
     captionEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:11px;color:#777;';
     captionEl.textContent = content.code + ' \xb7 ' + content.unit + ' \xb7 ' + content.scope;
 
-    titleCell.appendChild(titleEl);
     titleCell.appendChild(captionEl);
     el.appendChild(titleCell);
 
@@ -2996,6 +2978,7 @@
       height: 100%;
       font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
       overflow: hidden;
+      background: transparent;
     }
 
     /* ── Layout: table view vs chart shell ── */
@@ -3361,7 +3344,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-05.4';
+  const VERSION = '2026-06-08.1';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3661,8 +3644,9 @@
   // ─── BACKGROUND ───────────────────────────────────────────────────────────
   // ─── APPLY BACKGROUND ─────────────────────────────────────────────────────
   function applyBackground() {
-    document.body.style.background = CONFIG.bgColor;
-    document.documentElement.style.background = CONFIG.bgColor;
+    // Root is always transparent; host dashboard provides the background.
+    document.body.style.background = 'transparent';
+    document.documentElement.style.background = 'transparent';
   }
 
   // ─── SHARED HELPERS ───────────────────────────────────────────────────────
@@ -4119,16 +4103,16 @@
         'pills-row display=' + (pillsRow ? pillsRow.style.display : 'no element'));
     })();
 
-    // 12. Card title matches inline ban shell title (canonical METRIC_LABELS name)
+    // 12. Chart-name element carries the canonical METRIC_LABELS title (title owner: chrome header)
     (function() {
       var mId = CONFIG.metricId;
       var HEADLINE = ['tam', 'cagr', 'mcon'];
-      if (HEADLINE.indexOf(mId) === -1) return; // only check Headline metrics
+      if (HEADLINE.indexOf(mId) === -1) return;
       var canonical = METRIC_LABELS[mId] || '';
-      var titleEls = chartEl ? chartEl.querySelectorAll('[data-ban-title]') : [];
-      var inlineTitle = titleEls.length ? titleEls[0].textContent : '(no title element)';
-      check('canonical-title-matches', inlineTitle === canonical,
-        'inline="' + inlineTitle + '" canonical="' + canonical + '"');
+      var nameEl = document.getElementById('chart-name');
+      var cardTitle = nameEl ? nameEl.textContent : '(no chart-name el)';
+      check('canonical-title-matches', cardTitle === canonical,
+        'chart-name="' + cardTitle + '" canonical="' + canonical + '"');
     })();
 
     // 13–15. Direction-switch checks: switch through all valid directions and verify
@@ -4405,11 +4389,25 @@
         'card="' + cardTitle + '" inline="' + inlineTitle + '" canonical="' + canonical + '"');
     })();
 
-    // single-title: exactly one [data-ban-title] element per render
+    // single-title: title lives in #chart-name only — ban shell must have zero [data-ban-title] elements
     (function() {
       var titleEls = chartEl ? chartEl.querySelectorAll('[data-ban-title]') : [];
-      check('single-title', titleEls.length === 1,
-        titleEls.length + ' [data-ban-title] element(s) — expected exactly 1');
+      check('single-title', titleEls.length === 0,
+        titleEls.length + ' [data-ban-title] element(s) in ban shell — expected 0; title belongs to #chart-name');
+    })();
+
+    // root-bg-transparent: body and html backgrounds are transparent (host dashboard shows through)
+    (function() {
+      var bodyBg = window.getComputedStyle(document.body).backgroundColor;
+      var ok = bodyBg === 'rgba(0, 0, 0, 0)' || bodyBg === 'transparent';
+      check('root-bg-transparent', ok, 'body background-color: ' + bodyBg);
+    })();
+
+    // single-close: exactly one close control in the DOM (#back-btn; no extra floating close)
+    (function() {
+      var closeEls = document.querySelectorAll('#back-btn, [data-ban-close]');
+      check('single-close', closeEls.length === 1,
+        closeEls.length + ' close control(s) — expected exactly 1 (#back-btn)');
     })();
 
     // ban-locked-verdict-24: verdict is exactly 24px in all directions
