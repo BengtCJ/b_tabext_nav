@@ -412,6 +412,9 @@ interpolated value (it is generic).
   - Gutter is uniform: cell↔cell, cell↔frame, and table↔commentary are all the same 2px.
   - Corner radii nest: frame radius = cell radius + gutter (e.g. 8 + 2 = 10); cells and the
     commentary panel share one radius.
+  - Grouped-cell containers on detail/solutions/chart surfaces (not just the scorecard) use
+    the 2px gutter and nested radii (frame = cell + 2); assert no free-floating card group
+    with off-token gaps where the design specifies a frame.
   - No clipped or ellipsised text: indicator names and labels render in full (wrap, don't truncate).
   - Text on any coloured fill meets contrast (WCAG AA): e.g. the pink client cell uses dark
     text, never white.
