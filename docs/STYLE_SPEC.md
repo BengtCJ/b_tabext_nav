@@ -464,9 +464,9 @@ Tier-to-colour mapping:
 
 | Tier | Light hex | Dark hex | Colour name | Pill label text |
 |---|---|---|---|---|
-| 1 (best) | `#4ADE80` | `#57bf6a` | green | Essential |
-| 2 | `#F5AF00` | `#e0992e` | amber | Important |
-| 3 | neutral grey | neutral grey | grey-outline | Optional |
+| 1 (best) | `#4ADE80` | `#57bf6a` | green | 1 |
+| 2 | `#F5AF00` | `#e0992e` | amber | 2 |
+| 3 | neutral grey | neutral grey | grey-outline | 3 |
 
 Full light RAG palette (for reference): `#E42F4D` / `#F5AF00` / `#4ADE80`. Red (`#E42F4D`) is
 defined for completeness but **not used on this surface** — see pink-accent exemption below.

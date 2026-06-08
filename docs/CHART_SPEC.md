@@ -63,6 +63,74 @@ are wired in today.
 `ba` and `cra` keep their current (`hbar`) default and are out of scope until their
 data-shape class is resolved (see Open items).
 
+## Solutions grid (POTENTIAL / opportunities surface)
+
+What it is: per-construct grid of service cards (the "solutions" from SOLUTION_MENU),
+each carrying a priority pill. One grid per construct tab (growth / standout / fandom).
+Not a chart — a status grid; obeys the status-vocabulary rules below.
+
+Data source: the §4 published solutions view, read via the single read-adapter.
+Per-run, client-only. Rows filtered to the current construct in JS (house
+carry-all-rows / filter-in-JS pattern; construct id self-identified from dashboard.name)
+— NOT a Tableau filter. The `rationale` column is never read into the render.
+
+Render contract:
+- Cards in FIXED display_order from the menu. Never tier-sorted; order does not
+  change when tiers change run-to-run.
+- N-robust: render whatever the construct returns (2..N). No hardcoded 3x2 /
+  5-in-6 / dead empty 6th cell.
+- Each card: name + description (verbatim from the view) + one priority pill.
+- rationale NOT rendered (hidden from users).
+
+Status semantics (solutions — deliberately distinct from problems):
+- Pills are OUTLINED, never filled. No red on this surface.
+- tier 1 = green outline  ·  tier 2 = amber outline  ·  tier 3 = grey outline.
+- Light per-theme RAG: green #4ADE80 · amber #F5AF00 (red #E42F4D is NOT used here).
+  grey-outline neutral defined in STYLE_SPEC.
+- Tier shown as 1 / 2 / 3 (interim; ESSENTIAL/IMPORTANT/OPTIONAL wording is paused).
+
+Data sanity (verify, don't eyeball):
+- Membership = exactly the menu's active solutions present for this run+construct
+  in the view — not a hardcoded five.
+- Each card's tier comes from the view's tier column for that slot; human-win
+  ordering is already resolved view-side.
+- Construct of every rendered row == the self-identified construct.
+
+States:
+- too-small: below min render size -> compact/placeholder, never a broken grid.
+- no-data: construct has no solution rows (priorities not generated yet) ->
+  empty / coming-soon state, not an error.
+- unresolved-construct: dashboard.name has 0 or >=2 construct tokens ->
+  graceful neutral state (no guess).
+
+Looks wrong if:
+- a solution pill is FILLED or shows red (that's the problems treatment — wrong surface).
+- cards reorder between views, or are sorted by tier.
+- a tier-3 renders as anything but grey outline.
+- pink (#e994a2) appears (this surface is the explicit pink EXEMPTION).
+- the grid hardcodes a count or leaves a dead empty cell instead of flowing for N.
+- rationale text is visible anywhere.
+
+PROTO DIVERGENCE (decide before build-final): the Figma proto draws
+ESSENTIAL/IMPORTANT as FILLED green/amber pills and uses the words
+ESSENTIAL/IMPORTANT/OPTIONAL. The locked decision OVERRIDES the proto:
+outlined pills, no fills, no red, tier 1/2/3. Build to the locked decision
+unless re-decided here.
+
+Surface composition (TO CONFIRM — extension vs native scope, NOT specced here):
+the fuller proto shows the grid inside a larger surface — serif headline
+("Capitalise on market"), a narrative lead paragraph, the card grid, the
+"IN PRACTICE" featured panel, and a bottom CTA ("SEE THE [N] RECOMMENDED ACTIONS
+TO STANDOUT ->"). Each construct tab also carries an "N actions" count
+(GROWTH 3 / STANDOUT 5 / FANDOM 6), reading as the count of tier-1/2 (non-optional)
+solutions for that construct. Open question: which of these does the extension
+render vs native Tableau chrome? Resolve before the spec covers them.
+
+Light-surface tokens (off the proto render; confirm vs Figma file for canonical):
+- surface / card fill #FFFFFF · divider hairline #DDDDDD
+- headline (serif) + card title + CTA near-black ~#1A1A1A
+- card body + lead paragraph dark grey #3C3C3C
+
 ## Period granularity & gaps (data-driven)
 - **Offer only the granularities the data has.** The monthly/quarterly view controls are
   data-driven, not a static list: for the current indicator, a granularity is offered

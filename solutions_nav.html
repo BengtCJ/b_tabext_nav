@@ -311,7 +311,7 @@
   <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-06-08.1';
+  var VERSION = '2026-06-08.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   var FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -495,10 +495,15 @@
     var brand     = CONFIG.brandName ||
       (solutions.length && solutions[0].brand_name ? solutions[0].brand_name : 'the brand');
 
-    // Filter to current construct; no construct resolved = graceful no-op (show all)
-    var shown = construct
-      ? solutions.filter(function(s) { return s.construct === construct; })
-      : solutions;
+    // Unresolved-construct: dashboard.name matched 0 or >=2 tokens → graceful neutral state.
+    // Never guess; never show all constructs' cards as if they were one construct's.
+    if (!construct) {
+      root.innerHTML = '<div class="state-panel">Construct not identified from dashboard name</div>';
+      return;
+    }
+
+    // Filter to current construct — carry-all-rows / filter-in-JS pattern (CHART_SPEC).
+    var shown = solutions.filter(function(s) { return s.construct === construct; });
 
     // Fixed display_order sort (never re-sort by tier)
     shown = shown.slice().sort(function(a, b) { return a.display_order - b.display_order; });
@@ -524,7 +529,8 @@
     html += '<div class="sol-grid">';
     shown.forEach(function(sol) {
       var pillCls   = sol.tier === 1 ? 'sol-pill-t1' : sol.tier === 2 ? 'sol-pill-t2' : 'sol-pill-t3';
-      var pillLabel = sol.tier === 1 ? 'Essential'   : sol.tier === 2 ? 'Important'   : 'Optional';
+      // Tier shown as 1/2/3 (locked — ESSENTIAL/IMPORTANT/OPTIONAL wording paused per CHART_SPEC).
+      var pillLabel = sol.tier === 1 ? '1' : sol.tier === 2 ? '2' : '3';
       html +=
         '<div class="sol-card">' +
           '<div class="sol-name">' + escHtml(sol.name) + '</div>' +
