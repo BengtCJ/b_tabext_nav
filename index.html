@@ -1659,7 +1659,7 @@
         .transition().duration(500).ease(d3.easeBackOut).attr('r', pR);
       if (pR > 16)
         pg.append('text').attr('y', pR > 32 ? -7 : 4).attr('text-anchor','middle')
-          .style('font-size', Math.min(13, pR * 0.26) + 'px')
+          .style('font-size', VL_SIZE)
           .style('font-family', FONT_LIGHT).style('text-transform','uppercase')
           .style('fill', COL_LIGHT_GREY).style('pointer-events','none')
           .text(primaryData.name.length > 7 ? primaryData.name.slice(0, 7) : primaryData.name);
@@ -1697,7 +1697,7 @@
           .transition().duration(400).delay(i * 50 + 100).ease(d3.easeBackOut).attr('r', r);
         if (r > 14)
           cg.append('text').attr('y', r > 22 ? -4 : 4).attr('text-anchor','middle')
-            .style('font-size', Math.min(10, r * 0.34) + 'px')
+            .style('font-size', '11px')
             .style('font-family', FONT_LIGHT).style('text-transform','uppercase')
             .style('fill', COL_LIGHT_GREY).style('pointer-events','none')
             .text(comp.name.slice(0, 4));
@@ -1782,7 +1782,7 @@
       drawInset(pX, pY, pR, primaryData, D.primary, 1, 0);
       svg.append('text').attr('x', pX).attr('y', pY + pR + 16)
         .attr('text-anchor', 'middle')
-        .style('font-size', '10px').style('font-family', FONT_LIGHT)
+        .style('font-size', VL_SIZE).style('font-family', FONT_LIGHT)
         .style('text-transform', 'uppercase').style('fill', D.primary)
         .attr('data-brand', primaryData.name)
         .text(primaryData.name.length > 7 ? primaryData.name.slice(0, 7) : primaryData.name);
@@ -1807,7 +1807,7 @@
         drawInset(cx, cy, cR, comp, D.comp, 0.78, i * 50 + 100);
         svg.append('text').attr('x', cx).attr('y', cy + cR + 13)
           .attr('text-anchor', 'middle')
-          .style('font-size', '9px').style('font-family', FONT_LIGHT)
+          .style('font-size', '11px').style('font-family', FONT_LIGHT)
           .style('text-transform', 'uppercase').style('fill', D.comp)
           .attr('data-brand', comp.name)
           .text(comp.name.slice(0, 4));
@@ -1924,7 +1924,7 @@
       }
 
       svg.append('text').attr('x', bx + blockW/2).attr('y', blockH+16).attr('text-anchor','middle')
-        .style('font-size', isPrimary ? '10px':'9px').style('font-family', FONT_LIGHT)
+        .style('font-size', isPrimary ? VL_SIZE : '11px').style('font-family', FONT_LIGHT)
         .style('text-transform','uppercase').style('fill',col).attr('data-brand', d.name)
         .text(d.name.slice(0,4));
     });
