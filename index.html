@@ -251,7 +251,7 @@
         .attr('x', function(d) { return x(d.value) + 4; })
         .attr('y', function(d) { return y(d.name) + y.bandwidth() / 2; })
         .attr('dominant-baseline', 'middle')
-        .style('fill',        function(d) { return d.name === selectedBrand ? D.valueLabelSel.color : D.valueLabel.color; })
+        .style('fill',        function(d) { if (d.name !== selectedBrand) return D.valueLabel.color; return selectedBrand === CONFIG.clientBrand ? CONFIG.selectedColor : '#ededed'; })
         .style('font-size',   '10px')
         .style('font-family', function(d) { return d.name === selectedBrand ? D.valueLabelSel.font : D.valueLabel.font; })
         .text(function(d) { return d.value.toFixed(1); });
@@ -286,7 +286,7 @@
         .attr('x', function(d) { return x2(d.name) + x2.bandwidth() / 2; })
         .attr('y', function(d) { return y2(d.value) - 5; })
         .attr('text-anchor', 'middle')
-        .style('fill',        function(d) { return d.name === selectedBrand ? D.valueLabelSel.color : D.valueLabel.color; })
+        .style('fill',        function(d) { if (d.name !== selectedBrand) return D.valueLabel.color; return selectedBrand === CONFIG.clientBrand ? CONFIG.selectedColor : '#ededed'; })
         .style('font-size',   '11px')
         .style('font-family', function(d) { return d.name === selectedBrand ? D.valueLabelSel.font : D.valueLabel.font; })
         .text(function(d) { return d.value.toFixed(1); });
@@ -387,7 +387,7 @@
       g.append('text')
         .attr('x', x(last.period) + 6).attr('y', ly)
         .attr('dominant-baseline', 'middle')
-        .style('fill',           brand.name === selectedBrand ? CONFIG.selectedColor : CONFIG.neutralColor)
+        .style('fill',           brand.name === selectedBrand ? (selectedBrand === CONFIG.clientBrand ? CONFIG.selectedColor : '#ededed') : CONFIG.neutralColor)
         .style('font-size',      '10px').style('font-family', FONT_LIGHT)
         .style('text-transform', 'uppercase').style('letter-spacing', '0.06em')
         .style('cursor', 'pointer')
@@ -1246,10 +1246,11 @@
         var labelY = y(lastPt.v) + 4;
         placedY.forEach(function(py) { if (Math.abs(py - labelY) < 12) labelY = py + 12; });
         placedY.push(labelY);
+        var labelCol = isPrimary ? (primary === CONFIG.clientBrand ? CONFIG.selectedColor : '#ededed') : CONFIG.neutralColor;
         g.append('text').attr('x', iW + 6).attr('y', labelY)
           .attr('text-anchor','start').attr('dominant-baseline','auto')
           .style('font-size','9px').style('font-family', FONT_LIGHT)
-          .style('fill', col).style('text-transform','uppercase')
+          .style('fill', labelCol).style('text-transform','uppercase')
           .text(b.slice(0,4))
           .attr('opacity',0).transition().duration(300).delay(500).attr('opacity',1);
       }
@@ -1547,7 +1548,7 @@
         cell.append('text').attr('x',5).attr('y',26)
           .style('font-size', Math.min(10, cellW*0.20) + 'px')
           .style('font-family', FONT_TITLE).style('font-style','italic')
-          .style('fill', COL_LIGHT_GREY).text(node.data.value.toFixed(2));
+          .style('fill', isPrimary ? (primary === CONFIG.clientBrand ? CONFIG.selectedColor : '#ededed') : COL_LIGHT_GREY).text(node.data.value.toFixed(2));
     });
 
     el.appendChild(svgEl);
@@ -3344,7 +3345,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-08.1';
+  const VERSION = '2026-06-08.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
