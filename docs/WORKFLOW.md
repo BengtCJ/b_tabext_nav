@@ -74,12 +74,13 @@ Learned from the scorecard round, which converged but took too many turns.
    1. **Presence** — every required element there, and the right rows/columns present? (Row/column *membership* is a Tier-1 check but is verified on the data track, never asserted by eye or from memory — see CHART_SPEC Data sanity checklist; the cmoaf row miss came from skipping this.)
    2. **Placement** — position and order (column order, which column is the client, where the numeral sits).
    3. **Proportion** — relative sizes (client emphasis, largest element).
-   4. **Spacing** — gaps, gutters, padding, inset; on the 4px grid + named overrides.
-      **Grouping check (high-miss):** where the design groups cells, are they tiled
-      inside a hugging frame with the 2px hairline gutter (frame shows through; radii nest,
-      frame = cell + 2), or rendered as separate boxes with wide gaps? Free-floating boxes
-      where the reference groups cells is a Tier-2/4 blocker, not Tier-4 polish — it kills
-      the 'cells of a table' reading. This is the recurring teardown miss.
+  4. **Spacing** — gaps, gutters, padding, inset; on the 4px grid + named overrides.
+     **Grouping check (high-miss):** where the design groups cells, are they tiled inside
+     a hugging frame with the 2px hairline gutter (frame shows through; radii nest,
+     frame = cell + 2), or rendered as separate boxes with wide gaps? Free-floating boxes
+     where the reference groups cells is a **Tier-2/4 blocker, not Tier-4 polish** — it
+     kills the "cells of a table" reading. This is the recurring teardown miss; check it
+     on native pages as well as extension-rendered ones.
    5. **Colour / contrast** — fills, client highlight, WCAG on any coloured fill.
    6. **Format detail** — suffix placement, casing, figures (lining not old-style), truncation.
    7. **State completeness** — too-small / no-data / empty states; optional blocks (commentary).

@@ -499,6 +499,7 @@
       var FRAME_R = CELL_R + GUTTER; // 10 = 8 + 2
 
       var rail = document.createElement('div');
+      rail.setAttribute('data-grouped-cell-frame', 'ban-context');
       rail.style.cssText = 'background:#0d0d0d;border:1px solid #262626;border-radius:' + FRAME_R + 'px;' +
         'padding:' + GUTTER + 'px;display:flex;flex-direction:column;gap:' + GUTTER + 'px;' +
         'width:164px;flex-shrink:0;';
@@ -506,6 +507,7 @@
       ctx.cells.forEach(function(cell, i) {
         var isActive = (i === activeIdx);
         var cellEl = document.createElement('div');
+        cellEl.setAttribute('data-grouped-cell', '1');
         cellEl.style.cssText = 'background:' + (isActive ? '#363636' : '#222222') + ';' +
           'border-radius:' + CELL_R + 'px;padding:8px 12px;display:flex;flex-direction:column;gap:4px;flex:1;';
 
@@ -3345,7 +3347,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-08.3';
+  const VERSION = '2026-06-08.4';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -3964,6 +3966,27 @@
       console.warn('[' + metricId + '] Signed-float trend using smoothed line — default should be line-straight to avoid fabricated zero-crossings.');
   }
 
+  // ─── SHARED: grouped-cell frame assertion ─────────────────────────────────
+  // checkGroupedCellFrame(label, frameEl, checkFn)
+  // Asserts a grouped-cell container: gap === 2px AND frame radius = cell radius + 2.
+  // frameEl must have [data-grouped-cell] children (set by the renderer).
+  // checkFn has the same signature as the local check() inside each harness.
+  function checkGroupedCellFrame(label, frameEl, checkFn) {
+    if (!frameEl) { checkFn(label + '-gcf-present', false, 'no frame element'); return; }
+    var cells = frameEl.querySelectorAll('[data-grouped-cell]');
+    if (!cells.length) { checkFn(label + '-gcf-has-cells', false, 'no [data-grouped-cell] children'); return; }
+
+    var cs = window.getComputedStyle(frameEl);
+    var gapOk = (cs.gap === '2px' || cs.gap === '2px 2px' || cs.rowGap === '2px');
+    checkFn(label + '-gcf-gutter-2px', gapOk, 'gap=' + cs.gap + ' rowGap=' + cs.rowGap);
+
+    var frameR = parseFloat(cs.borderRadius) || parseFloat(cs.borderTopLeftRadius) || 0;
+    var cellR  = parseFloat(window.getComputedStyle(cells[0]).borderRadius) ||
+                 parseFloat(window.getComputedStyle(cells[0]).borderTopLeftRadius) || 0;
+    var radiusOk = (frameR === cellR + 2);
+    checkFn(label + '-gcf-radius-nested', radiusOk, 'frame-r=' + frameR + ' cell-r=' + cellR + ' expected=' + (cellR + 2));
+  }
+
   // ─── BAN-SHELL HARNESS ────────────────────────────────────────────────────
   // Call runBanShellHarness() from the browser console after rendering a headline ban.
   // Returns { pass: bool, results: [{name, ok, detail}] } and logs to console.
@@ -4483,6 +4506,66 @@
       else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
 
       check('ban-locked-numerals-40', allOk, allOk ? 'numerals=40px in all band directions' : detail.trim());
+    })();
+
+    // ── Grouped-cell frame: live check (any [data-grouped-cell-frame] in chart area) ──
+    // Also catches context-cell rails when a non-headline BAN is rendered.
+    (function() {
+      var scope = chartEl || document.body;
+      var frames = scope.querySelectorAll('[data-grouped-cell-frame]');
+      if (!frames.length) {
+        // No grouped-cell frames in this view — skip live check (fixtures below still run).
+        return;
+      }
+      Array.prototype.forEach.call(frames, function(f) {
+        var lbl = f.getAttribute('data-grouped-cell-frame') || 'unknown';
+        checkGroupedCellFrame(lbl, f, check);
+      });
+    })();
+
+    // ── Grouped-cell frame: synthetic fixtures (prove both failure modes) ──
+    // These always run regardless of which view is active.
+    (function() {
+      var tmp = document.createElement('div');
+      document.body.appendChild(tmp);
+
+      function runFixture(css, cellCss) {
+        tmp.innerHTML = '';
+        tmp.style.cssText = css;
+        var c = document.createElement('div');
+        c.setAttribute('data-grouped-cell', '1');
+        c.style.cssText = cellCss;
+        tmp.appendChild(c);
+        var inner = [];
+        checkGroupedCellFrame('_fix', tmp, function(n, ok, d) { inner.push({ n: n, ok: ok, d: d }); });
+        return inner;
+      }
+
+      // Fixture A: correct (frame=10px, cell=8px, gap=2px) — all checks must pass
+      var rA = runFixture(
+        'display:flex;flex-direction:column;gap:2px;padding:2px;border-radius:10px;position:absolute;top:-9999px;',
+        'border-radius:8px;height:10px;'
+      );
+      check('gcf-fixture-correct-passes', rA.every(function(r) { return r.ok; }),
+        rA.map(function(r) { return r.n.replace('_fix-', '') + ':' + (r.ok ? 'ok' : 'FAIL(' + r.d + ')'); }).join(' '));
+
+      // Fixture B: wide gap (8px, off-token) — gutter check must FAIL (detection verified)
+      var rB = runFixture(
+        'display:flex;flex-direction:column;gap:8px;padding:2px;border-radius:10px;position:absolute;top:-9999px;',
+        'border-radius:8px;height:10px;'
+      );
+      check('gcf-fixture-wide-gap-detected', rB.some(function(r) { return r.n.indexOf('gutter') !== -1 && !r.ok; }),
+        'gap=8px should trigger gutter failure');
+
+      // Fixture C: flat radius (frame=8px, cell=8px, 8 != 8+2=10) — radius check must FAIL
+      var rC = runFixture(
+        'display:flex;flex-direction:column;gap:2px;padding:2px;border-radius:8px;position:absolute;top:-9999px;',
+        'border-radius:8px;height:10px;'
+      );
+      check('gcf-fixture-flat-radius-detected', rC.some(function(r) { return r.n.indexOf('radius') !== -1 && !r.ok; }),
+        'frame-r=8 cell-r=8 (8 != 8+2=10) should trigger radius failure');
+
+      document.body.removeChild(tmp);
     })();
 
     // Log results

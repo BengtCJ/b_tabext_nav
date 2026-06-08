@@ -70,6 +70,13 @@ wanted; validate at the container size before final sign-off.
     group sits inside a hugging frame, cell↔frame padding is also 2px and radii nest (frame
     radius = cell radius + 2). Free cells inside a larger padded card use the 2px gutter
     between themselves but inherit that card's padding, not a 2px inset.
+  - **Native pages too.** The 2px-gutter / frame-shows-through treatment applies to
+    **native Tableau dashboard pages** (e.g. the solution pages), not only the extension.
+    Realise it with an outer Container holding the light-grey frame background + Corner
+    Radius (frame radius = cell radius + 2), white child cells at the cell radius, and
+    per-object padding tuned to a uniform 2px cell↔cell and cell↔frame. Forward
+    navigation on these pages is a native **Navigation object** (Pattern A) — never a CTA
+    rendered inside the card.
 
 ## Colour (codify existing — not a friction point)
 - Primary / client highlight: `#e994a2` (pink). Used wherever the client brand is marked —
@@ -412,9 +419,11 @@ interpolated value (it is generic).
   - Gutter is uniform: cell↔cell, cell↔frame, and table↔commentary are all the same 2px.
   - Corner radii nest: frame radius = cell radius + gutter (e.g. 8 + 2 = 10); cells and the
     commentary panel share one radius.
-  - Grouped-cell containers on detail/solutions/chart surfaces (not just the scorecard) use
-    the 2px gutter and nested radii (frame = cell + 2); assert no free-floating card group
-    with off-token gaps where the design specifies a frame.
+  - Grouped-cell containers the extension renders on **detail/chart surfaces** (not the
+    scorecard only) use the 2px gutter and nested radii (frame = cell + gutter); the
+    harness asserts no extension-rendered grouped-cell group ships with off-token gaps or
+    a flat (non-nested) radius. (Native Tableau pages are out of harness reach — verify
+    those by teardown.)
   - No clipped or ellipsised text: indicator names and labels render in full (wrap, don't truncate).
   - Text on any coloured fill meets contrast (WCAG AA): e.g. the pink client cell uses dark
     text, never white.
