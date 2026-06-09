@@ -705,7 +705,7 @@
       // ── VERDICT ZONE (col 1, row 4, transparent, top-aligned) ──────────
       var verdictZone = document.createElement('div');
       verdictZone.style.cssText = 'grid-column:1;grid-row:4;' +
-        'padding:8px 16px 8px;display:flex;flex-direction:column;gap:4px;overflow:hidden;min-width:0;';
+        'padding:8px 16px 8px;display:flex;flex-direction:column;justify-content:center;gap:4px;overflow:hidden;min-width:0;';
 
       var verdictEl = document.createElement('div');
       verdictEl.setAttribute('data-ban-verdict', '1');
@@ -719,7 +719,7 @@
       var readingZone = document.createElement('div');
       readingZone.setAttribute('data-ban-textcol', '1');
       readingZone.style.cssText = 'grid-column:2;grid-row:4;' +
-        'padding:8px 16px 8px;display:flex;flex-direction:column;gap:4px;overflow:hidden;min-width:0;';
+        'padding:8px 16px 8px;display:flex;flex-direction:column;justify-content:center;gap:4px;overflow:hidden;min-width:0;';
 
       var readingEl = document.createElement('div');
       readingEl.setAttribute('data-ban-reading', '1');
@@ -742,7 +742,7 @@
         cellEl.style.cssText = 'grid-column:3;grid-row:' + (i + 2) + ';' +
           'background:' + (band.active ? '#3a3a3a' : '#242424') + ';' +
           'border-radius:' + CELL_R + 'px;padding:8px 12px;' +
-          'display:flex;flex-direction:column;gap:4px;overflow:hidden;';
+          'display:flex;flex-direction:column;justify-content:center;gap:4px;overflow:hidden;';
 
         var labelRow = document.createElement('div');
         labelRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
@@ -884,12 +884,6 @@
     heroTxt.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
       'font-size:' + HERO_SZ + 'px;fill:#ededed;';
     heroTxt.textContent = (content.prefix || '') + content.dispVal;
-    if (content.unitSuffix) {
-      var sufSp = document.createElementNS(ns, 'tspan');
-      sufSp.style.cssText = 'font-size:' + Math.round(HERO_SZ * 0.42) + 'px;fill:#6f6f6f;';
-      sufSp.textContent = content.unitSuffix;
-      heroTxt.appendChild(sufSp);
-    }
     svgEl.appendChild(heroTxt);
 
     // Fallback pink rule if no active band dot (guaranteed accent)
@@ -909,7 +903,7 @@
     // ── LEGEND ZONE (col 2, row 2) — band table; numerals 40px ───────────────
     var legendZone = document.createElement('div');
     legendZone.style.cssText = 'grid-column:2;grid-row:2;' +
-      'display:flex;flex-direction:column;padding:8px 16px 8px;gap:0;overflow:hidden;min-width:0;';
+      'display:flex;flex-direction:column;justify-content:center;padding:8px 16px 8px;gap:0;overflow:hidden;min-width:0;';
 
     content.bands.forEach(function(band, i) {
       if (i > 0) {
@@ -959,7 +953,7 @@
     commentaryZone.setAttribute('data-ban-textcol', '1');
     commentaryZone.style.cssText = 'grid-column:2;grid-row:3;' +
       'display:flex;flex-direction:column;padding:8px 16px 16px;gap:4px;' +
-      'justify-content:flex-start;overflow:hidden;min-width:0;';
+      'justify-content:center;overflow:hidden;min-width:0;';
 
     var commentSep = document.createElement('div');
     commentSep.style.cssText = 'height:1px;background:#1e1e1e;margin-bottom:8px;flex-shrink:0;';
@@ -1091,7 +1085,7 @@
         bandCell.setAttribute('data-ban-cell', '1');
         bandCell.style.cssText = 'background:' + (band.active ? '#3a3a3a' : '#242424') + ';' +
           'border-radius:' + CELL_R + 'px;padding:12px;display:flex;flex-direction:column;' +
-          'gap:4px;overflow:hidden;';
+          'justify-content:center;gap:4px;overflow:hidden;';
 
         var labelRow = document.createElement('div');
         labelRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
@@ -3333,7 +3327,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-09.4';
+  const VERSION = '2026-06-10.1';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
