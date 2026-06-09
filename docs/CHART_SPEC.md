@@ -77,8 +77,7 @@ carry-all-rows / filter-in-JS pattern; construct id self-identified from dashboa
 Render contract:
 - Cards in FIXED display_order from the menu. Never tier-sorted; order does not
   change when tiers change run-to-run.
-- N-robust: render whatever the construct returns (2..N). No hardcoded 3x2 /
-  5-in-6 / dead empty 6th cell.
+- Fixed 6-cell scaffold: always render six solution holding cells. Fill with the construct's solutions in display_order; surplus cells render as empty holding cells (faint `--empty` fill), not omitted. (If re-decided to per-construct sizing, render exactly the construct's count with no empties.)
 - Each card: name + description (verbatim from the view) + one priority pill.
 - rationale NOT rendered (hidden from users).
 
@@ -87,7 +86,7 @@ Status semantics (solutions — deliberately distinct from problems):
 - tier 1 = green outline  ·  tier 2 = amber outline  ·  tier 3 = grey outline.
 - Light per-theme RAG: green #4ADE80 · amber #F5AF00 (red #E42F4D is NOT used here).
   grey-outline neutral defined in STYLE_SPEC.
-- Tier shown as 1 / 2 / 3 (interim; ESSENTIAL/IMPORTANT/OPTIONAL wording is paused).
+- Tier shown as the word ESSENTIAL / IMPORTANT / OPTIONAL (tier 1/2/3), outlined pill, no fill, no red.
 
 Data sanity (verify, don't eyeball):
 - Membership = exactly the menu's active solutions present for this run+construct
@@ -108,13 +107,13 @@ Looks wrong if:
 - cards reorder between views, or are sorted by tier.
 - a tier-3 renders as anything but grey outline.
 - pink (#e994a2) appears (this surface is the explicit pink EXEMPTION).
-- the grid hardcodes a count or leaves a dead empty cell instead of flowing for N.
+- a filled-slot count mismatches the construct's solutions, or an empty holding cell renders as anything other than the faint `--empty` slot.
 - rationale text is visible anywhere.
 
 PROTO DIVERGENCE (decide before build-final): the Figma proto draws
 ESSENTIAL/IMPORTANT as FILLED green/amber pills and uses the words
 ESSENTIAL/IMPORTANT/OPTIONAL. The locked decision OVERRIDES the proto:
-outlined pills, no fills, no red, tier 1/2/3. Build to the locked decision
+outlined pills, no fills, no red; tier shown as the words ESSENTIAL/IMPORTANT/OPTIONAL. Build to the locked decision
 unless re-decided here.
 
 Surface composition (TO CONFIRM — extension vs native scope, NOT specced here):

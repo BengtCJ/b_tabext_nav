@@ -33,6 +33,8 @@
       --gutter:      2px;
       /* Light-grey frame background — confirm-against-Figma */
       --frame-bg:    #E0E0E0;
+      /* Empty scaffold slot — faint fill lighter than frame, darker than white */
+      --empty:       #F5F5F5;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -71,18 +73,18 @@
     .construct-title {
       font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif;
       font-style: italic;
-      font-size: 40px;   /* Display */
+      font-size: 56px;   /* Display — v8 re-decision, was 40 */
       color: var(--title-color);
     }
     .construct-subtitle {
       font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      font-size: 13px;   /* Label */
+      font-size: 19px;   /* reuse §Detail-header Question size */
       color: var(--body-color);
       line-height: 1.5;
       margin-top: var(--sp-tight);
     }
 
-    /* ── Solution frame — hugging cell-frame container (STYLE_SPEC § Card-frame) */
+    /* ── Solution frame — fixed 3-col × 2-row + anchor col (STYLE_SPEC § Card-frame) */
     .sol-frame {
       flex: 1;
       min-height: 0;
@@ -90,8 +92,8 @@
       border-radius: 10px;             /* frame-radius = cell-radius 8 + gutter 2 */
       padding: var(--gutter);
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      grid-auto-rows: 1fr;
+      grid-template-columns: repeat(3, 1fr) minmax(0, 1fr);
+      grid-template-rows: 1fr 1fr;
       gap: var(--gutter);
     }
 
@@ -115,9 +117,16 @@
 
     .sol-name {
       font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      font-size: 16px;   /* Heading */
+      font-size: 18px;   /* Heading — v8 sanctioned bump, was 16 */
       color: var(--title-color);
       line-height: 1.3;
+      text-transform: uppercase;
+    }
+
+    /* ── Empty holding cell ────────────────────────────────────────────────── */
+    .sol-empty {
+      background: var(--empty);
+      border-radius: 8px;
     }
 
     .sol-desc {
@@ -125,7 +134,12 @@
       font-size: 13px;   /* Label */
       color: var(--body-color);
       line-height: 1.5;
-      flex: 1;
+      margin-top: auto;  /* bottom-pin in the flex card */
+      /* clamp — verified in Blink preview (TABLEAU_API_REALITY 2026-06-09) */
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     /* ── Solution pill — outlined, no fill, no red (STYLE_SPEC § Pill) ──── */
@@ -145,48 +159,65 @@
     .sol-pill-t2 { border-color: var(--pill-t2); color: var(--pill-t2); }
     .sol-pill-t3 { border-color: var(--pill-t3); color: var(--pill-t3); }
 
-    /* ── In Practice — alternate (no image) — trailing cell inside frame ─── */
-    .in-practice-alt {
+    /* ── In Practice anchor — col 4, spans both rows (STYLE_SPEC § Card-frame) ── */
+    .in-practice-anchor {
       background: var(--card-bg);
       border-radius: 8px;
-      padding: var(--sp-section);
+      grid-column: 4;
+      grid-row: 1 / 3;
       display: flex;
       flex-direction: column;
-      gap: var(--sp-default);
+      overflow: hidden;
+      min-height: 0;
     }
-    /* ── In Practice — primary (with image) — trailing cell inside frame ─── */
-    .in-practice-primary {
-      background: var(--card-bg);
-      border-radius: 8px;
-      padding: var(--sp-section);
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: var(--sp-section);
-      align-items: start;
+    /* Image wrapper: 2px inset from card edge; height = one solution-card row */
+    .ip-img-wrap {
+      padding: var(--gutter);      /* 2px inset all sides */
+      flex-shrink: 0;
+      height: calc((100% - var(--gutter)) / 2);
     }
-    .in-practice-img {
-      border-radius: 4px;
+    .ip-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 6px;          /* card 8 − gutter 2 = nested radius */
       object-fit: cover;
-      max-width: 200px;
+      display: block;
     }
-    .in-practice-content {
+    /* Text fills the rest below the image (or the whole card when no image) */
+    .ip-text {
+      flex: 1;
+      padding: var(--sp-section);
       display: flex;
       flex-direction: column;
       gap: var(--sp-default);
+      overflow: hidden;
+      min-height: 0;
     }
-    .in-practice-label {
+    .ip-label {
       font-size: 11px;   /* Caption */
       font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
       color: var(--t3-color);
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      margin-bottom: var(--sp-default);
+      flex-shrink: 0;
     }
-    .in-practice-body {
+    .ip-verdict {
+      font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif;
+      font-style: italic;
+      font-size: 24px;   /* ban-shell verdict size — sanctioned on this surface */
+      color: var(--title-color);
+      line-height: 1.3;
+      flex-shrink: 0;
+    }
+    .ip-reading {
       font-size: 13px;   /* Label */
       font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
       color: var(--body-color);
       line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 5;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     /* ── Configure button ────────────────────────────────────────────────── */
@@ -303,7 +334,7 @@
   <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-06-09.3';
+  var VERSION = '2026-06-09.4';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   var FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -432,6 +463,25 @@
       'improvement across the dimensions that matter most at this stage.';
   }
 
+  // ─── IN PRACTICE VERDICT RESOLVER ────────────────────────────────────────
+  // Short Baskerville lead sentence. One swap = real source. Brand-interpolated.
+  function resolveInPracticeVerdict(brand, construct) {
+    var b = brand || 'the brand';
+    var copy = {
+      growth:
+        'The growth opportunity for ' + b + ' lies at the intersection of penetration ' +
+        'and premium positioning.',
+      standout:
+        b + ' can sharpen its market edge through systematic investment in its most ' +
+        'distinctive signals.',
+      fandom:
+        'The path to deeper advocacy for ' + b + ' begins with the rituals and ' +
+        'communities that keep buyers close.',
+    };
+    return (construct && copy[construct]) ||
+      'Solutions for ' + b + ' provide a structured pathway to measurable brand improvement.';
+  }
+
   // ─── SUBTITLE RESOLVER ────────────────────────────────────────────────────
   function resolveSubtitle(construct) {
     var copy = {
@@ -501,42 +551,47 @@
       '<div class="construct-subtitle">' + escHtml(resolveSubtitle(construct)) + '</div>' +
       '</div>';
 
-    // Solution frame — hugging cell grid (STYLE_SPEC § Card-frame)
+    // Solution frame — fixed 3×2 scaffold + anchor col (STYLE_SPEC § Card-frame)
     html += '<div class="sol-frame">';
 
-    // Solution cards — pill top-right, description below
-    shown.forEach(function(sol) {
-      var pillCls   = sol.tier === 1 ? 'sol-pill-t1' : sol.tier === 2 ? 'sol-pill-t2' : 'sol-pill-t3';
-      var pillLabel = sol.tier === 1 ? 'Essential' : sol.tier === 2 ? 'Important' : 'Optional';
-      html +=
-        '<div class="sol-card" data-grouped-cell>' +
-          '<div class="sol-card-header">' +
-            '<div class="sol-name">' + escHtml(sol.name) + '</div>' +
-            '<span class="sol-pill ' + pillCls + '" style="flex-shrink:0">' + escHtml(pillLabel) + '</span>' +
-          '</div>' +
-          '<div class="sol-desc">' + escHtml(sol.description) + '</div>' +
-        '</div>';
-    });
-
-    // In Practice — trailing cell inside the frame (primary/alternate per image availability)
-    var imageUrl = shown.length && shown[0].image_url ? shown[0].image_url : '';
-    var ipCopy   = escHtml(resolveInPractice(brand, construct));
-    if (imageUrl) {
-      html +=
-        '<div class="in-practice-primary" data-grouped-cell>' +
-          '<img class="in-practice-img" src="' + escHtml(imageUrl) + '" alt="">' +
-          '<div class="in-practice-content">' +
-            '<div class="in-practice-label">In Practice</div>' +
-            '<div class="in-practice-body">' + ipCopy + '</div>' +
-          '</div>' +
-        '</div>';
-    } else {
-      html +=
-        '<div class="in-practice-alt" data-grouped-cell>' +
-          '<div class="in-practice-label">In Practice</div>' +
-          '<div class="in-practice-body">' + ipCopy + '</div>' +
-        '</div>';
+    // Fixed 6 solution holding cells — fill from shown, remainder = empty
+    var SLOT_COUNT = 6;
+    for (var i = 0; i < SLOT_COUNT; i++) {
+      var sol = shown[i];
+      if (sol) {
+        var pillCls   = sol.tier === 1 ? 'sol-pill-t1' : sol.tier === 2 ? 'sol-pill-t2' : 'sol-pill-t3';
+        var pillLabel = sol.tier === 1 ? 'Essential' : sol.tier === 2 ? 'Important' : 'Optional';
+        html +=
+          '<div class="sol-card" data-grouped-cell>' +
+            '<div class="sol-card-header">' +
+              '<div class="sol-name">' + escHtml(sol.name) + '</div>' +
+              '<span class="sol-pill ' + pillCls + '" style="flex-shrink:0">' + escHtml(pillLabel) + '</span>' +
+            '</div>' +
+            '<div class="sol-desc">' + escHtml(sol.description) + '</div>' +
+          '</div>';
+      } else {
+        html += '<div class="sol-empty" data-grouped-cell></div>';
+      }
     }
+
+    // In Practice anchor — col 4, spans both rows; image inset 2px when available
+    var imageUrl = shown.length && shown[0] && shown[0].image_url ? shown[0].image_url : '';
+    var verdict  = escHtml(resolveInPracticeVerdict(brand, construct));
+    var reading  = escHtml(resolveInPractice(brand, construct));
+
+    html += '<div class="in-practice-anchor" data-grouped-cell>';
+    if (imageUrl) {
+      html += '<div class="ip-img-wrap">' +
+                '<img class="ip-img" src="' + escHtml(imageUrl) + '" alt="">' +
+              '</div>';
+    }
+    html +=
+      '<div class="ip-text">' +
+        '<div class="ip-label">In Practice</div>' +
+        '<div class="ip-verdict">' + verdict + '</div>' +
+        '<div class="ip-reading">' + reading + '</div>' +
+      '</div>';
+    html += '</div>';   // end .in-practice-anchor
 
     html += '</div>';   // end .sol-frame
 
@@ -578,6 +633,41 @@
       : NaN;
     check('sol-gcf-radius-nested', frameR === cellR + 2,
       'frame-r=' + frameR + ' cell-r=' + cellR + ' expected=' + (cellR + 2));
+
+    // ── v8: 6 solution slots + anchor ──────────────────────────────────────
+    var solSlots = frame.querySelectorAll('.sol-card, .sol-empty');
+    check('sol-v8-6-slots', solSlots.length === 6, solSlots.length + ' solution slot(s)');
+    var anchor = frame.querySelector('.in-practice-anchor');
+    check('sol-v8-anchor-exists', anchor !== null);
+
+    // ── v8: type-role sizes ────────────────────────────────────────────────
+    var titleEl = document.querySelector('.construct-title');
+    if (titleEl) {
+      check('sol-v8-display-56px', parseFloat(window.getComputedStyle(titleEl).fontSize) === 56,
+        'fontSize=' + window.getComputedStyle(titleEl).fontSize);
+    }
+    var subtitleEl = document.querySelector('.construct-subtitle');
+    if (subtitleEl) {
+      check('sol-v8-subtitle-19px', parseFloat(window.getComputedStyle(subtitleEl).fontSize) === 19,
+        'fontSize=' + window.getComputedStyle(subtitleEl).fontSize);
+    }
+    var nameEl = frame.querySelector('.sol-name');
+    if (nameEl) {
+      check('sol-v8-heading-18px', parseFloat(window.getComputedStyle(nameEl).fontSize) === 18,
+        'fontSize=' + window.getComputedStyle(nameEl).fontSize);
+    }
+
+    // ── v8: clamp (overflow: hidden on clamped elements) ──────────────────
+    var descEl = frame.querySelector('.sol-desc');
+    if (descEl) {
+      check('sol-v8-desc-clamped', window.getComputedStyle(descEl).overflow === 'hidden',
+        'overflow=' + window.getComputedStyle(descEl).overflow);
+    }
+    var readingEl = frame.querySelector('.ip-reading');
+    if (readingEl) {
+      check('sol-v8-reading-clamped', window.getComputedStyle(readingEl).overflow === 'hidden',
+        'overflow=' + window.getComputedStyle(readingEl).overflow);
+    }
 
     // ── Synthetic fixture — must FAIL (gap 8px, non-nested radius) ─────────
     var fix = document.createElement('div');

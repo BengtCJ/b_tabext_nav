@@ -24,10 +24,10 @@ wanted; validate at the container size before final sign-off.
 | Role | Face | Use | Size |
 |---|---|---|---|
 | **Hero** | Baskerville italic (stack in Faces) | the BAN figure, arc centre — the focal number | per-chart override |
-| **Heading** | Tableau Light | table indicator names, section labels | 16px |
+| **Heading** | Tableau Light | table indicator names, section labels | 18px (was 16; sanctioned bump for solutions surface contrast — validate at 1421×773) |
 | **Label** | Tableau Light (brands UPPERCASE) / Regular (values) | brand names, value labels | 13px |
 | **Caption** | Tableau Light | axis ticks, legend, small notes | 11px |
-| **Display** | Baskerville italic (stack in Faces) | construct page title — solutions surface only | 40px |
+| **Display** | Baskerville italic (stack in Faces) | construct page title — solutions surface only | 56px (re-decision: was 40; bumped for scale — record as intentional) |
 
 - **Hero is the only sanctioned size override. It uses a fixed size per direction (not
   fit-to-box).** Design review (spec_022) found that free fit-to-box caused the same value
@@ -44,10 +44,10 @@ wanted; validate at the container size before final sign-off.
 - No other element sets its own font size. In particular, **no font size derived from
   geometry** (`Math.min(11, cellW * 0.22)` and similar must go).
 - **Display is the solutions-surface exception to the Baskerville-as-numerals rule.** The
-  construct page title on the solutions surface uses Baskerville italic, Title-case, 40px — the
+  construct page title on the solutions surface uses Baskerville italic, Title-case, 56px — the
   only sanctioned use of Baskerville for non-numeral text. Scope: solutions surface only. Do not
-  apply Display to chart titles, indicator names, or any dark-theme surface. 40px is locked;
-  build-and-review at 1421×773 whether tracking is needed.
+  apply Display to chart titles, indicator names, or any dark-theme surface. 56px is the v8
+  re-decision (was 40; bumped for scale against the Figma — record as intentional).
 - Below the documented **minimum container size**, a chart shows its "too small" state
   rather than shrinking text. Minimum size: `‹px ×px›` — separate from the validation
   size above; derive it from where a chart actually breaks, not from the current canvas.
@@ -424,6 +424,10 @@ interpolated value (it is generic).
     scale segments, the solutions frame) uses the 2px gutter and nested radii
     (frame = cell + gutter); the harness asserts none ships with off-token gaps or a flat
     (non-nested) radius.
+  - Solutions descriptions and the In Practice reading clamp (no overspill / clipped
+    overflow); the In Practice anchor is ONE white border-less card spanning both rows
+    with the image inset 2px from the card edge (one solution-card row, not full-bleed)
+    and text beneath — not separate cells, not a bordered card.
   - No clipped or ellipsised text: indicator names and labels render in full (wrap, don't truncate).
   - Text on any coloured fill meets contrast (WCAG AA): e.g. the pink client cell uses dark
     text, never white.
@@ -449,6 +453,8 @@ above.
 | Title text (near-black) | indicative | **confirm-against-Figma** |
 | Body text (dark-grey) | indicative | **confirm-against-Figma** |
 | Tier-3 pill text + border (grey) | indicative | **confirm-against-Figma** |
+| Empty holding cell (`--empty`) | `#F5F5F5` | Faint fill for unfilled scaffold slots; lighter than frame bg (`#E0E0E0`), darker than white |
+| Subtitle | 19px Tableau Light | Construct subtitle beneath Display title (reuse §Detail-header Question size) |
 
 Spacing, type-role sizes (Heading 16px, Label 13px, Caption 11px), and face stack are shared with
 the dark theme. Tokens marked **confirm-against-Figma** are indicative; finalise on the first
@@ -464,21 +470,23 @@ Tier-to-colour mapping:
 
 | Tier | Light hex | Dark hex | Colour name | Pill label text |
 |---|---|---|---|---|
-| 1 (best) | `#4ADE80` | `#57bf6a` | green | 1 |
-| 2 | `#F5AF00` | `#e0992e` | amber | 2 |
-| 3 | neutral grey | neutral grey | grey-outline | 3 |
+| 1 (best) | `#4ADE80` | `#57bf6a` | green | ESSENTIAL |
+| 2 | `#F5AF00` | `#e0992e` | amber | IMPORTANT |
+| 3 | neutral grey | neutral grey | grey-outline | OPTIONAL |
 
 Full light RAG palette (for reference): `#E42F4D` / `#F5AF00` / `#4ADE80`. Red (`#E42F4D`) is
 defined for completeness but **not used on this surface** — see pink-accent exemption below.
 Full dark RAG palette (for reference): `#e0584f` / `#e0992e` / `#57bf6a` (matching existing
 Scorecard RAG constants).
 
-### Grid (fixed order, N-robust)
+### Grid (fixed 6-cell scaffold)
 
 Card grid renders solutions in `display_order` (fixed; never re-sorted by tier or any other
-field). Layout uses `auto-fill` with a `minmax` column floor so it is robust to any N ≥ 2
-solutions — **never hardcode a 3×2 or 5-in-6 grid**. Grid column count adjusts with container
-width.
+field). Layout is a **fixed 3×2 scaffold** (3 solution columns × 2 rows) with one In Practice
+anchor column at right — always 4 columns, 2 rows. Always render six solution holding cells:
+fill from the construct's solutions in display_order; surplus cells render as empty holding
+cells (faint `--empty` fill, not omitted). The anchor spans both rows (grid-column 4,
+grid-row 1/3). `--gutter: 2px` is unchanged throughout.
 
 ### Card-frame and cell layout
 
@@ -486,10 +494,19 @@ Cards are tiled cells in one hugging frame: frame carries the light-grey backgro
 frame radius (= cell radius + 2px gutter); cells are white at the cell radius with NO
 own border; a uniform 2px hairline gutter shows cell↔cell and cell↔frame (per § Spacing
 override). Free-floating cards with off-token gaps are non-conformant.
-In Practice is a cell within that frame, not a separate footer panel; the frame fills the
-container (no stranded whitespace).
-Status pill sits top-right of the card.
+Status pill (ESSENTIAL/IMPORTANT/OPTIONAL, outlined, no fill) sits top-right of each solution card.
+Solution name: Heading 18px, uppercase. Solution description: bottom-pinned (`margin-top: auto`)
+and clamped (`-webkit-line-clamp`) — never overspills the cell.
 Forward navigation is a native Navigation object — no CTA rendered inside the card.
+
+**In Practice anchor** — ONE white, border-less card spanning both rows (grid-column 4,
+grid-row 1/3). When a case-study image exists: image inset 2px from the card edge (the
+`--gutter`; inner radius nests = card radius − 2 = 6px) and sized to exactly one
+solution-card row (`calc((100% − var(--gutter)) / 2)`) at the top; text beneath fills
+the rest. No case study → no image; text fills the whole card. Text = default editorial:
+label (Caption 11, uppercase) + verdict (Baskerville italic 24px) + reading (Label 13),
+reading clamped. Image is inset 2px, **not full-bleed** (intentional divergence from the
+Figma). The 2px inset and one-row height align the image with the solution cells.
 
 ### Pink-accent exemption
 
