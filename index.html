@@ -3333,7 +3333,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-09.2';
+  const VERSION = '2026-06-09.3';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -4701,7 +4701,27 @@
         { name:'Illy Coffee', period:'2025-Q4', value:4.5 },
       ];
     }
-    if (chart === 'line-straight' || chart === 'line-smooth') return WIDE_PERIODS;
+    if (chart === 'line-straight' || chart === 'line-smooth') {
+      var SIGNED_IDS = ['vom', 'svt'];
+      if (SIGNED_IDS.indexOf(CONFIG.metricId) !== -1) return [
+        { period:'2025-01','Illy Coffee': 0.032,Starbucks: 0.041,Nespresso:-0.012,Lavazza: 0.018,"Peet's Coffee":-0.007 },
+        { period:'2025-02','Illy Coffee': 0.028,Starbucks: 0.038,Nespresso:-0.009,Lavazza: 0.021,"Peet's Coffee": 0.004 },
+        { period:'2025-03','Illy Coffee': 0.041,Starbucks: 0.046,Nespresso: 0.003,Lavazza: 0.016,"Peet's Coffee":-0.011 },
+        { period:'2025-04','Illy Coffee': 0.037,Starbucks: 0.049,Nespresso:-0.005,Lavazza: 0.024,"Peet's Coffee": 0.002 },
+        { period:'2025-05','Illy Coffee': 0.044,Starbucks: 0.052,Nespresso: 0.011,Lavazza: 0.019,"Peet's Coffee": 0.008 },
+        { period:'2025-06','Illy Coffee': 0.039,Starbucks: 0.048,Nespresso: 0.007,Lavazza: 0.022,"Peet's Coffee": 0.013 },
+      ];
+      var RATIO_IDS = ['eqr', 'ebl', 'sstsr'];
+      if (RATIO_IDS.indexOf(CONFIG.metricId) !== -1) return [
+        { period:'2025-01','Illy Coffee':0.082,Starbucks:0.134,Nespresso:0.097,Lavazza:0.071,"Peet's Coffee":0.058 },
+        { period:'2025-02','Illy Coffee':0.079,Starbucks:0.128,Nespresso:0.102,Lavazza:0.074,"Peet's Coffee":0.061 },
+        { period:'2025-03','Illy Coffee':0.086,Starbucks:0.141,Nespresso:0.093,Lavazza:0.068,"Peet's Coffee":0.055 },
+        { period:'2025-04','Illy Coffee':0.091,Starbucks:0.138,Nespresso:0.099,Lavazza:0.072,"Peet's Coffee":0.063 },
+        { period:'2025-05','Illy Coffee':0.094,Starbucks:0.145,Nespresso:0.104,Lavazza:0.076,"Peet's Coffee":0.067 },
+        { period:'2025-06','Illy Coffee':0.089,Starbucks:0.142,Nespresso:0.101,Lavazza:0.073,"Peet's Coffee":0.064 },
+      ];
+      return WIDE_PERIODS;
+    }
     if (chart === 'area-100' || chart === 'stream' || chart === 'small-multiples') return WIDE_PERIODS;
     if (chart === 'slope') return [
       { name:'Illy Coffee',   v1:0.57, v2:0.64 },
@@ -4753,12 +4773,20 @@
       var pv = PREVIEW_BAN[CONFIG.metricId];
       if (pv !== undefined) return pv;
     }
+    var _mId = CONFIG.metricId;
+    var _vals;
+    if (['vom','svt'].indexOf(_mId) !== -1)
+      _vals = [0.041, -0.012, 0.028, 0.018, -0.007];
+    else if (['eqr','ebl','sstsr'].indexOf(_mId) !== -1)
+      _vals = [0.134, 0.097, 0.082, 0.071, 0.058];
+    else
+      _vals = [4.2, 3.8, 3.4, 3.1, 2.9];
     return [
-      { name:'Starbucks',     value:6.8 },
-      { name:'Nespresso',     value:5.4 },
-      { name:'Illy Coffee',   value:4.2 },
-      { name:'Lavazza',       value:3.9 },
-      { name:"Peet's Coffee", value:3.1 },
+      { name:'Starbucks',     value:_vals[0] },
+      { name:'Nespresso',     value:_vals[1] },
+      { name:'Illy Coffee',   value:_vals[2] },
+      { name:'Lavazza',       value:_vals[3] },
+      { name:"Peet's Coffee", value:_vals[4] },
     ];
   }
 
