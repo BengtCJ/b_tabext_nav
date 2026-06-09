@@ -5129,8 +5129,15 @@
 
       if (brandIdx === -1 || valueIdx === -1 || indIdx === -1) {
         var available = cols.map(function(c) { return c.fieldName; }).join(', ');
-        console.warn('Required fields missing. Available: ' + available);
-        showError('Required fields missing. Available: ' + available);
+        console.warn('[fetchAndCacheData] worksheet="' + CONFIG.worksheet +
+          '" cols=' + cols.length + ' rows=' + rows.length +
+          ' brand=' + brandIdx + ' value=' + valueIdx + ' ind=' + indIdx +
+          ' | Available: ' + available);
+        showError('Required fields missing in "' + CONFIG.worksheet + '" (' +
+          cols.length + ' cols, ' + rows.length + ' rows). ' +
+          (cols.length === 0
+            ? 'Worksheet returned no columns — check shelf fields and manifest data permission.'
+            : 'Available: ' + available));
         return;
       }
 
