@@ -28,6 +28,7 @@ wanted; validate at the container size before final sign-off.
 | **Label** | Tableau Light (brands UPPERCASE) / Regular (values) | brand names, value labels | 13px |
 | **Caption** | Tableau Light | axis ticks, legend, small notes | 11px |
 | **Display** | Baskerville italic (stack in Faces) | construct page title — solutions surface only | 56px (re-decision: was 40; bumped for scale — record as intentional) |
+| **Value numeral** | Baskerville italic (stack in Faces) | per-brand numeric value on chart marks (bars, bubbles, tiles, rings, line-end); excludes BAN family | 24px · client fill `#e994a2`, others `#ededed` |
 
 - **Hero is the only sanctioned size override. It uses a fixed size per direction (not
   fit-to-box).** Design review (spec_022) found that free fit-to-box caused the same value
@@ -78,6 +79,11 @@ wanted; validate at the container size before final sign-off.
     per-object padding tuned to a uniform 2px cell↔cell and cell↔frame. Forward
     navigation on these pages is a native **Navigation object** (Pattern A) — never a CTA
     rendered inside the card.
+  - **Nested tile (default).** An element nested *inside* a cell (a tile within a card —
+    e.g. the In Practice image inside its card) is inset from the cell edge by the 2px gutter,
+    its radius nests (tile radius = cell radius − gutter), and its size is expressed in
+    cell/row units (e.g. "one solution-cell row"), not a % or guessed px. Saying "tile"
+    inherits all three; do not re-derive the inset/radius/size per surface.
 
 ## Colour (codify existing — not a friction point)
 - Primary / client highlight: `#e994a2` (pink). Used wherever the client brand is marked —
@@ -416,6 +422,7 @@ interpolated value (it is generic).
 - No font size computed from element geometry.
 - No gap/margin off the 4px base unit, except the named overrides (incl. the 2px gutter).
 - Type sizes identical for the same role across all charts.
+- **Value numeral:** every non-BAN chart mark carries its numeric value in the Value-numeral role (Baskerville italic 24px); client brand fill = `#e994a2`, all others = `#ededed`. BAN family is exempt (hero is a separate, larger role). Decimals from `INDICATOR_DECIMALS`.
 - **Visual fidelity (measurable — the harness asserts these so the reviewer doesn't have to):**
   - Gutter is uniform: cell↔cell, cell↔frame, and table↔commentary are all the same 2px.
   - Corner radii nest: frame radius = cell radius + gutter (e.g. 8 + 2 = 10); cells and the

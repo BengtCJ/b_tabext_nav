@@ -141,6 +141,22 @@
     return name === primary ? FONT_BODY : FONT_LIGHT;
   }
 
+  // ─── VALUE-NUMERAL HELPER ─────────────────────────────────────────────────
+  // Value-numeral role per STYLE_SPEC: Baskerville italic 24px.
+  // Client brand fill = selectedColor (#e994a2); all others = #ededed.
+  // Decimals from INDICATOR_DECIMALS. Excludes BAN family.
+  var SERIF_VALUE_SIZE = '24px';
+  function serifValue(sel, value, metricId, isClient) {
+    var dec = (INDICATOR_DECIMALS[metricId] !== undefined) ? INDICATOR_DECIMALS[metricId] : 2;
+    return sel
+      .attr('data-value-numeral', '1')
+      .style('font-family', FONT_TITLE)
+      .style('font-style', 'italic')
+      .style('font-size', SERIF_VALUE_SIZE)
+      .style('fill', isClient ? CONFIG.selectedColor : '#ededed')
+      .text(value.toFixed(dec));
+  }
+
   // ─── STATE ────────────────────────────────────────────────────────────────
   let _selectedBrand  = null;  // clicked brand — opacity highlight only
   let _chartOverrides = {};    // { metricId: chartType, ... } — persisted to settings
@@ -267,9 +283,11 @@
         .attr('x', function(d) { return x(d.value) + 4; })
         .attr('y', function(d) { return y(d.name) + y.bandwidth() / 2; })
         .attr('dominant-baseline', 'middle')
-        .style('fill',        function(d) { return vlFill(d.name, selectedBrand); })
-        .style('font-size',   VL_SIZE)
-        .style('font-family', function(d) { return vlFont(d.name, selectedBrand); })
+        .attr('data-value-numeral', '1')
+        .style('font-family', FONT_TITLE)
+        .style('font-style', 'italic')
+        .style('font-size', SERIF_VALUE_SIZE)
+        .style('fill', function(d) { return d.name === CONFIG.clientBrand ? CONFIG.selectedColor : '#ededed'; })
         .text(function(d) { return vlText(d.value); });
 
       g.selectAll('.lbl').data(sorted).join('text').attr('class', 'lbl')
@@ -302,9 +320,11 @@
         .attr('x', function(d) { return x2(d.name) + x2.bandwidth() / 2; })
         .attr('y', function(d) { return y2(d.value) - 5; })
         .attr('text-anchor', 'middle')
-        .style('fill',        function(d) { return vlFill(d.name, selectedBrand); })
-        .style('font-size',   VL_SIZE)
-        .style('font-family', function(d) { return vlFont(d.name, selectedBrand); })
+        .attr('data-value-numeral', '1')
+        .style('font-family', FONT_TITLE)
+        .style('font-style', 'italic')
+        .style('font-size', SERIF_VALUE_SIZE)
+        .style('fill', function(d) { return d.name === CONFIG.clientBrand ? CONFIG.selectedColor : '#ededed'; })
         .text(function(d) { return vlText(d.value); });
 
       g2.append('g').attr('transform', 'translate(0,' + h2 + ')')
@@ -1203,7 +1223,7 @@
       var vals = data.map(function(d) { return { p: d.period, v: d[b] }; });
       var isPrimary = b === primary;
       var col = isPrimary ? CONFIG.selectedColor : CONFIG.neutralColor;
-      var sw  = isPrimary ? 2 : 1;
+      var sw  = isPrimary ? 2 : 1.5;
 
       var path = g.append('path').datum(vals)
         .attr('fill','none').attr('stroke',col).attr('stroke-width',sw)
@@ -1234,6 +1254,9 @@
           .style('fill', labelCol).style('text-transform','uppercase')
           .text(b.slice(0,4))
           .attr('opacity',0).transition().duration(300).delay(500).attr('opacity',1);
+        serifValue(g.append('text').attr('x', iW + 6).attr('y', labelY + 18).attr('text-anchor','start').attr('opacity', 0),
+          lastPt.v, CONFIG.metricId, b === CONFIG.clientBrand)
+          .transition().duration(300).delay(500).attr('opacity', 1);
       }
     });
 
@@ -1526,10 +1549,8 @@
           .style('font-family', FONT_LIGHT).style('text-transform','uppercase')
           .style('fill', COL_LIGHT_GREY).text(node.data.name.slice(0,4));
       if (cellW > 40 && cellH > 30)
-        cell.append('text').attr('x',5).attr('y',26)
-          .style('font-size', VL_SIZE)
-          .style('font-family', vlFont(node.data.name, primary))
-          .style('fill', vlFill(node.data.name, primary)).text(vlText(node.data.value));
+        serifValue(cell.append('text').attr('x',5).attr('y',26),
+          node.data.value, CONFIG.metricId, node.data.name === CONFIG.clientBrand);
     });
 
     el.appendChild(svgEl);
@@ -1573,10 +1594,8 @@
           .style('font-size', VL_SIZE)
           .style('font-family', FONT_LIGHT).style('text-transform','uppercase')
           .style('fill', COL_LIGHT_GREY).text(d.name.slice(0,4));
-        svg.append('text').attr('x',lx).attr('y',H/2 + 9).attr('text-anchor','middle')
-          .style('font-size', VL_SIZE)
-          .style('font-family', vlFont(d.name, primary))
-          .style('fill', vlFill(d.name, primary)).text(vlText(d.value));
+        serifValue(svg.append('text').attr('x',lx).attr('y',H/2 + 9).attr('text-anchor','middle'),
+          d.value, CONFIG.metricId, d.name === CONFIG.clientBrand);
       }
       cx += segW + gap;
     });
@@ -1627,11 +1646,8 @@
           .style('fill', COL_LIGHT_GREY).style('pointer-events','none')
           .text(primaryData.name.length > 7 ? primaryData.name.slice(0, 7) : primaryData.name);
       if (pR > 32)
-        pg.append('text').attr('y', 10).attr('text-anchor','middle')
-          .style('font-size', VL_SIZE)
-          .style('font-family', vlFont(primaryData.name, primary))
-          .style('fill', vlFill(primaryData.name, primary)).style('pointer-events','none')
-          .text(vlText(primaryData.value));
+        serifValue(pg.append('text').attr('y', 10).attr('text-anchor','middle').style('pointer-events','none'),
+          primaryData.value, CONFIG.metricId, primaryData.name === CONFIG.clientBrand);
     }
 
     // Competitor 2-column grid
@@ -1660,16 +1676,13 @@
           .transition().duration(400).delay(i * 50 + 100).ease(d3.easeBackOut).attr('r', r);
         if (r > 14)
           cg.append('text').attr('y', r > 22 ? -4 : 4).attr('text-anchor','middle')
-            .style('font-size', '11px')
+            .style('font-size', VL_SIZE)
             .style('font-family', FONT_LIGHT).style('text-transform','uppercase')
             .style('fill', COL_LIGHT_GREY).style('pointer-events','none')
             .text(comp.name.slice(0, 4));
         if (r > 22)
-          cg.append('text').attr('y', 10).attr('text-anchor','middle')
-            .style('font-size', VL_SIZE)
-            .style('font-family', vlFont(comp.name, primary))
-            .style('fill', vlFill(comp.name, primary)).style('pointer-events','none')
-            .text(vlText(comp.value));
+          serifValue(cg.append('text').attr('y', 10).attr('text-anchor','middle').style('pointer-events','none'),
+            comp.value, CONFIG.metricId, comp.name === CONFIG.clientBrand);
       });
     }
 
@@ -1717,22 +1730,16 @@
         .on('click', (function(nm) { return async function() { await selectBrand(nm, _dashboard); }; })(d.name))
         .transition().duration(450).delay(delay).ease(d3.easeBackOut).attr('r', rInner);
       if (rInner >= 12) {
-        svg.append('text').attr('x', cx).attr('y', cy + 4).attr('text-anchor', 'middle')
-          .style('font-size', VL_SIZE)
-          .style('font-family', vlFont(d.name, primary))
-          .style('fill', vlFill(d.name, primary)).style('pointer-events', 'none')
-          .text(vlText(d.value));
+        serifValue(svg.append('text').attr('x', cx).attr('y', cy + 4).attr('text-anchor', 'middle').style('pointer-events', 'none'),
+          d.value, CONFIG.metricId, d.name === CONFIG.clientBrand);
       } else {
         svg.append('line')
           .attr('x1', cx).attr('y1', cy - rInner - 2)
           .attr('x2', cx).attr('y2', cy - outerR - 8)
           .attr('stroke', col).attr('stroke-width', 0.8)
           .attr('stroke-dasharray', '2,2').attr('opacity', 0.65);
-        svg.append('text').attr('x', cx).attr('y', cy - outerR - 11)
-          .attr('text-anchor', 'middle')
-          .style('font-size', VL_SIZE).style('font-family', vlFont(d.name, primary))
-          .style('fill', vlFill(d.name, primary)).attr('data-brand', d.name)
-          .text(vlText(d.value));
+        serifValue(svg.append('text').attr('x', cx).attr('y', cy - outerR - 11).attr('text-anchor', 'middle').attr('data-brand', d.name),
+          d.value, CONFIG.metricId, d.name === CONFIG.clientBrand);
       }
       return rInner;
     }
@@ -1770,7 +1777,7 @@
         drawInset(cx, cy, cR, comp, D.comp, 0.78, i * 50 + 100);
         svg.append('text').attr('x', cx).attr('y', cy + cR + 13)
           .attr('text-anchor', 'middle')
-          .style('font-size', '11px').style('font-family', FONT_LIGHT)
+          .style('font-size', VL_SIZE).style('font-family', FONT_LIGHT)
           .style('text-transform', 'uppercase').style('fill', D.comp)
           .attr('data-brand', comp.name)
           .text(comp.name.slice(0, 4));
@@ -1825,10 +1832,8 @@
           return function(t) { return arcFill.startAngle(-Math.PI/2).endAngle(interp(t))(); };
         });
 
-      g.append('text').attr('y',4).attr('text-anchor','middle')
-        .style('font-size', VL_SIZE)
-        .style('font-family', vlFont(d.name, primary))
-        .style('fill', vlFill(d.name, primary)).text(vlText(d.value));
+      serifValue(g.append('text').attr('y',4).attr('text-anchor','middle'),
+        d.value, CONFIG.metricId, d.name === CONFIG.clientBrand);
 
       svg.append('text').attr('x',cx).attr('y',cy+R+16).attr('text-anchor','middle')
         .style('font-size', isPrimary ? '10px':'9px').style('font-family', FONT_LIGHT)
@@ -1887,7 +1892,7 @@
       }
 
       svg.append('text').attr('x', bx + blockW/2).attr('y', blockH+16).attr('text-anchor','middle')
-        .style('font-size', isPrimary ? VL_SIZE : '11px').style('font-family', FONT_LIGHT)
+        .style('font-size', VL_SIZE).style('font-family', FONT_LIGHT)
         .style('text-transform','uppercase').style('fill',col).attr('data-brand', d.name)
         .text(d.name.slice(0,4));
     });
@@ -1964,10 +1969,8 @@
 
       var valX = d.value >= 0 ? x(d.value) + 8 : x(d.value) - 8;
       var valAnchor = d.value >= 0 ? 'start' : 'end';
-      g.append('text').attr('x',valX).attr('y', rowY + band.bandwidth()/2 + 4)
-        .attr('text-anchor',valAnchor)
-        .style('font-size', VL_SIZE).style('font-family', vlFont(d.name, primary))
-        .style('fill', vlFill(d.name, primary)).text(vlText(d.value))
+      serifValue(g.append('text').attr('x',valX).attr('y', rowY + band.bandwidth()/2 + 4).attr('text-anchor',valAnchor),
+        d.value, CONFIG.metricId, d.name === CONFIG.clientBrand)
         .attr('opacity',0).transition().duration(300).delay(i*50+600).attr('opacity',1);
     });
 
@@ -2084,6 +2087,10 @@
         .on('click', (function(name) { return async function() { await selectBrand(name, _dashboard); }; })(d.name))
         .transition().duration(600).delay(delay).ease(d3.easeCubicOut)
         .attr('y', y(d.value)).attr('height', barH);
+
+      serifValue(g.append('text').attr('x', bx + bw / 2).attr('y', y(d.value) - 6).attr('text-anchor','middle').attr('opacity', 0),
+        d.value, CONFIG.metricId, d.name === CONFIG.clientBrand)
+        .transition().duration(300).delay(delay + 600).attr('opacity', 1);
     });
 
     g.append('g').attr('transform','translate(0,' + iH + ')')
@@ -2116,8 +2123,7 @@
     var rowGap   = Math.max(2,  Math.floor(rowH * 0.08));
     var trackH   = Math.max(14, rowH - labelSz - labelMb - rowGap);
     var barH     = Math.max(8,  Math.floor(trackH * 0.72));
-    var scoreSz  = Math.min(18, Math.max(10, Math.floor(rowH * 0.38)));
-    var scoreW   = Math.ceil(scoreSz * 3.8);
+    var scoreW   = 96; // fixed to hold SERIF_VALUE_SIZE (24px) numerals
     var trackW   = W - scoreW;
 
     var allVals  = data.map(function(d) { return d.value; });
@@ -2175,10 +2181,11 @@
       flex.appendChild(svgEl);
 
       var score = document.createElement('div');
+      score.setAttribute('data-value-numeral', '1');
       score.style.cssText = 'width:' + scoreW + 'px;padding-left:8px;' +
-        'font-family:' + FONT_TITLE + ';font-style:italic;font-size:' +
-        (isPrimary ? scoreSz : Math.max(9, scoreSz - 1)) + 'px;color:' + col + ';';
-      score.textContent = d.value.toFixed(3);
+        'font-family:' + FONT_TITLE + ';font-style:italic;font-size:' + SERIF_VALUE_SIZE + ';' +
+        'color:' + (d.name === CONFIG.clientBrand ? CONFIG.selectedColor : '#ededed') + ';';
+      score.textContent = vlText(d.value);
       flex.appendChild(score);
 
       row.appendChild(flex);
@@ -3015,13 +3022,13 @@
     }
     #chart-name {
       font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      font-size: 16px;
+      font-size: 24px;
       color: #ededed;
       line-height: 1.2;
     }
     #chart-source {
       font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      font-size: 11px;
+      font-size: 13px;
       color: #777;
     }
     #chart-header-right {
@@ -3326,7 +3333,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-09.1';
+  const VERSION = '2026-06-09.4';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -4596,6 +4603,76 @@
     return { pass: finalPass, results: results };
   }
 
+  // ─── VALUE-NUMERAL HARNESS ────────────────────────────────────────────────
+  // runValueNumeralHarness() — call from browser console after rendering any non-BAN chart.
+  // Returns { pass: bool, results: [{name, ok, detail}] }.
+  function runValueNumeralHarness() {
+    var results = [];
+    var pass = true;
+    function check(name, ok, detail) {
+      results.push({ name: name, ok: ok, detail: detail || '' });
+      if (!ok) pass = false;
+    }
+
+    var BAN_CHARTS = ['ban_editorial', 'ban_radial', 'ban_ledger'];
+    var isBan = BAN_CHARTS.indexOf(CONFIG.chart) !== -1;
+
+    // 1. BAN charts must have zero data-value-numeral elements
+    var chartEl = document.getElementById('chart');
+    var numerals = chartEl ? chartEl.querySelectorAll('[data-value-numeral]') : [];
+    if (isBan) {
+      check('ban-no-value-numeral', numerals.length === 0,
+        numerals.length + ' data-value-numeral element(s) found in BAN chart');
+      var finalPass = results.every(function(r) { return r.ok; });
+      console.group('[ValueNumeralHarness] ' + (finalPass ? 'PASS ✓' : 'FAIL ✗'));
+      results.forEach(function(r) {
+        console.log((r.ok ? '✓' : '✗') + ' ' + r.name + (r.detail ? ' — ' + r.detail : ''));
+      });
+      console.groupEnd();
+      return { pass: finalPass, results: results };
+    }
+
+    // 2. Non-BAN charts that carry value numerals must have at least one
+    var NO_NUMERAL_CHARTS = ['line', 'slope', 'area-100', 'stream', 'dot-matrix',
+      'small-multiples', 'arc', 'vbar-stacked', 'waffle'];
+    var expectsNumeral = NO_NUMERAL_CHARTS.indexOf(CONFIG.chart) === -1;
+    if (expectsNumeral) {
+      check('value-numeral-present', numerals.length > 0,
+        'expected ≥1 [data-value-numeral], found ' + numerals.length + ' (chart=' + CONFIG.chart + ')');
+    }
+
+    // 3. Each value-numeral element must be Baskerville italic 24px
+    var badFont = [], badSize = [], badStyle = [];
+    Array.prototype.forEach.call(numerals, function(el) {
+      var cs = window.getComputedStyle(el);
+      var ff = (cs.fontFamily || el.style.fontFamily || '');
+      var fs = (cs.fontSize || el.style.fontSize || '');
+      var fi = (cs.fontStyle || el.style.fontStyle || '');
+      if (ff.indexOf('Baskerville') === -1) badFont.push(ff);
+      if (fs !== '24px') badSize.push(fs);
+      if (fi !== 'italic') badStyle.push(fi);
+    });
+    check('value-numeral-font-baskerville', badFont.length === 0,
+      badFont.length ? 'bad font-family on ' + badFont.length + ' el(s): ' + badFont[0] : 'ok');
+    check('value-numeral-size-24px', badSize.length === 0,
+      badSize.length ? 'bad font-size on ' + badSize.length + ' el(s): ' + badSize[0] : 'ok');
+    check('value-numeral-style-italic', badStyle.length === 0,
+      badStyle.length ? 'bad font-style on ' + badStyle.length + ' el(s): ' + badStyle[0] : 'ok');
+
+    // 4. BAN shell children must never carry data-value-numeral
+    var banEls = chartEl ? chartEl.querySelectorAll('[data-ban-lockup] [data-value-numeral], [data-ban-hero] [data-value-numeral]') : [];
+    check('ban-children-no-value-numeral', banEls.length === 0,
+      banEls.length + ' data-value-numeral element(s) inside BAN shell');
+
+    var finalPass2 = results.every(function(r) { return r.ok; });
+    console.group('[ValueNumeralHarness] ' + (finalPass2 ? 'PASS ✓' : 'FAIL ✗'));
+    results.forEach(function(r) {
+      console.log((r.ok ? '✓' : '✗') + ' ' + r.name + (r.detail ? ' — ' + r.detail : ''));
+    });
+    console.groupEnd();
+    return { pass: finalPass2, results: results };
+  }
+
   // ─── SAMPLE DATA (preview mode only) ──────────────────────────────────────
   // ─── SAMPLE DATA ─────────────────────────────────────────────────────────
   function getSampleData(chart) {
@@ -4624,7 +4701,27 @@
         { name:'Illy Coffee', period:'2025-Q4', value:4.5 },
       ];
     }
-    if (chart === 'line-straight' || chart === 'line-smooth') return WIDE_PERIODS;
+    if (chart === 'line-straight' || chart === 'line-smooth') {
+      var SIGNED_IDS = ['vom', 'svt'];
+      if (SIGNED_IDS.indexOf(CONFIG.metricId) !== -1) return [
+        { period:'2025-01','Illy Coffee': 0.032,Starbucks: 0.041,Nespresso:-0.012,Lavazza: 0.018,"Peet's Coffee":-0.007 },
+        { period:'2025-02','Illy Coffee': 0.028,Starbucks: 0.038,Nespresso:-0.009,Lavazza: 0.021,"Peet's Coffee": 0.004 },
+        { period:'2025-03','Illy Coffee': 0.041,Starbucks: 0.046,Nespresso: 0.003,Lavazza: 0.016,"Peet's Coffee":-0.011 },
+        { period:'2025-04','Illy Coffee': 0.037,Starbucks: 0.049,Nespresso:-0.005,Lavazza: 0.024,"Peet's Coffee": 0.002 },
+        { period:'2025-05','Illy Coffee': 0.044,Starbucks: 0.052,Nespresso: 0.011,Lavazza: 0.019,"Peet's Coffee": 0.008 },
+        { period:'2025-06','Illy Coffee': 0.039,Starbucks: 0.048,Nespresso: 0.007,Lavazza: 0.022,"Peet's Coffee": 0.013 },
+      ];
+      var RATIO_IDS = ['eqr', 'ebl', 'sstsr'];
+      if (RATIO_IDS.indexOf(CONFIG.metricId) !== -1) return [
+        { period:'2025-01','Illy Coffee':0.082,Starbucks:0.134,Nespresso:0.097,Lavazza:0.071,"Peet's Coffee":0.058 },
+        { period:'2025-02','Illy Coffee':0.079,Starbucks:0.128,Nespresso:0.102,Lavazza:0.074,"Peet's Coffee":0.061 },
+        { period:'2025-03','Illy Coffee':0.086,Starbucks:0.141,Nespresso:0.093,Lavazza:0.068,"Peet's Coffee":0.055 },
+        { period:'2025-04','Illy Coffee':0.091,Starbucks:0.138,Nespresso:0.099,Lavazza:0.072,"Peet's Coffee":0.063 },
+        { period:'2025-05','Illy Coffee':0.094,Starbucks:0.145,Nespresso:0.104,Lavazza:0.076,"Peet's Coffee":0.067 },
+        { period:'2025-06','Illy Coffee':0.089,Starbucks:0.142,Nespresso:0.101,Lavazza:0.073,"Peet's Coffee":0.064 },
+      ];
+      return WIDE_PERIODS;
+    }
     if (chart === 'area-100' || chart === 'stream' || chart === 'small-multiples') return WIDE_PERIODS;
     if (chart === 'slope') return [
       { name:'Illy Coffee',   v1:0.57, v2:0.64 },
@@ -4676,12 +4773,20 @@
       var pv = PREVIEW_BAN[CONFIG.metricId];
       if (pv !== undefined) return pv;
     }
+    var _mId = CONFIG.metricId;
+    var _vals;
+    if (['vom','svt'].indexOf(_mId) !== -1)
+      _vals = [0.041, -0.012, 0.028, 0.018, -0.007];
+    else if (['eqr','ebl','sstsr'].indexOf(_mId) !== -1)
+      _vals = [0.134, 0.097, 0.082, 0.071, 0.058];
+    else
+      _vals = [4.2, 3.8, 3.4, 3.1, 2.9];
     return [
-      { name:'Starbucks',     value:6.8 },
-      { name:'Nespresso',     value:5.4 },
-      { name:'Illy Coffee',   value:4.2 },
-      { name:'Lavazza',       value:3.9 },
-      { name:"Peet's Coffee", value:3.1 },
+      { name:'Starbucks',     value:_vals[0] },
+      { name:'Nespresso',     value:_vals[1] },
+      { name:'Illy Coffee',   value:_vals[2] },
+      { name:'Lavazza',       value:_vals[3] },
+      { name:"Peet's Coffee", value:_vals[4] },
     ];
   }
 

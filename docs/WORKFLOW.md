@@ -88,6 +88,12 @@ Learned from the scorecard round, which converged but took too many turns.
 3. **Prototype the delta in chat** — static HTML, dummy data, renders inline. Live-tune
    only the "know-it-when-I-see-it" values (proportion, elegance); state the nameable ones
    in one pass rather than discovering them one per turn.
+   **Composite-cell pass.** When a cell contains other elements, pin these six in one pass
+   before prototyping: (a) the container and what it spans (in rows/cols), (b) each child =
+   *container or tile*, (c) child insets *in gutter units*, (d) child sizes *in row/cell units*,
+   (e) fixed vs fills, (f) the empty / no-data variant. Describe in grid units and tokens —
+   never relative words ("double", "within", "slightly") or guessed px/%; those force
+   one-property-per-turn discovery (the In Practice anchor burned v4→v8 on exactly this).
 4. **Reconcile stated rules vs the frame; flag conflicts before locking** (e.g. a stated
    2-colour rule vs an amber cell in the screenshot).
 5. **Lock to a per-chart CHART_SPEC / STYLE_SPEC entry + tighten the work order's
