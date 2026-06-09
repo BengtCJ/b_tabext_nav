@@ -4858,9 +4858,13 @@
       } : null;
 
       if (!list && !matrixModel) {
+        var _resolvedId = resolveSubgroup();
+        var _errMsg = _resolvedId
+          ? 'No indicators found for subgroup “' + _resolvedId + '”. ' +
+            'Verify the worksheet contains rows where ' + CONFIG.subcategoryIdField + ' = “' + _resolvedId + '”.'
+          : 'Name this dashboard tab with a subgroup ID to display its indicators.';
         document.getElementById('table-view').innerHTML =
-          '<p style="padding:16px;font-family:\'Tableau Light\',sans-serif;color:#666;">' +
-          'Name this dashboard tab with a subgroup ID to display its indicators.</p>';
+          '<p style="padding:16px;font-family:\'Tableau Light\',sans-serif;color:#666;">' + _errMsg + '</p>';
         return;
       }
     }
