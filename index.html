@@ -1676,7 +1676,7 @@
           .transition().duration(400).delay(i * 50 + 100).ease(d3.easeBackOut).attr('r', r);
         if (r > 14)
           cg.append('text').attr('y', r > 22 ? -4 : 4).attr('text-anchor','middle')
-            .style('font-size', '11px')
+            .style('font-size', VL_SIZE)
             .style('font-family', FONT_LIGHT).style('text-transform','uppercase')
             .style('fill', COL_LIGHT_GREY).style('pointer-events','none')
             .text(comp.name.slice(0, 4));
@@ -1777,7 +1777,7 @@
         drawInset(cx, cy, cR, comp, D.comp, 0.78, i * 50 + 100);
         svg.append('text').attr('x', cx).attr('y', cy + cR + 13)
           .attr('text-anchor', 'middle')
-          .style('font-size', '11px').style('font-family', FONT_LIGHT)
+          .style('font-size', VL_SIZE).style('font-family', FONT_LIGHT)
           .style('text-transform', 'uppercase').style('fill', D.comp)
           .attr('data-brand', comp.name)
           .text(comp.name.slice(0, 4));
@@ -1892,7 +1892,7 @@
       }
 
       svg.append('text').attr('x', bx + blockW/2).attr('y', blockH+16).attr('text-anchor','middle')
-        .style('font-size', isPrimary ? VL_SIZE : '11px').style('font-family', FONT_LIGHT)
+        .style('font-size', VL_SIZE).style('font-family', FONT_LIGHT)
         .style('text-transform','uppercase').style('fill',col).attr('data-brand', d.name)
         .text(d.name.slice(0,4));
     });
@@ -3333,7 +3333,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-09.1';
+  const VERSION = '2026-06-09.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
