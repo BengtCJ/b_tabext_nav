@@ -29,13 +29,14 @@ wanted; validate at the container size before final sign-off.
 | **Caption** | Tableau Light | axis ticks, legend, small notes | 11px |
 | **Display** | Baskerville italic (stack in Faces) | construct page title — solutions surface only | 40px |
 
-- **Hero is the only sanctioned size override, and the only geometry-responsive size: it is
-  fit-to-box.** The focal figure scales to fit its zone (so `1.9`, `2002`, `14.4` each fill the
-  same box), implemented without vw/vh (measure the glyphs and scale — e.g. SVG `getBBox` →
-  `viewBox`, after fonts load). Every OTHER element keeps a fixed role size — the ban on
-  geometry-driven font size still binds all non-hero type. Optional: a shared min/max bound so the
-  hero doesn't diverge wildly in size between directions (build-and-review). Chart graphics (radial
-  rings) are not type and scale freely.
+- **Hero is the only sanctioned size override. It uses a fixed size per direction (not
+  fit-to-box).** Design review (spec_022) found that free fit-to-box caused the same value
+  to render at different sizes across cards, making the hero role unstable. Fixed sizes:
+  **Editorial 160px · Ledger 120px** (Baskerville italic). A character-count clamp floors at
+  **100px** for unusually long values — the hero never goes below this or above the base.
+  Radial uses a fixed SVG-scale approach inside the rings (unchanged). Every OTHER element
+  keeps a fixed role size — the ban on geometry-derived font size binds all non-hero type.
+  Chart graphics (radial rings) are not type and scale freely.
 - **A chart-view title uses the Heading role (Tableau Light), never Baskerville.**
   Baskerville italic is hero numerals only; an indicator name shown as a chart
   title is a Heading, not a hero. If 16px reads with too little title contrast at
@@ -220,9 +221,9 @@ here). All three inherit the frame chrome, 2px gutter, radius nesting, fills and
 Scorecard frame rules above; each is a small layout delta over that shared base.
 
 **Shared (all directions)**
-- Hero number — Baskerville italic; the ONLY geometry-responsive size (see Type roles).
-  Fit-to-box via SVG `getBBox`→`viewBox` in Editorial & Ledger; a fixed hero override sized to
-  sit inside the ring in Radial (Radial is band-metric-only, so the value is short/bounded).
+- Hero number — Baskerville italic; fixed size per direction (see Type roles for the decision).
+  **Editorial 160px · Ledger 120px** (HTML div, `white-space:nowrap`); char-count clamp floors at
+  100px. Radial: a fixed override sized to sit inside the ring (SVG-scale approach unchanged).
   Suffix (`%` for `cagr`) ~0.43em, muted grey, baseline-aligned; suffix/unit text per CHART_SPEC
   + Task 0023, not here.
 - Pink accent is guaranteed in every direction: Editorial = a short pink rule beneath the hero;
@@ -245,20 +246,20 @@ Scorecard frame rules above; each is a small layout delta over that shared base.
     hero    hero     bandL
     hero    hero     bandM
     verdict reading  bandH
-- Hero = a 2×2 block (cols 1–2, content rows 1–2), transparent, fit-to-box number + pink rule beneath.
+- Hero = a 2×2 block (cols 1–2, content rows 1–2), transparent, 160px fixed number + pink rule beneath.
 - Verdict (col 1, row 3) and Reading (col 2, row 3): transparent, top-aligned beneath the hero.
 - Bands fill the full-height right column (col 3).
 
 **Editorial — band-less (`tam`,`mcon`)** — a **two-column grid that tiles the card full
 height**, never free placement (no number stranded in a corner with a centre void — the
 failure this rule fixes). Tracks `minmax(0, 5fr)` | `minmax(0, 7fr)`; the `minmax(0, …)`
-clamp is what lets the fit-to-box hero scale to its track instead of overflowing into the
-rail. **Left track = hero**, vertically centred in its track: the fit-to-box number with the
+clamp is what prevents the fixed-size hero from overflowing into the
+rail. **Left track = hero**, vertically centred in its track: the 160px fixed number with the
 short pink rule **beneath** it (per the shared pink-accent rule). **Right track = text rail**,
 vertically centred: **definition → verdict → reading**, each in its existing role/colour
 (definition & reading = Label; verdict = 24px Baskerville italic), separated by the `section`
 gap. No band cells, no ranges-disclaimer (band-less). **Locked:** grid-tiles-full-height,
-the `minmax(0,…)` track clamp, fit-to-box hero, pink rule beneath the hero. **Build-and-review
+the `minmax(0,…)` track clamp, fixed-size hero (160px), pink rule beneath the hero. **Build-and-review
 at 1421×773:** the 5/7 track ratio, the inter-track gap, and whether the hero is centred vs
 bottom-anchored in its track.
 
@@ -279,7 +280,7 @@ bottom-anchored in its track.
     hero   verdict  reading
     bandL  bandM    bandH
 - Top row is a uniform `--panel` (#181818): hero, verdict and reading cells all `--panel`.
-- Hero: fit-to-box number, generous interior padding so the figure is inset from the cell edges
+- Hero: 120px fixed number, generous interior padding so the figure is inset from the cell edges
   (loose end of the cell-padding range); NO pink rule.
 - Verdict (middle): a short pink rule ABOVE the text, then the verdict; content vertically centred.
 - Reading (right): NO rule; reading + disclaimer centred together as one block (not floor-pinned).
@@ -409,7 +410,7 @@ interpolated value (it is generic).
 ## Enforcement (what the harness / lint checks)
 - No `font-size` value that isn't one of the four roles or a Scorecard-section locked size
   (hero override excepted).
-- Ban-shell locked sizes (allowed in addition to the four roles + the hero fit-to-box override):
+- Ban-shell locked sizes (allowed in addition to the four roles + the hero fixed-size override):
   verdict 24px and benchmark numerals 40px, both Baskerville italic. No other ban-shell text
   leaves the four roles.
 - No font size computed from element geometry.

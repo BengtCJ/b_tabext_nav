@@ -625,7 +625,6 @@
     var GUTTER = 2;
     var CELL_R = 8;
     var isBand = content.isBandMetric && content.bands.length > 0;
-    var numCols = isBand ? 3 : 2;
 
     el.innerHTML = '';
     el.setAttribute('data-ban-lockup', '1');
@@ -647,39 +646,33 @@
     titleCell.appendChild(captionEl);
     el.appendChild(titleCell);
 
-    // ── HERO ZONE (transparent, fit-to-box SVG) ────────────────────────────
+    // ── HERO ZONE (transparent, fixed-size div) ────────────────────────────
     // Band: 2×2 block cols 1-2 rows 2-3; band-less: col 1 row 2
     var heroZone = document.createElement('div');
     heroZone.style.cssText = (isBand ? 'grid-column:1/3;grid-row:2/4;' : 'grid-column:1;grid-row:2;') +
-      'padding:8px 16px 16px;display:flex;flex-direction:column;' +
+      'padding:8px 16px 16px;display:flex;flex-direction:column;justify-content:center;' +
       'gap:8px;overflow:hidden;min-width:0;';
 
-    var ns = 'http://www.w3.org/2000/svg';
-    var heroSvg = document.createElementNS(ns, 'svg');
-    heroSvg.setAttribute('width', '100%');
-    heroSvg.setAttribute('height', '100%');
-    heroSvg.setAttribute('preserveAspectRatio', 'xMinYMid meet');
-    heroSvg.setAttribute('data-ban-hero-svg', '1');
-    heroSvg.style.cssText = 'display:block;flex:1;min-height:0;overflow:visible;';
+    // Fixed hero size from type scale; char-count clamp so long values flex within the band
+    var heroStr = (content.prefix || '') + content.dispVal;
+    var HERO_BASE_PX = 160, HERO_MIN_PX = 100;
+    var heroPx = Math.max(HERO_MIN_PX, HERO_BASE_PX - Math.max(0, heroStr.length - 4) * 12);
+    var heroSufPx = Math.round(heroPx * 0.43);
 
-    var heroTxt = document.createElementNS(ns, 'text');
-    heroTxt.setAttribute('data-ban-hero', '1');
-    heroTxt.setAttribute('x', '0');
-    heroTxt.setAttribute('y', '0');
-    heroTxt.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:100px;fill:#ededed;';
-    var dispStr = (content.prefix || '') + content.dispVal;
+    var heroEl = document.createElement('div');
+    heroEl.setAttribute('data-ban-hero', '1');
+    heroEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:' + heroPx + 'px;line-height:1;color:#ededed;white-space:nowrap;';
     if (content.unitSuffix) {
-      heroTxt.appendChild(document.createTextNode(dispStr));
-      var sufTspan = document.createElementNS(ns, 'tspan');
-      sufTspan.style.cssText = 'font-size:42px;fill:#6f6f6f;';
-      sufTspan.textContent = content.unitSuffix;
-      heroTxt.appendChild(sufTspan);
+      heroEl.appendChild(document.createTextNode(heroStr));
+      var sufSpan = document.createElement('span');
+      sufSpan.style.cssText = 'font-size:' + heroSufPx + 'px;color:#6f6f6f;';
+      sufSpan.textContent = content.unitSuffix;
+      heroEl.appendChild(sufSpan);
     } else {
-      heroTxt.textContent = dispStr;
+      heroEl.textContent = heroStr;
     }
-    heroSvg.appendChild(heroTxt);
-    heroZone.appendChild(heroSvg);
+    heroZone.appendChild(heroEl);
 
     // Guaranteed pink rule beneath hero (~120px, 1px, selectedColor)
     var ruleEl = document.createElement('div');
@@ -793,18 +786,6 @@
       el.appendChild(textZone);
     }
 
-    // Fit-to-box: set SVG viewBox after fonts load so getBBox measures correctly
-    (function() {
-      function setVB() {
-        var bb = heroTxt.getBBox();
-        if (bb && bb.width > 0 && bb.height > 0) {
-          heroSvg.setAttribute('viewBox', bb.x + ' ' + bb.y + ' ' + bb.width + ' ' + bb.height);
-          return true;
-        }
-        return false;
-      }
-      if (!setVB()) { document.fonts.ready.then(setVB); }
-    })();
   }
 
   // ─── BAN RADIAL (Direction 2 — 2-col grid, rings span rows, band metrics only) ──
@@ -988,7 +969,6 @@
     var GUTTER = 2;
     var CELL_R = 8;
     var isBand = content.isBandMetric && content.bands.length > 0;
-    var ns = 'http://www.w3.org/2000/svg';
 
     el.innerHTML = '';
     el.setAttribute('data-ban-lockup', '1');
@@ -1010,36 +990,31 @@
     titleCell.appendChild(captionEl);
     el.appendChild(titleCell);
 
-    // ── ROW 2, COL 1: HERO CELL (--panel, generous padding, fit-to-box, NO rule) ─
+    // ── ROW 2, COL 1: HERO CELL (--panel, generous padding, fixed size, NO rule) ─
     var heroCell = document.createElement('div');
     heroCell.style.cssText = 'background:#181818;border-radius:' + CELL_R + 'px;' +
-      'padding:16px 20px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;';
+      'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;gap:8px;overflow:hidden;min-width:0;';
 
-    var heroSvg = document.createElementNS(ns, 'svg');
-    heroSvg.setAttribute('width', '100%');
-    heroSvg.setAttribute('height', '100%');
-    heroSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    heroSvg.setAttribute('data-ban-hero-svg', '1');
-    heroSvg.style.cssText = 'display:block;flex:1;min-height:0;overflow:visible;';
+    // Ledger hero occupies 1/3-width cell; smaller base than editorial (120 vs 160)
+    var heroStrLg = (content.prefix || '') + content.dispVal;
+    var HERO_BASE_LG = 120, HERO_MIN_LG = 100;
+    var heroPxLg = Math.max(HERO_MIN_LG, HERO_BASE_LG - Math.max(0, heroStrLg.length - 4) * 10);
+    var heroSufPxLg = Math.round(heroPxLg * 0.43);
 
-    var heroTxt = document.createElementNS(ns, 'text');
-    heroTxt.setAttribute('data-ban-hero', '1');
-    heroTxt.setAttribute('x', '0');
-    heroTxt.setAttribute('y', '0');
-    heroTxt.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
-      'font-size:100px;fill:#ededed;';
-    var dispStr = (content.prefix || '') + content.dispVal;
+    var heroEl = document.createElement('div');
+    heroEl.setAttribute('data-ban-hero', '1');
+    heroEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
+      'font-size:' + heroPxLg + 'px;line-height:1;color:#ededed;white-space:nowrap;';
     if (content.unitSuffix) {
-      heroTxt.appendChild(document.createTextNode(dispStr));
-      var sufTspan = document.createElementNS(ns, 'tspan');
-      sufTspan.style.cssText = 'font-size:42px;fill:#6f6f6f;';
-      sufTspan.textContent = content.unitSuffix;
-      heroTxt.appendChild(sufTspan);
+      heroEl.appendChild(document.createTextNode(heroStrLg));
+      var sufSpanLg = document.createElement('span');
+      sufSpanLg.style.cssText = 'font-size:' + heroSufPxLg + 'px;color:#6f6f6f;';
+      sufSpanLg.textContent = content.unitSuffix;
+      heroEl.appendChild(sufSpanLg);
     } else {
-      heroTxt.textContent = dispStr;
+      heroEl.textContent = heroStrLg;
     }
-    heroSvg.appendChild(heroTxt);
-    heroCell.appendChild(heroSvg);
+    heroCell.appendChild(heroEl);
     el.appendChild(heroCell);
 
     // ── ROW 2, COL 2: VERDICT CELL (--panel, pink rule above, centred) ────────
@@ -1132,18 +1107,6 @@
       });
     }
 
-    // Fit-to-box: set SVG viewBox after fonts load so getBBox measures correctly
-    (function() {
-      function setVB() {
-        var bb = heroTxt.getBBox();
-        if (bb && bb.width > 0 && bb.height > 0) {
-          heroSvg.setAttribute('viewBox', bb.x + ' ' + bb.y + ' ' + bb.width + ' ' + bb.height);
-          return true;
-        }
-        return false;
-      }
-      if (!setVB()) { document.fonts.ready.then(setVB); }
-    })();
   }
 
   // ─── BANs ─────────────────────────────────────────────────────────────────
@@ -3363,7 +3326,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-08.4';
+  const VERSION = '2026-06-09.1';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -4079,13 +4042,16 @@
         csEl ? 'display=' + csEl.display + ' cols=' + (chartEl.style.gridTemplateColumns || 'none') : 'no element');
     })();
 
-    // 7. Fit-to-box hero: hero SVG exists and has a viewBox set from getBBox
+    // 7. Hero fixed-size: hero element has a font-size in the sanctioned clamp band [100, 200]
     (function() {
-      var heroSvg = chartEl ? chartEl.querySelector('[data-ban-hero-svg]') : null;
-      var vb = heroSvg ? heroSvg.getAttribute('viewBox') : '';
-      var ftbOk = !!vb && vb !== '0 0 0 0' && vb !== '';
-      check('fit-to-box-hero', ftbOk,
-        heroSvg ? ('viewBox=' + (vb || '(not set)')) : 'no hero SVG (radial direction uses rings SVG — check rings-svg)');
+      if (CONFIG.chart === 'ban_radial') {
+        check('hero-size-clamped', true, 'radial — hero embedded in ring SVG (fixed-scale approach)'); return;
+      }
+      var heroEl = chartEl ? chartEl.querySelector('[data-ban-hero]') : null;
+      if (!heroEl) { check('hero-size-clamped', false, 'no [data-ban-hero] element found'); return; }
+      var fsPx = parseInt(heroEl.style.fontSize, 10);
+      var ok = !isNaN(fsPx) && fsPx >= 100 && fsPx <= 200;
+      check('hero-size-clamped', ok, 'font-size=' + (heroEl.style.fontSize || 'unset'));
     })();
 
     // 8. Grid fills frame (structural): [data-ban-textcol] element exists in the grid
@@ -4247,51 +4213,87 @@
       runAtSize('narrow-tall-400x700',   400, 700);
     })();
 
-    // fit-to-box-hero: hero SVG viewBox is set from getBBox across all directions; only hero scales with geometry.
+    // hero-size-constant: hero font-size is in the [100, 200] band across values and container sizes.
+    // Covers A1 (fixed, not container-derived) and A3 (stable across values).
     (function() {
       var HEADLINE = ['tam', 'cagr', 'mcon'];
       if (HEADLINE.indexOf(CONFIG.metricId) === -1) {
-        check('fit-to-box-hero', true, 'non-headline metric — skip'); return;
+        check('hero-size-constant', true, 'non-headline metric — skip'); return;
       }
-      var PREVIEW_BAN = { cagr: 1.9, tam: 14.4, mcon: 2002 };
-      var numVal = PREVIEW_BAN[CONFIG.metricId];
       var brand = CONFIG.clientBrand;
       var testEl = chartEl;
-      var origStyle = testEl.style.cssText;
       var allOk = true;
       var detail = '';
 
-      // Check each direction: editorial and ledger use data-ban-hero-svg with viewBox;
-      // radial hero scales with the rings SVG (data-ban-rings-svg fills zone).
-      var dirsToCheck = METRIC_CHARTS[CONFIG.metricId] || ['ban_editorial'];
-      dirsToCheck.forEach(function(dir) {
-        testEl.style.cssText = 'width:800px;height:500px;position:relative;overflow:hidden;';
-        if (dir === 'ban_radial') { renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
-        else if (dir === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
-        else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+      // Representative values per metric covering short, mid, and longer strings
+      var TEST_VALS = { cagr: [1.9, 5.5, 12.4], tam: [9.4, 14.4, 120.4], mcon: [800, 1502, 2002] };
+      var vals = TEST_VALS[CONFIG.metricId] || [1.9, 14.4, 2002];
 
-        if (dir === 'ban_radial') {
-          // Rings SVG fills its zone — hero is embedded and scales with rings
-          var ringSvg = testEl.querySelector('[data-ban-rings-svg]');
-          var ok = !!ringSvg;
-          if (!ok) { allOk = false; detail += dir + ':no-rings-svg '; }
-          else { detail += dir + ':rings-svg-ok '; }
-        } else {
-          var hSvg = testEl.querySelector('[data-ban-hero-svg]');
-          var vb = hSvg ? hSvg.getAttribute('viewBox') : '';
-          var ok = !!vb && vb !== '' && vb !== '0 0 0 0';
-          if (!ok) { allOk = false; detail += dir + ':viewBox=' + (vb || 'not-set') + ' '; }
-          else { detail += dir + ':viewBox-ok '; }
-        }
+      var dirsToCheck = (METRIC_CHARTS[CONFIG.metricId] || ['ban_editorial']).filter(function(d) {
+        return d !== 'ban_radial'; // radial hero is embedded in the rings SVG — separate fixed approach
       });
 
+      dirsToCheck.forEach(function(dir) {
+        var sizes = vals.map(function(numVal) {
+          var origStyle = testEl.style.cssText;
+          testEl.style.cssText = 'width:800px;height:500px;position:relative;overflow:hidden;';
+          if (dir === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+          else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+          var hEl = testEl.querySelector('[data-ban-hero]');
+          var fsPx = hEl ? parseInt(hEl.style.fontSize, 10) : NaN;
+          testEl.style.cssText = origStyle;
+          return fsPx;
+        });
+        var allInBand = sizes.every(function(s) { return !isNaN(s) && s >= 100 && s <= 200; });
+        if (!allInBand) { allOk = false; detail += dir + ':out-of-band(' + sizes.join(',') + ') '; }
+        else { detail += dir + ':sizes(' + sizes.join(',') + ') '; }
+      });
+
+      // Also verify radial has its rings SVG
+      if ((METRIC_CHARTS[CONFIG.metricId] || []).indexOf('ban_radial') !== -1) {
+        var origStyle = testEl.style.cssText;
+        testEl.style.cssText = 'width:800px;height:500px;position:relative;overflow:hidden;';
+        renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, 1.9, brand));
+        var rSvg = testEl.querySelector('[data-ban-rings-svg]');
+        if (!rSvg) { allOk = false; detail += 'ban_radial:no-rings-svg '; }
+        else { detail += 'ban_radial:rings-svg-ok '; }
+        testEl.style.cssText = origStyle;
+      }
+
       // Restore
+      var numVal = ({cagr:1.9, tam:14.4, mcon:2002})[CONFIG.metricId];
+      if (CONFIG.chart === 'ban_radial') { renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+      else if (CONFIG.chart === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+      else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
+
+      check('hero-size-constant', allOk, detail.trim());
+    })();
+
+    // hero-not-geometry-derived: hero font-size stays fixed when container width changes (A1, A4).
+    (function() {
+      var HEADLINE = ['tam', 'cagr', 'mcon'];
+      if (HEADLINE.indexOf(CONFIG.metricId) === -1) {
+        check('hero-not-geometry-derived', true, 'non-headline metric — skip'); return;
+      }
+      var numVal = ({cagr:1.9, tam:14.4, mcon:2002})[CONFIG.metricId];
+      var brand = CONFIG.clientBrand;
+      var testEl = chartEl;
+
+      var origStyle = testEl.style.cssText;
+      testEl.style.cssText = 'width:600px;height:500px;position:relative;overflow:hidden;';
+      renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand));
+      var fs600 = (testEl.querySelector('[data-ban-hero]') || {}).style && testEl.querySelector('[data-ban-hero]').style.fontSize || 'n/a';
+
+      testEl.style.cssText = 'width:1200px;height:500px;position:relative;overflow:hidden;';
+      renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand));
+      var fs1200 = (testEl.querySelector('[data-ban-hero]') || {}).style && testEl.querySelector('[data-ban-hero]').style.fontSize || 'n/a';
+
       testEl.style.cssText = origStyle;
       if (CONFIG.chart === 'ban_radial') { renderBanRadial(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
       else if (CONFIG.chart === 'ban_ledger') { renderBanLedger(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
       else { renderBanShell(testEl, getBanShellContent(CONFIG.metricId, numVal, brand)); }
 
-      check('fit-to-box-hero', allOk, detail.trim());
+      check('hero-not-geometry-derived', fs600 === fs1200, 'fs@600=' + fs600 + ' fs@1200=' + fs1200);
     })();
 
     // non-hero-type-constant: title and reading font-size unchanged across container heights, all three directions.
