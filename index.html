@@ -1223,7 +1223,7 @@
       var vals = data.map(function(d) { return { p: d.period, v: d[b] }; });
       var isPrimary = b === primary;
       var col = isPrimary ? CONFIG.selectedColor : CONFIG.neutralColor;
-      var sw  = isPrimary ? 2 : 1;
+      var sw  = isPrimary ? 2 : 1.5;
 
       var path = g.append('path').datum(vals)
         .attr('fill','none').attr('stroke',col).attr('stroke-width',sw)
@@ -3333,7 +3333,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-09.3';
+  const VERSION = '2026-06-09.4';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
