@@ -420,11 +420,10 @@ interpolated value (it is generic).
   - Gutter is uniform: cell↔cell, cell↔frame, and table↔commentary are all the same 2px.
   - Corner radii nest: frame radius = cell radius + gutter (e.g. 8 + 2 = 10); cells and the
     commentary panel share one radius.
-  - Grouped-cell containers the extension renders on **detail/chart surfaces** (not the
-    scorecard only) use the 2px gutter and nested radii (frame = cell + gutter); the
-    harness asserts no extension-rendered grouped-cell group ships with off-token gaps or
-    a flat (non-nested) radius. (Native Tableau pages are out of harness reach — verify
-    those by teardown.)
+  - Every grouped-cell container the extension renders (scorecard, ban context cells,
+    scale segments, the solutions frame) uses the 2px gutter and nested radii
+    (frame = cell + gutter); the harness asserts none ships with off-token gaps or a flat
+    (non-nested) radius.
   - No clipped or ellipsised text: indicator names and labels render in full (wrap, don't truncate).
   - Text on any coloured fill meets contrast (WCAG AA): e.g. the pink client cell uses dark
     text, never white.
@@ -480,6 +479,17 @@ Card grid renders solutions in `display_order` (fixed; never re-sorted by tier o
 field). Layout uses `auto-fill` with a `minmax` column floor so it is robust to any N ≥ 2
 solutions — **never hardcode a 3×2 or 5-in-6 grid**. Grid column count adjusts with container
 width.
+
+### Card-frame and cell layout
+
+Cards are tiled cells in one hugging frame: frame carries the light-grey background +
+frame radius (= cell radius + 2px gutter); cells are white at the cell radius with NO
+own border; a uniform 2px hairline gutter shows cell↔cell and cell↔frame (per § Spacing
+override). Free-floating cards with off-token gaps are non-conformant.
+In Practice is a cell within that frame, not a separate footer panel; the frame fills the
+container (no stranded whitespace).
+Status pill sits top-right of the card.
+Forward navigation is a native Navigation object — no CTA rendered inside the card.
 
 ### Pink-accent exemption
 

@@ -29,6 +29,10 @@
       --sp-default:  8px;
       --sp-section: 16px;
       --sp-loose:   24px;
+      /* Named override — 2px hairline cell gutter (§ Spacing) */
+      --gutter:      2px;
+      /* Light-grey frame background — confirm-against-Figma; currently = --panel-bg */
+      --frame-bg:    var(--panel-bg);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -78,25 +82,35 @@
       margin-top: var(--sp-tight);
     }
 
-    /* ── Solution grid — flex:1 fill, auto-fill, N-robust (STYLE_SPEC § Grid) */
-    .sol-grid {
+    /* ── Solution frame — hugging cell-frame container (STYLE_SPEC § Card-frame) */
+    .sol-frame {
       flex: 1;
       min-height: 0;
+      background: var(--frame-bg);
+      border-radius: 10px;             /* frame-radius = cell-radius 8 + gutter 2 */
+      padding: var(--gutter);
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       grid-auto-rows: 1fr;
-      gap: var(--sp-default);
+      gap: var(--gutter);
     }
 
-    /* ── Solution card ───────────────────────────────────────────────────── */
+    /* ── Solution card — white cell, NO own border (frame gap IS the separation) */
     .sol-card {
       background: var(--card-bg);
-      border: 1px solid var(--card-border);
       border-radius: 8px;
       padding: var(--sp-section);
       display: flex;
       flex-direction: column;
-      gap: var(--sp-default);
+    }
+
+    /* header row: name left, pill right */
+    .sol-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--sp-tight);
+      margin-bottom: var(--sp-default);
     }
 
     .sol-name {
@@ -131,17 +145,18 @@
     .sol-pill-t2 { border-color: var(--pill-t2); color: var(--pill-t2); }
     .sol-pill-t3 { border-color: var(--pill-t3); color: var(--pill-t3); }
 
-    /* ── In Practice panel — alternate (full-width, no image) ───────────── */
+    /* ── In Practice — alternate (no image) — trailing cell inside frame ─── */
     .in-practice-alt {
-      background: var(--panel-bg);
-      border: 1px solid var(--card-border);
+      background: var(--card-bg);
       border-radius: 8px;
       padding: var(--sp-section);
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-default);
     }
-    /* ── In Practice panel — primary (two-column with image) ─────────────── */
+    /* ── In Practice — primary (with image) — trailing cell inside frame ─── */
     .in-practice-primary {
-      background: var(--panel-bg);
-      border: 1px solid var(--card-border);
+      background: var(--card-bg);
       border-radius: 8px;
       padding: var(--sp-section);
       display: grid;
@@ -172,29 +187,6 @@
       font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
       color: var(--body-color);
       line-height: 1.5;
-    }
-
-    /* ── Page footer (in-practice + CTA) ────────────────────────────────── */
-    .page-footer {
-      flex-shrink: 0;
-      padding-top: var(--sp-section);
-      display: flex;
-      flex-direction: column;
-      gap: var(--sp-default);
-    }
-    .page-cta {
-      display: flex;
-      justify-content: flex-end;
-    }
-    .cta-btn {
-      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      font-size: 13px;   /* Label */
-      color: var(--title-color);
-      background: transparent;
-      border: 1px solid var(--card-border);
-      border-radius: 6px;
-      padding: 8px 16px;
-      cursor: pointer;
     }
 
     /* ── Configure button ────────────────────────────────────────────────── */
@@ -311,7 +303,7 @@
   <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-06-08.2';
+  var VERSION = '2026-06-09.1';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   var FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -450,22 +442,6 @@
     return (construct && copy[construct]) || 'Priority solutions for measurable brand improvement.';
   }
 
-  // ─── CTA RESOLVER ─────────────────────────────────────────────────────────
-  function resolveCta(construct) {
-    var copy = {
-      growth:   'Explore Growth Brief →',
-      standout: 'Explore Standout Brief →',
-      fandom:   'Explore Fandom Brief →',
-    };
-    return (construct && copy[construct]) || 'Explore Full Brief →';
-  }
-
-  // ─── CTA CLICK ────────────────────────────────────────────────────────────
-  function _ctaClick() {
-    // Future: hook for Tableau navigation to full brief
-    console.log('cta: ' + (_construct || 'default'));
-  }
-
   // ─── HELPERS ──────────────────────────────────────────────────────────────
   function escHtml(s) {
     return String(s == null ? '' : s)
@@ -525,30 +501,30 @@
       '<div class="construct-subtitle">' + escHtml(resolveSubtitle(construct)) + '</div>' +
       '</div>';
 
-    // Solution grid
-    html += '<div class="sol-grid">';
+    // Solution frame — hugging cell grid (STYLE_SPEC § Card-frame)
+    html += '<div class="sol-frame">';
+
+    // Solution cards — pill top-right, description below
     shown.forEach(function(sol) {
       var pillCls   = sol.tier === 1 ? 'sol-pill-t1' : sol.tier === 2 ? 'sol-pill-t2' : 'sol-pill-t3';
       // Tier shown as 1/2/3 (locked — ESSENTIAL/IMPORTANT/OPTIONAL wording paused per CHART_SPEC).
       var pillLabel = sol.tier === 1 ? '1' : sol.tier === 2 ? '2' : '3';
       html +=
-        '<div class="sol-card">' +
-          '<div class="sol-name">' + escHtml(sol.name) + '</div>' +
-          '<div class="sol-desc">' + escHtml(sol.description) + '</div>' +
-          '<div>' +
-            '<span class="sol-pill ' + pillCls + '">' + escHtml(pillLabel) + '</span>' +
+        '<div class="sol-card" data-grouped-cell>' +
+          '<div class="sol-card-header">' +
+            '<div class="sol-name">' + escHtml(sol.name) + '</div>' +
+            '<span class="sol-pill ' + pillCls + '" style="flex-shrink:0">' + escHtml(pillLabel) + '</span>' +
           '</div>' +
+          '<div class="sol-desc">' + escHtml(sol.description) + '</div>' +
         '</div>';
     });
-    html += '</div>';
 
-    // Page footer — in-practice (primary/alternate) + CTA
+    // In Practice — trailing cell inside the frame (primary/alternate per image availability)
     var imageUrl = shown.length && shown[0].image_url ? shown[0].image_url : '';
     var ipCopy   = escHtml(resolveInPractice(brand, construct));
-    var ipHtml;
     if (imageUrl) {
-      ipHtml =
-        '<div class="in-practice-primary">' +
+      html +=
+        '<div class="in-practice-primary" data-grouped-cell>' +
           '<img class="in-practice-img" src="' + escHtml(imageUrl) + '" alt="">' +
           '<div class="in-practice-content">' +
             '<div class="in-practice-label">In Practice</div>' +
@@ -556,23 +532,77 @@
           '</div>' +
         '</div>';
     } else {
-      ipHtml =
-        '<div class="in-practice-alt">' +
+      html +=
+        '<div class="in-practice-alt" data-grouped-cell>' +
           '<div class="in-practice-label">In Practice</div>' +
           '<div class="in-practice-body">' + ipCopy + '</div>' +
         '</div>';
     }
 
-    html += '<div class="page-footer">' +
-      ipHtml +
-      '<div class="page-cta">' +
-        '<button class="cta-btn" onclick="_ctaClick()">' +
-          escHtml(resolveCta(construct)) +
-        '</button>' +
-      '</div>' +
-      '</div>';
+    html += '</div>';   // end .sol-frame
 
     root.innerHTML = html;
+  }
+
+  // ─── HARNESS ──────────────────────────────────────────────────────────────
+  // Grouped-cell frame assertion — STYLE_SPEC § Enforcement → Visual fidelity.
+  // Mirrors checkGroupedCellFrame() in index.html; uses [data-grouped-cell] convention.
+  // Call runSolutionsHarness() from console after render; auto-runs in preview mode.
+  function runSolutionsHarness() {
+    var results = [];
+    var pass    = true;
+
+    function check(name, ok, detail) {
+      results.push({ name: name, ok: ok, detail: detail || '' });
+      if (!ok) pass = false;
+      console.log('[harness] ' + (ok ? 'PASS' : 'FAIL') + '  ' + name +
+        (detail ? '  (' + detail + ')' : ''));
+    }
+
+    // ── Live frame ─────────────────────────────────────────────────────────
+    var frame = document.querySelector('.sol-frame');
+    if (!frame) {
+      console.warn('[harness] .sol-frame not found — render first');
+      return { pass: false, results: results };
+    }
+    var cells = frame.querySelectorAll('[data-grouped-cell]');
+    check('sol-gcf-has-cells', cells.length > 0, cells.length + ' cell(s)');
+
+    var fs  = window.getComputedStyle(frame);
+    var gapOk = (fs.gap === '2px' || fs.gap === '2px 2px' || fs.rowGap === '2px');
+    check('sol-gcf-gutter-2px', gapOk, 'gap=' + fs.gap + ' rowGap=' + fs.rowGap);
+
+    var frameR = parseFloat(fs.borderRadius) || parseFloat(fs.borderTopLeftRadius) || 0;
+    var cellR  = cells.length
+      ? (parseFloat(window.getComputedStyle(cells[0]).borderRadius) ||
+         parseFloat(window.getComputedStyle(cells[0]).borderTopLeftRadius) || 0)
+      : NaN;
+    check('sol-gcf-radius-nested', frameR === cellR + 2,
+      'frame-r=' + frameR + ' cell-r=' + cellR + ' expected=' + (cellR + 2));
+
+    // ── Synthetic fixture — must FAIL (gap 8px, non-nested radius) ─────────
+    var fix = document.createElement('div');
+    var kid = document.createElement('div');
+    kid.setAttribute('data-grouped-cell', '');
+    kid.style.cssText  = 'border-radius:8px;background:#fff;width:50px;height:50px;';
+    fix.style.cssText  = 'position:absolute;visibility:hidden;display:grid;gap:8px;' +
+      'border-radius:8px;width:120px;height:60px;';
+    fix.appendChild(kid);
+    document.body.appendChild(fix);
+    var xf    = window.getComputedStyle(fix);
+    var xGapOk = (xf.gap === '2px' || xf.gap === '2px 2px' || xf.rowGap === '2px');
+    var xR    = parseFloat(xf.borderRadius) || 0;
+    var xCR   = parseFloat(window.getComputedStyle(kid).borderRadius) || 0;
+    var xRadOk = (xR === xCR + 2);
+    document.body.removeChild(fix);
+    // Both fixture checks should be false — the fixture is intentionally off-token
+    check('sol-fixture-gutter-FAIL', !xGapOk,
+      'gap=' + xf.gap + ' (non-2px → FAIL expected)');
+    check('sol-fixture-radius-FAIL', !xRadOk,
+      'frame-r=' + xR + ' cell-r=' + xCR + ' (non-nested → FAIL expected)');
+
+    console.log('[harness] solutions frame: ' + (pass ? 'ALL PASS' : 'SOME FAIL'));
+    return { pass: pass, results: results };
   }
 
   // ─── SETTINGS ─────────────────────────────────────────────────────────────
@@ -627,6 +657,7 @@
     }
     _solutions    = SAMPLE_SOLUTIONS;
     render();
+    runSolutionsHarness();
   } else {
     tableau.extensions.initializeAsync({
       configure: function() { showSettings(); },
@@ -662,8 +693,19 @@
       render();
     }).catch(function(err) {
       console.error('[solutions_nav] initializeAsync failed:', err);
+      // Outside Tableau — honour ?construct= URL param the same as the no-tableau path
+      var urlParams = new URLSearchParams(location.search);
+      var urlConst  = urlParams.get('construct');
+      if (urlConst) {
+        var lower   = urlConst.trim().toLowerCase();
+        var urlHits = CONSTRUCT_TOKENS.filter(function(t) { return lower.indexOf(t) !== -1; });
+        _construct  = urlHits.length === 1 ? urlHits[0] : null;
+      } else {
+        _construct = 'growth';
+      }
       _solutions = SAMPLE_SOLUTIONS;
       render();
+      runSolutionsHarness();
     });
   }
   </script>
