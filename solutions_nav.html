@@ -303,7 +303,7 @@
   <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-06-09.1';
+  var VERSION = '2026-06-09.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   var FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -507,8 +507,7 @@
     // Solution cards — pill top-right, description below
     shown.forEach(function(sol) {
       var pillCls   = sol.tier === 1 ? 'sol-pill-t1' : sol.tier === 2 ? 'sol-pill-t2' : 'sol-pill-t3';
-      // Tier shown as 1/2/3 (locked — ESSENTIAL/IMPORTANT/OPTIONAL wording paused per CHART_SPEC).
-      var pillLabel = sol.tier === 1 ? '1' : sol.tier === 2 ? '2' : '3';
+      var pillLabel = sol.tier === 1 ? 'Essential' : sol.tier === 2 ? 'Important' : 'Optional';
       html +=
         '<div class="sol-card" data-grouped-cell>' +
           '<div class="sol-card-header">' +
