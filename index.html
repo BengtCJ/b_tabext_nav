@@ -3017,8 +3017,9 @@
       min-width: 0;
     }
     #chart-name {
-      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      font-size: 24px;
+      font-family: 'Baskerville', 'Libre Baskerville', Georgia, serif;
+      font-style: italic;
+      font-size: 39px;
       color: #ededed;
       line-height: 1.2;
     }
@@ -3329,7 +3330,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-10.2';
+  const VERSION = '2026-06-10.3';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -4436,6 +4437,19 @@
       var titleEls = chartEl ? chartEl.querySelectorAll('[data-ban-title]') : [];
       check('single-title', titleEls.length === 0,
         titleEls.length + ' [data-ban-title] element(s) in ban shell — expected 0; title belongs to #chart-name');
+    })();
+
+    // chart-name-title-role: #chart-name must be Baskerville italic 39px (Title role — Task H)
+    (function() {
+      var nameEl = document.getElementById('chart-name');
+      if (!nameEl) { check('chart-name-title-role', false, '#chart-name element not found'); return; }
+      var cs = window.getComputedStyle(nameEl);
+      var ff = cs.fontFamily || nameEl.style.fontFamily || '';
+      var fs = cs.fontSize || nameEl.style.fontSize || '';
+      var fi = cs.fontStyle || nameEl.style.fontStyle || '';
+      var ok = ff.indexOf('Baskerville') !== -1 && fs === '39px' && fi === 'italic';
+      check('chart-name-title-role', ok,
+        ok ? 'Baskerville italic 39px' : 'ff=' + ff + ' fs=' + fs + ' fi=' + fi);
     })();
 
     // root-bg-transparent: body and html backgrounds are transparent (host dashboard shows through)

@@ -27,6 +27,7 @@ wanted; validate at the container size before final sign-off.
 | **Heading** | Tableau Light | table indicator names, section labels | 18px (was 16; sanctioned bump for solutions surface contrast — validate at 1421×773) |
 | **Label** | Tableau Light (brands UPPERCASE) / Regular (values) | brand names, value labels | 13px |
 | **Caption** | Tableau Light | axis ticks, legend, small notes | 11px |
+| **Title** | Baskerville italic (FONT_TITLE stack) | the chart-view indicator title (`#chart-name`) | ~39px (scale step 13×1.2⁶; confirm at 1421×773) |
 | **Display** | Baskerville italic (stack in Faces) | construct page title — solutions surface only | 56px (re-decision: was 40; bumped for scale — record as intentional) |
 | **Value numeral** | Baskerville italic (stack in Faces) | per-brand numeric value on chart marks (bars, bubbles, tiles, rings, line-end); excludes BAN family | 24px · client fill `#e994a2`, others `#ededed` |
 
@@ -38,10 +39,10 @@ wanted; validate at the container size before final sign-off.
   Radial uses a fixed SVG-scale approach inside the rings (unchanged). Every OTHER element
   keeps a fixed role size — the ban on geometry-derived font size binds all non-hero type.
   Chart graphics (radial rings) are not type and scale freely.
-- **A chart-view title uses the Heading role (Tableau Light), never Baskerville.**
-  Baskerville italic is hero numerals only; an indicator name shown as a chart
-  title is a Heading, not a hero. If 16px reads with too little title contrast at
-  1421×773, bump Heading to 18 per the Heading note — do not switch the face.
+- **The chart-view title uses the Title role — Baskerville italic, pinned to the modular
+  scale (~39px at 1421×773).** Serif now spans hero + title (the editorial 'voice'); sans (Tableau
+  Light/Regular) stays for labels, axes, captions, and in-table/section Headings. The ban on
+  geometry-driven sizing still binds — the Title is a fixed scale step, not fit-to-box.
 - No other element sets its own font size. In particular, **no font size derived from
   geometry** (`Math.min(11, cellW * 0.22)` and similar must go).
 - **Display is the solutions-surface exception to the Baskerville-as-numerals rule.** The
