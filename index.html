@@ -670,7 +670,7 @@
     // Band: 2×2 block cols 1-2 rows 2-3; band-less: col 1 row 2
     var heroZone = document.createElement('div');
     heroZone.style.cssText = (isBand ? 'grid-column:1/3;grid-row:2/4;' : 'grid-column:1;grid-row:2;') +
-      'padding:8px 16px 16px;display:flex;flex-direction:column;justify-content:center;' +
+      'padding:8px 16px 16px;display:flex;flex-direction:column;justify-content:center;align-items:center;' +
       'gap:8px;overflow:hidden;min-width:0;';
 
     // Fixed hero size from type scale; char-count clamp so long values flex within the band
@@ -686,7 +686,7 @@
     if (content.unitSuffix) {
       heroEl.appendChild(document.createTextNode(heroStr));
       var sufSpan = document.createElement('span');
-      sufSpan.style.cssText = 'font-size:' + heroSufPx + 'px;color:#6f6f6f;';
+      sufSpan.style.cssText = 'font-size:' + heroSufPx + 'px;color:#6f6f6f;margin-left:0.15em;';
       sufSpan.textContent = content.unitSuffix;
       heroEl.appendChild(sufSpan);
     } else {
@@ -694,11 +694,11 @@
     }
     heroZone.appendChild(heroEl);
 
-    // Guaranteed pink rule beneath hero (~120px, 1px, selectedColor)
+    // Guaranteed pink rule — non-band: beneath hero; band: above verdict
     var ruleEl = document.createElement('div');
     ruleEl.setAttribute('data-ban-pink-rule', '1');
     ruleEl.style.cssText = 'background:' + CONFIG.selectedColor + ';width:120px;height:1px;flex-shrink:0;';
-    heroZone.appendChild(ruleEl);
+    if (!isBand) { heroZone.appendChild(ruleEl); }
     el.appendChild(heroZone);
 
     if (isBand) {
@@ -707,6 +707,8 @@
       verdictZone.style.cssText = 'grid-column:1;grid-row:4;' +
         'padding:8px 16px 8px;display:flex;flex-direction:column;justify-content:center;gap:4px;overflow:hidden;min-width:0;';
 
+      ruleEl.style.marginBottom = '8px';
+      verdictZone.appendChild(ruleEl);
       var verdictEl = document.createElement('div');
       verdictEl.setAttribute('data-ban-verdict', '1');
       verdictEl.style.cssText = 'font-family:' + FONT_TITLE + ';font-style:italic;font-weight:400;' +
@@ -741,7 +743,7 @@
         cellEl.setAttribute('data-ban-cell', '1');
         cellEl.style.cssText = 'grid-column:3;grid-row:' + (i + 2) + ';' +
           'background:' + (band.active ? '#3a3a3a' : '#242424') + ';' +
-          'border-radius:' + CELL_R + 'px;padding:8px 12px;' +
+          'border-radius:' + CELL_R + 'px;padding:16px;' +
           'display:flex;flex-direction:column;justify-content:center;gap:4px;overflow:hidden;';
 
         var labelRow = document.createElement('div');
@@ -1007,7 +1009,7 @@
     // ── ROW 2, COL 1: HERO CELL (--panel, generous padding, fixed size, NO rule) ─
     var heroCell = document.createElement('div');
     heroCell.style.cssText = 'background:#181818;border-radius:' + CELL_R + 'px;' +
-      'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;gap:8px;overflow:hidden;min-width:0;';
+      'padding:16px 20px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;overflow:hidden;min-width:0;';
 
     // Ledger hero occupies 1/3-width cell; smaller base than editorial (120 vs 160)
     var heroStrLg = (content.prefix || '') + content.dispVal;
@@ -1022,7 +1024,7 @@
     if (content.unitSuffix) {
       heroEl.appendChild(document.createTextNode(heroStrLg));
       var sufSpanLg = document.createElement('span');
-      sufSpanLg.style.cssText = 'font-size:' + heroSufPxLg + 'px;color:#6f6f6f;';
+      sufSpanLg.style.cssText = 'font-size:' + heroSufPxLg + 'px;color:#6f6f6f;margin-left:0.15em;';
       sufSpanLg.textContent = content.unitSuffix;
       heroEl.appendChild(sufSpanLg);
     } else {
@@ -1084,7 +1086,7 @@
         var bandCell = document.createElement('div');
         bandCell.setAttribute('data-ban-cell', '1');
         bandCell.style.cssText = 'background:' + (band.active ? '#3a3a3a' : '#242424') + ';' +
-          'border-radius:' + CELL_R + 'px;padding:12px;display:flex;flex-direction:column;' +
+          'border-radius:' + CELL_R + 'px;padding:16px;display:flex;flex-direction:column;' +
           'justify-content:center;gap:4px;overflow:hidden;';
 
         var labelRow = document.createElement('div');
@@ -3327,7 +3329,7 @@
 
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  const VERSION = '2026-06-10.1';
+  const VERSION = '2026-06-10.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   const FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
