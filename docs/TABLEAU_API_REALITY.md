@@ -165,6 +165,16 @@ both confirmed working or already in use.
   largest worksheets in use. `[docs]` / `[tested]` needed.
 - Library-loading + `min-api-version` items above.
 - Library-loading + `min-api-version` items above.
+- **PRIORITIES_VIEW column contract (solutions surface).** `[specced — pending the §4
+  dimension-aware 4A Code session; not yet live]`. Columns the solutions extension reads:
+  `item_type`, `item_id`, `name`, `description`, `severity` (NULL on standard rows — the
+  prioritised-vs-standard signal; prioritised cards have 1/2/3), `dim_group`
+  (`growth`/`standout`/`fandom` — the construct filter key), `display_order` (standard-shelf
+  sort), `source`, plus `business_id`, `brand_name`, `display_name`, `run_id` from the
+  SCORER_RANKING left-join. `rationale` is NOT exposed. Per the fields-on-shelf gotcha, every
+  column the grid reads must sit on a Rows/Columns shelf of the worksheet the extension reads, or
+  the read silently comes back short. Move to Confirmed (with a `[tested]` tag + date) once 4A
+  has shipped and the live column set is verified.
 
 ## Dead ends — do not retry
 

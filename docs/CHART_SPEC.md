@@ -69,14 +69,23 @@ What it is: per-construct grid of service cards (the "solutions" from SOLUTION_M
 each carrying a priority pill. One grid per construct tab (growth / standout / fandom).
 Not a chart — a status grid; obeys the status-vocabulary rules below.
 
-Data source: the §4 published solutions view, read via the single read-adapter.
-Per-run, client-only. Rows filtered to the current construct in JS (house
-carry-all-rows / filter-in-JS pattern; construct id self-identified from dashboard.name)
-— NOT a Tableau filter. The `rationale` column is never read into the render.
+Data source: `PRIORITIES_VIEW` (the Spec 4 opportunities view), `item_type = 'solution'`
+rows, read via the single read-adapter. Per-run, client-only (the view is already
+client-filtered). Rows filtered to the current construct in JS on the `dim_group` column
+(values `growth` / `standout` / `fandom`) — house carry-all-rows / filter-in-JS pattern,
+construct self-identified from `dashboard.name` construct tokens — NOT a Tableau filter.
+`name` and `description` are read verbatim from the PRIORITIES row (snapshotted at
+generation; no menu join). `rationale` is not exposed by the view, so the
+never-render-rationale rule is enforced upstream as well as in the render. SOLUTION_MENU is
+retired from Snowflake (a Config-tab generation candidate list only) and is never read by the
+extension.
 
 Render contract:
-- Cards in FIXED display_order from the menu. Never tier-sorted; order does not
-  change when tiers change run-to-run.
+- Cards in a FIXED display order — the menu's `display_order`, **snapshotted onto each PRIORITIES
+  row** and exposed by the view — never severity-sorted at the shelf level; order does not change
+  when severities change run-to-run. Within a construct: the **standard shelf** sorts by
+  `display_order`; the **prioritised top row** sorts by `severity` (1 first). See the
+  prioritised-vs-standard rule in Data sanity.
 - Fixed 6-cell scaffold: always render six solution holding cells. Fill with the construct's solutions in display_order; surplus cells render as empty holding cells (faint `--empty` fill), not omitted. (If re-decided to per-construct sizing, render exactly the construct's count with no empties.)
 - Each card: name + description (verbatim from the view) + one priority pill.
 - rationale NOT rendered (hidden from users).
@@ -89,10 +98,16 @@ Status semantics (solutions — deliberately distinct from problems):
 - Tier shown as the word ESSENTIAL / IMPORTANT / OPTIONAL (tier 1/2/3), outlined pill, no fill, no red.
 
 Data sanity (verify, don't eyeball):
-- Membership = exactly the menu's active solutions present for this run+construct
-  in the view — not a hardcoded five.
-- Each card's tier comes from the view's tier column for that slot; human-win
-  ordering is already resolved view-side.
+- Membership = **all** of the construct's `item_type='solution'` rows the view returns for this
+  run + construct (matched on `dim_group`). The engine materialises the **whole service pool**
+  (~7 per construct), not a selected few, not a hardcoded count, and not a menu cross-check. The
+  brand-relevant subset is flagged by `severity IS NOT NULL` (rendered as the top row); the rest
+  are standard (`severity` NULL, the bottom shelf). The render stays N-robust regardless of pool
+  size.
+- Each prioritised card's tier (the 1/2/3 pill) comes from the view's `severity` column
+  (1 = highest); human-win ordering is already resolved view-side (`source` = human over llm).
+  **Standard cards have `severity` NULL and render with no pill** — that NULL is the
+  prioritised-vs-standard signal, not missing data. Do not coerce it to 0 or hide the card.
 - Construct of every rendered row == the self-identified construct.
 
 States:
@@ -120,9 +135,12 @@ Surface composition (TO CONFIRM — extension vs native scope, NOT specced here)
 the fuller proto shows the grid inside a larger surface — serif headline
 ("Capitalise on market"), a narrative lead paragraph, the card grid, the
 "IN PRACTICE" featured panel, and a bottom CTA ("SEE THE [N] RECOMMENDED ACTIONS
-TO STANDOUT ->"). Each construct tab also carries an "N actions" count
-(GROWTH 3 / STANDOUT 5 / FANDOM 6), reading as the count of tier-1/2 (non-optional)
-solutions for that construct. Open question: which of these does the extension
+TO STANDOUT ->"). Each construct tab also carries an "N actions" count = the number of **prioritised** solutions for
+that construct (`severity` not null) — brand-dependent, not engine-fixed and not the full pool.
+The whole pool (~7 per construct) is always shown; only the prioritised subset counts as
+"actions." The proto's GROWTH 3 / STANDOUT 5 / FANDOM 6 are illustrative prioritised counts, not
+fixed engine output — the real count varies per brand/run. Read it from the view (count of
+severity-not-null rows for the construct); never hardcode. Open question: which of these does the extension
 render vs native Tableau chrome? Resolve before the spec covers them.
 
 Light-surface tokens (off the proto render; confirm vs Figma file for canonical):
@@ -223,6 +241,16 @@ definition string must say so; cells are greyscale scale-bands, never RAG.
 - Verify `mcon`/`cagr`/`tam` display units against `INDICATOR_UNITS` before rendering: `mcon`
   is an integer HHI (2002, not a 0.2002 decimal), `cagr` is `%`, `tam` is `$B`. The HHI band
   thresholds assume the integer scale.
+- **Solutions display-order — RESOLVED.** `PRIORITIES` snapshots the menu's `display_order` onto
+  each row and `PRIORITIES_VIEW` exposes it. The standard shelf sorts by `display_order` (stable,
+  brand-independent, tier-independent); the prioritised top row sorts by `severity`. No `item_id`
+  fallback needed.
+- **Solutions build target is the post-refactor engine, not the current repo.** As built the
+  insights engine is flat (no `dim_group`, one-pass pills, no standard shelf). Per-construct is
+  specced (`SPEC_4_OPPORTUNITIES` §3) and pending a Code session (dimension-aware 4A) that adds
+  `dim_group`, snapshots `display_order`, and writes the full pool with the prioritised subset
+  flagged. Do not wire the grid against the current flat repo state; the `dim_group` filter
+  column, the `display_order` sort key, and the standard shelf all land with that session.
 
 ## "Looks wrong if…" (quick visual checks)
 - A primary brand isn't highlighted, or two brands share the highlight colour.

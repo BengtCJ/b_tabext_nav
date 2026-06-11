@@ -50,8 +50,12 @@ This repo hosts multiple sibling extensions sharing the same specs (`CHART_SPEC.
 Each extension is a self-contained single HTML file + `.trex` manifest. Specs are shared; no code
 is shared between extension files.
 
-**TODO (§4 cross-ref — HELD):** once the engine signals §4 locked, add the solutions view column
-names to `TABLEAU_API_REALITY.md` and wire the adapter in `solutions_nav.html`.
+**§4 cross-ref:** Spec 4 (opportunities) has shipped — the solutions display source is
+`PRIORITIES_VIEW` (`item_type='solution'`, filtered per-construct on `dim_group`, the whole pool
+shown with the prioritised subset flagged by `severity` not null). Its column contract is
+recorded under `TABLEAU_API_REALITY.md` → To verify (pending the dimension-aware 4A session that
+adds the `dim_group` construct column + snapshotted `display_order`). Wiring the adapter in
+`solutions_nav.html` is a later work order, blocked until `dim_group` is live.
 
 ## Migration direction
 Native overview now; the extension gradually absorbs more and may eventually render the
