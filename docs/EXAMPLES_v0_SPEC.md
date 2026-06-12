@@ -92,8 +92,8 @@ If one card design carries those three, it carries the other twelve.
 
 v0 is done when, in the client's real Tableau environment:
 
-- [ ] YouTube embed renders inside the extension iframe (the core unknown).
-- [ ] The webpage-preview card renders (image hotlinked or placeholder).
+- [x] YouTube embed renders inside the extension iframe — requires `youtube.com` (not `youtube-nocookie.com`) + `?origin=<host>`. Tested 2026-06-12.
+- [x] The webpage-preview card renders (image hotlinked) — external `img-src` not blocked by Tableau Cloud CSP. Tested 2026-06-12.
 - [ ] The card reflows cleanly between a wide band and a narrow column —
       the queen survives being squeezed.
 - [ ] The card reads a Tableau parameter for the selected indicator and
