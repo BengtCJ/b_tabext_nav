@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest manifest-version="0.1" xmlns="http://www.tableau.com/xml/extension_manifest">
+  <dashboard-extension id="com.bengtcj.b-examples-v0" extension-version="0.0.1">
+    <default-locale>en_US</default-locale>
+    <name resource-id="name">BP Examples (v0)</name>
+    <description>Qualitative case-study examples — v0 spike. Renders one indicator's case study (embed or webpage preview) with support stats, a headline metric, and characterised reactions. Coordinated by the "Selected Indicator" parameter.</description>
+
+    <author name="BengtCJ" email="" organization="" website="https://bengtcj.github.io"/>
+
+    <!-- 1.4+ is enough for parameter find + ParameterChanged events -->
+    <min-api-version>1.4</min-api-version>
+
+    <source-location>
+      <url>https://bengtcj.github.io/b_tabext_nav/examples.html</url>
+    </source-location>
+
+    <!-- Placeholder icon — replace with a real 32x32 base64 PNG before sharing. -->
+    <icon>iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAF0lEQVQ4y2NgYGBg+E8GPgwMBBIHAAAkAAQAkJbGpQAAAABJRU5ErkJggg==</icon>
+  </dashboard-extension>
+
+  <resources>
+    <resource id="name">
+      <text locale="en_US">BP Examples (v0)</text>
+    </resource>
+  </resources>
+</manifest>

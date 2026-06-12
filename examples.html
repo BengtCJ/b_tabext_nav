@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Case-study examples — v0</title>
+
+<script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+  /* ── Tokens ───────────────────────────────────────────────
+     Direction: an evidence exhibit. The case study is mounted;
+     the metric is the instrument reading beside it. Cool paper,
+     a single petrol accent for flagged evidence, the one big
+     number set in a serif so the figure reads as the artifact,
+     mono for every data label so the quant layer reads measured. */
+  :root{
+    --paper:#F1F4F3;
+    --mount:#FFFFFF;
+    --ink:#15241F;
+    --ink-2:#54635D;
+    --line:#DCE3DF;
+    --accent:#0E6E63;
+    --accent-soft:#E2EFEB;
+    --warn:#A6481B;
+
+    --font-display:"Fraunces", Georgia, "Times New Roman", serif;
+    --font-body:"IBM Plex Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    --font-mono:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --r:10px;
+    --pad:20px;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:14px;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ── Dev toggle (v0 only — remove in v1) ───────────────── */
+  .dev{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 16px;
+    font-family:var(--font-mono); font-size:11px;
+    color:var(--ink-2);
+    border-bottom:1px solid var(--line);
+    background:var(--paper);
+  }
+  .dev b{ color:var(--accent); font-weight:500; letter-spacing:.04em; }
+  .dev .seg{ display:inline-flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; background:var(--mount); }
+  .dev button{
+    appearance:none; border:0; background:transparent; cursor:pointer;
+    font-family:var(--font-mono); font-size:11px; color:var(--ink-2);
+    padding:5px 11px;
+  }
+  .dev button[aria-pressed="true"]{ background:var(--accent); color:#fff; }
+  .dev button:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
+
+  /* ── Card shell ────────────────────────────────────────── */
+  .wrap{ padding:16px; }
+  .card{
+    background:var(--mount);
+    border:1px solid var(--line);
+    border-radius:var(--r);
+    overflow:hidden;
+    box-shadow:0 1px 0 rgba(21,36,31,.03), 0 8px 24px -18px rgba(21,36,31,.35);
+  }
+
+  /* Eyebrow row: the indicator parameter, made visible. */
+  .eyebrow{
+    display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+    padding:14px var(--pad);
+    border-bottom:1px solid var(--line);
+    font-family:var(--font-mono);
+  }
+  .code{
+    color:var(--accent); font-weight:500; font-size:12px;
+    letter-spacing:.06em; text-transform:uppercase;
+  }
+  .code::after{ content:"·"; margin:0 8px; color:var(--line); }
+  .iname{ font-size:12px; color:var(--ink-2); letter-spacing:.02em; }
+  .eyebrow .spacer{ flex:1 1 auto; }
+  .tag{
+    font-size:11px; color:var(--ink-2);
+    background:var(--accent-soft); color:var(--accent);
+    padding:3px 8px; border-radius:999px; white-space:nowrap;
+  }
+  .asof{ font-size:11px; color:var(--ink-2); white-space:nowrap; }
+
+  /* Body grid — wide: queen | instrument. narrow: stacked. */
+  .body{ display:grid; gap:0; }
+  .wide .body{ grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr); }
+  .narrow .body{ grid-template-columns:1fr; }
+
+  .queen{ padding:var(--pad); }
+  .wide .queen{ border-right:1px solid var(--line); }
+  .narrow .queen{ border-bottom:1px solid var(--line); }
+
+  /* The mounted exhibit */
+  .mount{
+    position:relative;
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+    background:#0c1512;
+  }
+  .mount::before{ /* accent edge — the "flag" */
+    content:""; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:var(--accent); z-index:2;
+  }
+  .ratio{ position:relative; width:100%; aspect-ratio:16/9; }
+  .ratio iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+
+  /* Webpage-preview card (the floor) */
+  .preview{ background:var(--mount); color:var(--ink); display:block; text-decoration:none; }
+  .preview .thumb{
+    aspect-ratio:16/9; background:
+      linear-gradient(135deg,#13352f,#0E6E63 60%,#1a8378);
+    display:flex; align-items:flex-end; padding:14px;
+  }
+  .preview .thumb img{ width:100%; height:100%; object-fit:cover; }
+  .preview .thumb .ph{ font-family:var(--font-mono); font-size:11px; color:#cfe7e1; }
+  .preview .meta{ padding:14px 16px; }
+  .preview .src{ font-family:var(--font-mono); font-size:11px; color:var(--accent); letter-spacing:.04em; }
+  .preview .ttl{ font-weight:600; margin:4px 0 4px; line-height:1.35; }
+  .preview .dsc{ color:var(--ink-2); font-size:13px; }
+  .preview:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* Support stats — the artifact's own reach */
+  .stats{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .stat{
+    display:inline-flex; align-items:baseline; gap:6px;
+    font-family:var(--font-mono); font-size:12px;
+    color:var(--ink); background:var(--paper);
+    border:1px solid var(--line); border-radius:7px;
+    padding:6px 9px;
+  }
+  .stat .v{ font-weight:500; }
+  .stat .k{ color:var(--ink-2); font-size:11px; }
+  .stats-empty{ margin-top:12px; font-size:12px; color:var(--ink-2); font-style:italic; }
+
+  /* Instrument column: BAN + bars + characterisation */
+  .instrument{ padding:var(--pad); display:flex; flex-direction:column; gap:16px; }
+  .label{
+    font-family:var(--font-mono); font-size:10px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-2);
+  }
+  .bans{ display:flex; flex-wrap:wrap; gap:18px 28px; }
+  .ban .n{
+    font-family:var(--font-display); font-weight:600;
+    font-size:46px; line-height:.95; letter-spacing:-.01em;
+    font-variant-numeric:tabular-nums;
+  }
+  .ban .u{ font-family:var(--font-display); font-weight:500; font-size:22px; color:var(--ink-2); }
+  .ban .cap{ display:block; margin-top:6px; font-size:12px; color:var(--ink-2); }
+
+  .bars{ display:flex; flex-direction:column; gap:9px; }
+  .bar .top{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; }
+  .bar .top .bl{ color:var(--ink-2); }
+  .bar .top .bv{ font-family:var(--font-mono); font-weight:500; }
+  .track{ height:7px; border-radius:999px; background:var(--paper); border:1px solid var(--line); overflow:hidden; }
+  .fill{ height:100%; background:var(--ink-2); border-radius:999px; }
+  .bar.subject .fill{ background:var(--accent); }
+  .bar.subject .bv{ color:var(--accent); }
+
+  .rule{ height:1px; background:var(--line); }
+
+  .charact .label{ color:var(--accent); }
+  .charact p{ margin:8px 0 0; color:var(--ink); }
+
+  @media (prefers-reduced-motion:no-preference){
+    .card{ transition:opacity .18s ease; }
+    .card.swap{ opacity:0; }
+  }
+</style>
+</head>
+
+<body>
+  <!-- Dev toggle: present only to test all three archetypes + reflow
+       without wiring a Tableau parameter. Remove in v1. -->
+  <div class="dev" role="group" aria-label="v0 indicator switcher">
+    <b>v0</b><span>indicator</span>
+    <div class="seg" id="seg"></div>
+    <span class="spacer" style="flex:1"></span>
+    <span id="srcnote">standalone</span>
+    <span id="vernote"></span>
+  </div>
+
+  <div class="wrap">
+    <div class="card" id="card"></div>
+  </div>
+
+<script>
+// ─── VERSION ──────────────────────────────────────────────
+const VERSION = '2026-06-12.1';
+
+/* ───────────────────────────────────────────────────────────
+   DATA — the single swappable seam.
+   v0: hardcoded. v1: replace the body of getExamplesForIndicator
+   with a query against SCORER_EXAMPLES (+ joins). Nothing else
+   in the file needs to change.
+   ─────────────────────────────────────────────────────────── */
+const EXAMPLES = {
+  ebl: {
+    indicatorId: "ebl",
+    indicatorName: "engagement beyond likes",
+    subjectBrand: "Competitor A",
+    subjectRole: "exemplar",
+    asOf: "2026-06-01",
+    caseStudy: {
+      type: "youtube",
+      // ↓ replace with a real example video id to test the embed
+      youtubeId: "REPLACE_VIDEO_ID"
+    },
+    supportStats: [
+      { k: "views", v: "2.4M" },
+      { k: "likes", v: "188K" },
+      { k: "comments", v: "9.7K" },
+      { k: "shares", v: "31K" }
+    ],
+    quant: {
+      bans: [{ n: "72", u: "/100", cap: "Engagement quality index" }],
+      bars: [
+        { label: "This example", value: 72, subject: true },
+        { label: "Category median", value: 41 }
+      ]
+    },
+    characterisation:
+      "Typical reactions cluster on the format rather than the product — viewers " +
+      "tag friends, quote lines back, and debate the ending. Comments run long " +
+      "and conversational, not one-word praise; a recurring thread asks for a part two."
+  },
+
+  dvtr: {
+    indicatorId: "dvtr",
+    indicatorName: "distinctive verbal tone recognition",
+    subjectBrand: "Competitor B",
+    subjectRole: "exemplar",
+    asOf: "2026-06-01",
+    caseStudy: {
+      type: "youtube",
+      youtubeId: "REPLACE_VIDEO_ID"
+    },
+    supportStats: [
+      { k: "views", v: "610K" }
+    ],
+    quant: {
+      bans: [{ n: "8.6", u: "/10", cap: "Voice distinctiveness" }],
+      bars: []
+    },
+    characterisation:
+      "The voice is doing the work: dry, clipped, slightly self-aware. Viewers " +
+      "imitate the cadence in the comments without naming the brand — the surest " +
+      "sign the tone is recognisable on its own."
+  },
+
+  tam: {
+    indicatorId: "tam",
+    indicatorName: "total addressable market",
+    subjectBrand: "Category",
+    subjectRole: "context",
+    asOf: "2026-06-01",
+    caseStudy: {
+      type: "webpage",
+      webpage: {
+        source: "marketreports.example",
+        title: "Premium coffee: category sizing and five-year outlook",
+        description:
+          "Independent market intel on category value, segment growth, and the " +
+          "shift toward premium at-home formats.",
+        url: "https://example.com/premium-coffee-outlook",
+        image: "" // leave empty for the styled placeholder; set a real OG image to test hotlinking
+      }
+    },
+    supportStats: [], // stat-led indicator: no brand artifact reach
+    quant: {
+      bans: [
+        { n: "$4.2", u: "B", cap: "Total addressable market" },
+        { n: "8.1", u: "%", cap: "Compound annual growth" }
+      ],
+      bars: []
+    },
+    characterisation:
+      "The category context: a large, still-growing premium segment where at-home " +
+      "formats are taking share. The number is the headroom; this is what it looks like."
+  }
+};
+
+function getExamplesForIndicator(indicatorId){
+  return EXAMPLES[indicatorId] || EXAMPLES.ebl;
+}
+
+/* ── Rendering ─────────────────────────────────────────── */
+const card = document.getElementById("card");
+const esc = s => String(s).replace(/[&<>"']/g, c => (
+  { "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c]
+));
+
+function queenHTML(ex){
+  const cs = ex.caseStudy;
+  if (cs.type === "youtube"){
+    const src = "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(cs.youtubeId);
+    return `<div class="mount"><div class="ratio">
+      <iframe src="${src}" title="${esc(ex.indicatorName)} example"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    </div></div>`;
+  }
+  const w = cs.webpage;
+  const thumb = w.image
+    ? `<img src="${esc(w.image)}" alt="" referrerpolicy="no-referrer" />`
+    : `<span class="ph">webpage preview · og:image</span>`;
+  return `<a class="mount preview" href="${esc(w.url)}" target="_blank" rel="noopener noreferrer">
+      <div class="thumb">${thumb}</div>
+      <div class="meta">
+        <div class="src">${esc(w.source)}</div>
+        <div class="ttl">${esc(w.title)}</div>
+        <div class="dsc">${esc(w.description)}</div>
+      </div>
+    </a>`;
+}
+
+function statsHTML(ex){
+  if (!ex.supportStats.length){
+    return `<div class="stats-empty">No brand artifact — category context above.</div>`;
+  }
+  return `<div class="stats">` + ex.supportStats.map(s =>
+    `<span class="stat"><span class="v">${esc(s.v)}</span><span class="k">${esc(s.k)}</span></span>`
+  ).join("") + `</div>`;
+}
+
+function bansHTML(q){
+  return `<div class="bans">` + q.bans.map(b =>
+    `<div class="ban"><span class="n">${esc(b.n)}</span><span class="u">${esc(b.u||"")}</span>
+       <span class="cap">${esc(b.cap||"")}</span></div>`
+  ).join("") + `</div>`;
+}
+
+function barsHTML(q){
+  if (!q.bars.length) return "";
+  return `<div class="bars">` + q.bars.map(b => {
+    const pct = Math.max(0, Math.min(100, b.value));
+    return `<div class="bar ${b.subject ? "subject":""}">
+      <div class="top"><span class="bl">${esc(b.label)}</span><span class="bv">${esc(b.value)}</span></div>
+      <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join("") + `</div>`;
+}
+
+function render(indicatorId){
+  const ex = getExamplesForIndicator(indicatorId);
+  const roleTag = ex.subjectRole === "exemplar"
+    ? `exemplar · ${esc(ex.subjectBrand)}`
+    : esc(ex.subjectBrand);
+
+  const html = `
+    <div class="eyebrow">
+      <span class="code">${esc(ex.indicatorId)}</span><span class="iname">${esc(ex.indicatorName)}</span>
+      <span class="spacer"></span>
+      <span class="tag">${roleTag}</span>
+      <span class="asof">as of ${esc(ex.asOf)}</span>
+    </div>
+    <div class="body">
+      <div class="queen">
+        ${queenHTML(ex)}
+        ${statsHTML(ex)}
+      </div>
+      <div class="instrument">
+        <div>
+          <div class="label">Metric</div>
+          ${bansHTML(ex.quant)}
+        </div>
+        ${barsHTML(ex.quant)}
+        <div class="rule"></div>
+        <div class="charact">
+          <div class="label">Typical reactions</div>
+          <p>${esc(ex.characterisation)}</p>
+        </div>
+      </div>
+    </div>`;
+
+  // gentle swap if motion allowed
+  card.classList.add("swap");
+  requestAnimationFrame(() => {
+    card.innerHTML = html;
+    requestAnimationFrame(() => card.classList.remove("swap"));
+  });
+  syncSeg(indicatorId);
+}
+
+/* ── Responsive: reflow on the card's own width, not the viewport ── */
+const root = document.documentElement;
+const ro = new ResizeObserver(entries => {
+  for (const e of entries){
+    const w = e.contentRect.width;
+    root.classList.toggle("wide", w >= 640);
+    root.classList.toggle("narrow", w < 640);
+  }
+});
+ro.observe(document.querySelector(".wrap"));
+
+/* ── Dev toggle ──────────────────────────────────────────── */
+const seg = document.getElementById("seg");
+const ORDER = ["ebl","dvtr","tam"];
+ORDER.forEach(id => {
+  const b = document.createElement("button");
+  b.textContent = id;
+  b.setAttribute("aria-pressed","false");
+  b.onclick = () => setIndicator(id, true);
+  seg.appendChild(b);
+});
+function syncSeg(id){
+  [...seg.children].forEach(b =>
+    b.setAttribute("aria-pressed", String(b.textContent === id)));
+}
+
+/* ── State + Tableau parameter coordination ──────────────── */
+let current = "ebl";
+let tableauParam = null;
+
+function setIndicator(id, fromUser){
+  current = id;
+  render(id);
+  // push the user's dev choice back to the Tableau parameter if present
+  if (fromUser && tableauParam){
+    try { tableauParam.changeValueAsync(id); } catch(_){}
+  }
+}
+
+async function initTableau(){
+  const note = document.getElementById("srcnote");
+  if (!(window.tableau && tableau.extensions && tableau.extensions.initializeAsync)){
+    note.textContent = "standalone (no Tableau)";
+    setIndicator(current, false);
+    return;
+  }
+  try {
+    await tableau.extensions.initializeAsync();
+    note.textContent = "tableau · parameter";
+    const dash = tableau.extensions.dashboardContent.dashboard;
+    tableauParam = await dash.findParameterAsync("Selected Indicator");
+    if (tableauParam){
+      const v = String(tableauParam.currentValue.value || "").toLowerCase();
+      if (EXAMPLES[v]) current = v;
+      tableauParam.addEventListener(tableau.TableauEventType.ParameterChanged, async ev => {
+        const p = await ev.getParameterAsync();
+        const nv = String(p.currentValue.value || "").toLowerCase();
+        if (EXAMPLES[nv]) setIndicator(nv, false);
+      });
+    } else {
+      note.textContent = "tableau · no parameter (dev toggle)";
+    }
+  } catch (err){
+    note.textContent = "standalone (init failed)";
+  }
+  setIndicator(current, false);
+}
+
+document.getElementById("vernote").textContent = VERSION;
+initTableau();
+</script>
+</body>
+</html>
