@@ -202,7 +202,7 @@
 
 <script>
 // ─── VERSION ──────────────────────────────────────────────
-const VERSION = '2026-06-12.1';
+const VERSION = '2026-06-12.2';
 
 /* ───────────────────────────────────────────────────────────
    DATA — the single swappable seam.
@@ -308,7 +308,8 @@ const esc = s => String(s).replace(/[&<>"']/g, c => (
 function queenHTML(ex){
   const cs = ex.caseStudy;
   if (cs.type === "youtube"){
-    const src = "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(cs.youtubeId);
+    const origin = encodeURIComponent(window.location.origin);
+    const src = "https://www.youtube.com/embed/" + encodeURIComponent(cs.youtubeId) + "?origin=" + origin;
     return `<div class="mount"><div class="ratio">
       <iframe src="${src}" title="${esc(ex.indicatorName)} example"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
