@@ -516,6 +516,28 @@ label (Caption 11, uppercase) + verdict (Baskerville italic 24px) + reading (Lab
 reading clamped. Image is inset 2px, **not full-bleed** (intentional divergence from the
 Figma). The 2px inset and one-row height align the image with the solution cells.
 
+### Insight lead paragraph (per-construct commentary)
+Extension-rendered. Bespoke per-construct commentary read from the `insights` worksheet,
+placed below the Display construct title, above the card grid, full content width.
+- Source: sheet `insights`, one text column per construct — `opps_growth` / `opps_standout`
+  / `opps_fandom`. Construct→column map hardcoded (no settings cog); the matching column for
+  the self-identified construct is read verbatim.
+- Type: Label role, 13px, Tableau, body grey `#3C3C3C`, line-height ~1.5. Sanctioned bump to
+  Heading 18px if the lead needs more presence — build-and-review at 1421×773, record as
+  intentional. No other size.
+- No pink: the solutions-surface pink-accent exemption applies; no `#e994a2`.
+- Spacing: Display title → insight = `section` (16px); insight → grid = `section` (16px).
+  Build-and-review at 1421×773.
+- Fallback (value empty / `'%null%'` / `'Null'` / `''` / null): render the generic fallback
+  sentence with `{{client}}` interpolated (`CONFIG.clientBrand`, re-resolved on
+  `ParameterChanged`, same resolver as the question subtitle). Real interim copy, never a token.
+- Load-failure diagnostic (structural): when `insights` is absent, the construct's column is
+  missing / not on a shelf, the read returns 0 columns, or the construct is unresolved (tab
+  name has 0 or ≥2 construct tokens), render an actionable hint in the slot — naming the
+  expected sheet, the expected column, and the Rows/Columns-shelf requirement — and log the
+  same to console. Distinct from the empty-value fallback.
+- Preview mode (`typeof tableau === 'undefined'`): render a sample insight sentence.
+
 ### Pink-accent exemption
 
 The **solutions surface carries no pink accent** — it is fully exempt from the

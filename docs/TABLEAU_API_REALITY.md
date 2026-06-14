@@ -179,6 +179,14 @@ both confirmed working or already in use.
   the read silently comes back short. Move to Confirmed (with a `[tested]` tag + date) once 4A
   has shipped and the live column set is verified.
 
+- **`insights` worksheet column contract (solutions lead paragraph).** Sheet `insights`, one
+  text column per construct: `opps_growth` / `opps_standout` / `opps_fandom`, read via
+  `getSummaryDataAsync` (separate read from the §4 view). Per the fields-on-shelf gotcha, each
+  `opps_*` column must sit on a Rows/Columns shelf or the read comes back short (0 cols / short
+  row). Null text returns the `'%null%'` string sentinel, not JS null — the empty→fallback guard
+  checks `'%null%'` / `'Null'` / `''` / null. Move to Confirmed (`[tested]` + date) once verified
+  live in Tableau.
+
 ## Dead ends — do not retry
 
 Paths that cost time and led nowhere. Recorded so they are not attempted again.

@@ -220,121 +220,27 @@
       overflow: hidden;
     }
 
-    /* ── Configure button ────────────────────────────────────────────────── */
-    #configure-btn {
-      position: fixed;
-      bottom: var(--sp-default);
-      right: var(--sp-default);
-      background: rgba(255,255,255,0.85);
-      border: 1px solid var(--card-border);
-      color: var(--t3-color);
-      cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 14px;
-      line-height: 1;
-      z-index: 100;
-      transition: color 0.12s;
-    }
-    #configure-btn:hover { color: var(--title-color); }
-
-    /* ── Settings panel ──────────────────────────────────────────────────── */
-    #settings-panel {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(255,255,255,0.97);
-      z-index: 200;
-      padding: var(--sp-section);
-      flex-direction: column;
-      gap: var(--sp-default);
-    }
-    #settings-panel.visible { display: flex; }
-
-    .settings-title {
-      font-size: 16px;   /* Heading */
-      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      color: var(--title-color);
-      margin-bottom: var(--sp-tight);
-    }
-    .settings-row {
-      display: flex;
-      flex-direction: column;
-      gap: var(--sp-tight);
-    }
-    .settings-row label {
-      font-size: 11px;   /* Caption */
-      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      color: var(--t3-color);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-    .settings-row input {
-      font-size: 13px;
+    /* ── Insight lead paragraph (STYLE_SPEC § Insight lead paragraph) ──── */
+    .insight-lead {
+      flex-shrink: 0;
+      margin-bottom: var(--sp-section);
       font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
-      border: 1px solid var(--card-border);
-      border-radius: 4px;
-      padding: 6px 8px;
-      color: var(--title-color);
-      background: var(--card-bg);
+      font-size: 13px;   /* Label role */
+      color: #3C3C3C;    /* body grey — STYLE_SPEC § Solutions surface light tokens */
+      line-height: 1.5;
     }
-    .settings-btns {
-      display: flex;
-      gap: var(--sp-default);
-      margin-top: var(--sp-tight);
-    }
-    .btn-primary {
-      font-size: 13px;
-      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      padding: 6px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      background: var(--title-color);
-      color: #fff;
-      border: none;
-    }
-    .btn-cancel {
-      font-size: 13px;
-      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      padding: 6px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      background: transparent;
+    .insight-lead--diag {
       color: var(--t3-color);
-      border: 1px solid var(--card-border);
-    }
-    .settings-version {
-      font-size: 11px;
-      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      color: var(--t3-color);
-      margin-top: auto;
+      font-style: italic;
     }
   </style>
 </head>
 <body>
   <div id="root"></div>
-  <button id="configure-btn" title="Configure">&#9881;</button>
-  <div id="settings-panel">
-    <div class="settings-title">BP Solutions — Settings</div>
-    <div class="settings-row">
-      <label>Worksheet name</label>
-      <input id="cfg-worksheet" type="text" placeholder="(leave empty to use sample data)">
-    </div>
-    <div class="settings-row">
-      <label>Client brand name</label>
-      <input id="cfg-brand" type="text" placeholder="e.g. Nespresso">
-    </div>
-    <div class="settings-btns">
-      <button class="btn-primary" id="cfg-save">Save</button>
-      <button class="btn-cancel"  id="cfg-cancel">Cancel</button>
-    </div>
-    <div class="settings-version" id="settings-version"></div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-06-09.4';
+  var VERSION = '2026-06-14.2';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   var FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -346,18 +252,30 @@
   // one constant — do not hardcode tokens anywhere else.
   var CONSTRUCT_TOKENS = ['growth', 'standout', 'fandom'];
 
-  // ─── CONFIG / DEFAULTS ───────────────────────────────────────────────────
-  var DEFAULTS = {
-    worksheet: '',   // worksheet name for live §4 data (empty = sample fixture)
-    brandName: '',   // client brand name for In Practice interpolation
+  // ─── INSIGHTS ────────────────────────────────────────────────────────────
+  // Hardcoded — no settings cog (CLAUDE.md § Sibling extensions, spec_026).
+  var INSIGHTS_SHEET  = 'insights';
+  var INSIGHT_COL_MAP = { growth: 'opps_growth', standout: 'opps_standout', fandom: 'opps_fandom' };
+  // Sample sentences for preview mode (typeof tableau === 'undefined').
+  var SAMPLE_INSIGHTS = {
+    growth:   'In a crowded market, targeted action on the right growth lever outperforms broad investment — the key is identifying which opportunity is ripe for this brand today.',
+    standout: 'Distinctive signal is the fastest route to recognition — brands that invest in their most ownable assets see compounding returns in salience and consideration.',
+    fandom:   'Advocacy compounds over time: brands with the strongest community rituals see lower acquisition costs and higher lifetime value across the customer base.',
   };
-  var CONFIG = Object.assign({}, DEFAULTS);
+
+  // ─── CONFIG ──────────────────────────────────────────────────────────────
+  // No settings cog; all values are constants here or resolved from parameters.
+  var CONFIG = {
+    clientBrand: '',               // resolved from 'Select Client Brand' parameter
+    parameter:   'Select Client Brand',
+  };
 
   // ─── STATE ────────────────────────────────────────────────────────────────
-  var _dashboard   = null;
-  var _construct   = null;   // 'growth' | 'standout' | 'fandom' | null
-  var _solutions   = null;   // current solution list (render model)
-  var _resizeTimer = null;
+  var _dashboard     = null;
+  var _construct     = null;   // 'growth' | 'standout' | 'fandom' | null
+  var _solutions     = null;   // current solution list (render model)
+  var _insightResult = null;   // { type: 'bespoke'|'empty'|'structural', text?, col?, sheet? }
+  var _resizeTimer   = null;
 
   // ─── SAMPLE FIXTURE ───────────────────────────────────────────────────────
   // PROVISIONAL — five solutions across three constructs for one run/client.
@@ -522,6 +440,97 @@
       .replace(/"/g, '&quot;');
   }
 
+  // ─── INSIGHT LEAD PARAGRAPH ───────────────────────────────────────────────
+
+  // Generic fallback copy — {{client}} interpolated at render time.
+  // Re-resolved on every render so ParameterChanged picks up a new clientBrand.
+  var FALLBACK_INSIGHTS = {
+    growth:   'For {{client}}, growth is the size of the prize still on the table — the demand, occasions, and audiences the brand is positioned to win as the category expands.',
+    standout: 'Standout is what makes {{client}} hard to substitute — the distinctive assets and experiences that earn attention and resist being swapped for the nearest rival.',
+    fandom:   'Fandom is loyalty turned active — the point where {{client}}\'s customers don\'t just stay, but choose, defend, and recommend the brand to others.',
+  };
+
+  function resolveInsightFallback(brand, construct) {
+    var b   = brand || 'the brand';
+    var tpl = (construct && FALLBACK_INSIGHTS[construct]) ||
+      'For {{client}}, the data points to clear pathways for measurable brand improvement — the priority moves are identified.';
+    return tpl.replace(/\{\{client\}\}/g, b);
+  }
+
+  // Read the construct's insight column from the `insights` sheet.
+  // Returns a Promise<{ type: 'bespoke'|'empty'|'structural', text?, col?, sheet? }>.
+  // Per TABLEAU_API_REALITY: fields-on-shelf gotcha; null → '%null%' string sentinel.
+  function readInsightAsync(dashboard, construct) {
+    var col = INSIGHT_COL_MAP[construct];
+    if (!col) {
+      console.warn('[solutions_nav] unresolved construct — cannot read insight; construct:', construct);
+      return Promise.resolve({ type: 'structural', col: null, sheet: INSIGHTS_SHEET });
+    }
+    var ws = null;
+    var sheets = dashboard.worksheets;
+    for (var i = 0; i < sheets.length; i++) {
+      if (sheets[i].name === INSIGHTS_SHEET) { ws = sheets[i]; break; }
+    }
+    if (!ws) {
+      console.warn('[solutions_nav] insight sheet "' + INSIGHTS_SHEET + '" not found on dashboard');
+      return Promise.resolve({ type: 'structural', col: col, sheet: INSIGHTS_SHEET });
+    }
+    return ws.getSummaryDataAsync({ maxRows: 10 }).then(function(dt) {
+      if (!dt.columns || dt.columns.length === 0) {
+        console.warn('[solutions_nav] insight sheet "' + INSIGHTS_SHEET + '" returned 0 columns — add "' + col + '" to a Rows/Columns shelf');
+        return { type: 'structural', col: col, sheet: INSIGHTS_SHEET };
+      }
+      var colIdx = -1;
+      for (var i = 0; i < dt.columns.length; i++) {
+        if (dt.columns[i].fieldName === col) { colIdx = i; break; }
+      }
+      if (colIdx === -1) {
+        console.warn('[solutions_nav] insight column "' + col + '" missing in sheet "' + INSIGHTS_SHEET +
+          '" — add it to a Rows/Columns shelf. Available: ' +
+          dt.columns.map(function(c) { return c.fieldName; }).join(', '));
+        return { type: 'structural', col: col, sheet: INSIGHTS_SHEET };
+      }
+      if (!dt.data || dt.data.length === 0) {
+        console.warn('[solutions_nav] insight sheet "' + INSIGHTS_SHEET + '" has columns but 0 rows');
+        return { type: 'structural', col: col, sheet: INSIGHTS_SHEET };
+      }
+      var raw = dt.data[0][colIdx].value;
+      var fmt = dt.data[0][colIdx].formattedValue;
+      if (raw === '%null%' || raw === 'Null' || raw === '' || raw === null || raw === undefined ||
+          fmt === 'Null' || fmt === '' || fmt === null) {
+        return { type: 'empty' };
+      }
+      return { type: 'bespoke', text: String(raw) };
+    }).catch(function(err) {
+      console.warn('[solutions_nav] insight read error:', err);
+      return { type: 'structural', col: col, sheet: INSIGHTS_SHEET };
+    });
+  }
+
+  // Build the insight lead paragraph HTML for insertion between header and grid.
+  function renderInsightHtml(construct) {
+    if (typeof tableau === 'undefined') {
+      // Preview mode — show sample sentence for layout checks.
+      var sample = SAMPLE_INSIGHTS[construct] || SAMPLE_INSIGHTS.growth;
+      return '<div class="insight-lead">' + escHtml(sample) + '</div>';
+    }
+    if (!_insightResult) return '';   // async read not yet complete; re-rendered on arrival
+    if (_insightResult.type === 'bespoke') {
+      return '<div class="insight-lead">' + escHtml(_insightResult.text) + '</div>';
+    }
+    if (_insightResult.type === 'empty') {
+      return '<div class="insight-lead">' +
+        escHtml(resolveInsightFallback(CONFIG.clientBrand, construct)) +
+        '</div>';
+    }
+    // Structural failure — in-slot diagnostic (STYLE_SPEC § Insight lead paragraph).
+    var col = _insightResult.col || (INSIGHT_COL_MAP[construct] || '(unknown)');
+    var diag = 'Configuration: sheet "' + INSIGHTS_SHEET + '" · column "' + col +
+      '" · add to a Rows/Columns shelf in that worksheet.';
+    console.warn('[solutions_nav] insight diagnostic: ' + diag);
+    return '<div class="insight-lead insight-lead--diag">' + escHtml(diag) + '</div>';
+  }
+
   // ─── RENDER ───────────────────────────────────────────────────────────────
   var MIN_W = 280;
   var MIN_H = 160;
@@ -539,7 +548,7 @@
 
     var solutions = _solutions || [];
     var construct = _construct;
-    var brand     = CONFIG.brandName ||
+    var brand     = CONFIG.clientBrand ||
       (solutions.length && solutions[0].brand_name ? solutions[0].brand_name : 'the brand');
 
     // Unresolved-construct: dashboard.name matched 0 or >=2 tokens → graceful neutral state.
@@ -571,6 +580,9 @@
       '<div class="construct-title">' + escHtml(constructLabel) + '</div>' +
       '<div class="construct-subtitle">' + escHtml(resolveSubtitle(construct)) + '</div>' +
       '</div>';
+
+    // Insight lead paragraph — below Display title, above grid (STYLE_SPEC § Insight lead paragraph)
+    html += renderInsightHtml(construct);
 
     // Solution frame — fixed 3×2 scaffold + anchor col (STYLE_SPEC § Card-frame)
     html += '<div class="sol-frame">';
@@ -678,6 +690,21 @@
         'fontSize=' + window.getComputedStyle(nameEl).fontSize);
     }
 
+    // ── insight lead paragraph ────────────────────────────────────────────
+    var insightEl = document.querySelector('.insight-lead');
+    if (insightEl) {
+      var iFs = window.getComputedStyle(insightEl);
+      check('sol-insight-13px', parseFloat(iFs.fontSize) === 13,
+        'fontSize=' + iFs.fontSize);
+      check('sol-insight-color', iFs.color.toLowerCase().indexOf('60') !== -1 ||
+        iFs.color === 'rgb(60, 60, 60)',
+        'color=' + iFs.color);
+      check('sol-insight-no-pink', iFs.color.indexOf('233') === -1,
+        'color should not be pink; color=' + iFs.color);
+    } else {
+      check('sol-insight-present', false, '.insight-lead not found');
+    }
+
     // ── v8: clamp (overflow: hidden on clamped elements) ──────────────────
     var descEl = frame.querySelector('.sol-desc');
     if (descEl) {
@@ -715,36 +742,6 @@
     return { pass: pass, results: results };
   }
 
-  // ─── SETTINGS ─────────────────────────────────────────────────────────────
-  function showSettings() {
-    document.getElementById('cfg-worksheet').value = CONFIG.worksheet || '';
-    document.getElementById('cfg-brand').value     = CONFIG.brandName || '';
-    document.getElementById('settings-version').textContent = 'v' + VERSION;
-    document.getElementById('settings-panel').classList.add('visible');
-  }
-
-  function hideSettings() {
-    document.getElementById('settings-panel').classList.remove('visible');
-  }
-
-  document.getElementById('configure-btn').addEventListener('click', showSettings);
-  document.getElementById('cfg-cancel').addEventListener('click', hideSettings);
-  document.getElementById('cfg-save').addEventListener('click', function() {
-    CONFIG.worksheet = document.getElementById('cfg-worksheet').value.trim();
-    CONFIG.brandName = document.getElementById('cfg-brand').value.trim();
-    if (typeof tableau !== 'undefined' && tableau.extensions && tableau.extensions.settings) {
-      tableau.extensions.settings.set('worksheet', CONFIG.worksheet);
-      tableau.extensions.settings.set('brandName', CONFIG.brandName);
-      tableau.extensions.settings.saveAsync().then(function() {
-        hideSettings();
-        render();
-      });
-    } else {
-      hideSettings();
-      render();
-    }
-  });
-
   // ─── RESIZE ───────────────────────────────────────────────────────────────
   var resizeObserver = new ResizeObserver(function() {
     clearTimeout(_resizeTimer);
@@ -769,25 +766,15 @@
     render();
     runSolutionsHarness();
   } else {
-    tableau.extensions.initializeAsync({
-      configure: function() { showSettings(); },
-    }).then(function() {
+    tableau.extensions.initializeAsync().then(function() {
       _dashboard = tableau.extensions.dashboardContent.dashboard;
-
-      // Load persisted settings
-      var settings = tableau.extensions.settings;
-      Object.keys(DEFAULTS).forEach(function(k) {
-        var val = settings.get(k);
-        if (val) CONFIG[k] = val;
-      });
-
       _construct = resolveConstruct();
       _solutions = SAMPLE_SOLUTIONS;
 
       // TODO §4 live-view wiring (HELD — pending engine §4 lock):
       // When ready, replace the SAMPLE_SOLUTIONS line above with:
       //   var ws = _dashboard.worksheets.find(function(w) {
-      //     return w.name === CONFIG.worksheet;
+      //     return w.name === PRIORITIES_SHEET;
       //   });
       //   if (ws) {
       //     ws.getSummaryDataAsync({ maxRows: 5000 }).then(function(dt) {
@@ -800,7 +787,39 @@
       //     });
       //   }
 
+      // Initial render with what we have; async ops below trigger re-renders.
       render();
+
+      // Resolve client brand from parameter; re-render on change.
+      // getParametersAsync is on Sheet (Dashboard extends Sheet) — TABLEAU_API_REALITY [tested].
+      _dashboard.getParametersAsync().then(function(params) {
+        params.forEach(function(p) {
+          if (p.name === CONFIG.parameter && p.currentValue && p.currentValue.value) {
+            CONFIG.clientBrand = p.currentValue.value;
+          }
+          p.addEventListener(tableau.TableauEventType.ParameterChanged, function() {
+            _dashboard.getParametersAsync().then(function(fresh) {
+              fresh.forEach(function(fp) {
+                if (fp.name === CONFIG.parameter && fp.currentValue && fp.currentValue.value) {
+                  CONFIG.clientBrand = fp.currentValue.value;
+                }
+              });
+              render();
+            });
+          });
+        });
+        render();
+      }).catch(function(err) {
+        console.warn('[solutions_nav] parameter read error:', err);
+      });
+
+      // Read per-construct insight from the `insights` sheet.
+      if (_construct) {
+        readInsightAsync(_dashboard, _construct).then(function(result) {
+          _insightResult = result;
+          render();
+        });
+      }
     }).catch(function(err) {
       console.error('[solutions_nav] initializeAsync failed:', err);
       // Outside Tableau — honour ?construct= URL param the same as the no-tableau path

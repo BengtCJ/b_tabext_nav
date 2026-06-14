@@ -46,6 +46,8 @@ This repo hosts multiple sibling extensions sharing the same specs (`CHART_SPEC.
 `STYLE_SPEC.md`, `TABLEAU_API_REALITY.md`). Current extensions:
 - **`index.html` + `indicator_nav.trex`** — indicator table + D3 charts (dark theme).
 - **`solutions_nav.html` + `solutions_nav.trex`** — per-construct solution grid + pills (light theme).
+  `solutions_nav.html` is hardcoded — no settings cog / `configure` callback; sheet/column names
+  and copy are constants in the file (edit there, not via a dialog).
 
 Each extension is a self-contained single HTML file + `.trex` manifest. Specs are shared; no code
 is shared between extension files.

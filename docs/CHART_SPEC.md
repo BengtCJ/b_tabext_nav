@@ -143,6 +143,14 @@ fixed engine output — the real count varies per brand/run. Read it from the vi
 severity-not-null rows for the construct); never hardcode. Open question: which of these does the extension
 render vs native Tableau chrome? Resolve before the spec covers them.
 
+**Lead paragraph — RESOLVED (extension-rendered).** The narrative lead paragraph is
+extension-rendered, fed by the separate `insights` worksheet (one text column per construct:
+`opps_growth` / `opps_standout` / `opps_fandom`), resolved through one function: bespoke
+column value → generic fallback → in-slot structural diagnostic. Tokens in STYLE_SPEC →
+Solutions surface → Insight lead paragraph. `insights` is separate from `PRIORITIES_VIEW`, so
+this is independent of the §4 hold. The remaining composition elements (serif headline source,
+IN PRACTICE panel, CTA, extension-vs-native split) stay open.
+
 Light-surface tokens (off the proto render; confirm vs Figma file for canonical):
 - surface / card fill #FFFFFF · divider hairline #DDDDDD
 - headline (serif) + card title + CTA near-black ~#1A1A1A
