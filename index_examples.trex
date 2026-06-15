@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest manifest-version="0.1" xmlns="http://www.tableau.com/xml/extension_manifest">
+  <dashboard-extension id="com.bengtcj.b-indicator-nav-examples" extension-version="2026.06.15">
+    <default-locale>en_US</default-locale>
+    <name resource-id="name">BP Nav + Charts + Examples</name>
+    <description>Indicator navigation table with D3 charts and inline examples drawer. Click a row to open an in-place drawer showing the committed chart alongside qualitative case-study examples.</description>
+    <author name="BengtCJ" email="" organization="" website="https://bengtcj.github.io"/>
+    <min-api-version>1.4</min-api-version>
+    <source-location>
+      <url>https://bengtcj.github.io/b_tabext_nav/index_examples.html</url>
+    </source-location>
+    <icon>iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAF0lEQVQ4y2NgYGBg+E8GPgwMBBIHAAAkAAQAkJbGpQAAAABJRU5ErkJggg==</icon>
+    <permissions>
+      <permission>full data</permission>
+    </permissions>
+  </dashboard-extension>
+  <resources>
+    <resource id="name">
+      <text locale="en_US">BP Nav + Charts + Examples</text>
+    </resource>
+  </resources>
+</manifest>
