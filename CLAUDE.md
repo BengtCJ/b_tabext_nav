@@ -55,9 +55,11 @@ is shared between extension files.
 **§4 cross-ref:** Spec 4 (opportunities) has shipped — the solutions display source is
 `PRIORITIES_VIEW` (`item_type='solution'`, filtered per-construct on `dim_group`, the whole pool
 shown with the prioritised subset flagged by `severity` not null). Its column contract is
-recorded under `TABLEAU_API_REALITY.md` → To verify (pending the dimension-aware 4A session that
-adds the `dim_group` construct column + snapshotted `display_order`). Wiring the adapter in
-`solutions_nav.html` is a later work order, blocked until `dim_group` is live.
+recorded under `TABLEAU_API_REALITY.md` → To verify. The dimension-aware
+  4A engine code has landed (2026-06-11): `dim_group`, full-pool write, and snapshotted
+  `display_order` are implemented (CHART_SPEC → Open items). Wiring the adapter in
+  `solutions_nav.html` is a later work order, blocked until `PRIORITIES_VIEW` is live in Snowflake
+  (operator config + DDL apply), not on further code.
 
 ## Migration direction
 Native overview now; the extension gradually absorbs more and may eventually render the

@@ -168,8 +168,8 @@ both confirmed working or already in use.
   largest worksheets in use. `[docs]` / `[tested]` needed.
 - Library-loading + `min-api-version` items above.
 - Library-loading + `min-api-version` items above.
-- **PRIORITIES_VIEW column contract (solutions surface).** `[specced — pending the §4
-  dimension-aware 4A Code session; not yet live]`. Columns the solutions extension reads:
+- **PRIORITIES_VIEW column contract (solutions surface).** `[engine code landed 2026-06-11 (Cell 4A) — pending operator config + DDL apply to go live; not
+  yet read-tested in Tableau]`. Columns the solutions extension reads:
   `item_type`, `item_id`, `name`, `description`, `severity` (NULL on standard rows — the
   prioritised-vs-standard signal; prioritised cards have 1/2/3), `dim_group`
   (`growth`/`standout`/`fandom` — the construct filter key), `display_order` (standard-shelf
@@ -184,8 +184,15 @@ both confirmed working or already in use.
   `getSummaryDataAsync` (separate read from the §4 view). Per the fields-on-shelf gotcha, each
   `opps_*` column must sit on a Rows/Columns shelf or the read comes back short (0 cols / short
   row). Null text returns the `'%null%'` string sentinel, not JS null — the empty→fallback guard
-  checks `'%null%'` / `'Null'` / `''` / null. Move to Confirmed (`[tested]` + date) once verified
-  live in Tableau.
+  checks `'%null%'` / `'Null'` / `''` / null.
+  **Caption format (observed spec_026 live-read):** Tableau surfaces the field as
+  `"Opps Growth (Insights1)"` — not the raw `opps_growth` name. The `(Insights1)` suffix is a
+  Tableau source-qualifier added when a calculated field name collides or the field is published
+  from a data source with that alias. The extension normalises before matching: lowercase, strip
+  trailing ` (…)` qualifier, spaces/hyphens → underscores — so `"Opps Growth (Insights1)"` →
+  `"opps_growth"`. `[observed]` spec_026 live-read, 2026-06-15. On first live read the extension
+  logs all actual `fieldName` values to console to confirm the real caption. Move fully to
+  Confirmed (`[tested]` + date) once verified live in Tableau with `opps_growth` populated.
 
 ## Dead ends — do not retry
 
