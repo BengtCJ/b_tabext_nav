@@ -65,7 +65,7 @@
       color: var(--t3-color);
     }
 
-    /* ── Page header (Display title + subtitle) ─────────────────────────── */
+    /* ── Page header (Display title) ────────────────────────────────────── */
     .page-header {
       flex-shrink: 0;
       margin-bottom: var(--sp-section);
@@ -75,13 +75,6 @@
       font-style: italic;
       font-size: 56px;   /* Display — v8 re-decision, was 40 */
       color: var(--title-color);
-    }
-    .construct-subtitle {
-      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      font-size: 19px;   /* reuse §Detail-header Question size */
-      color: var(--body-color);
-      line-height: 1.5;
-      margin-top: var(--sp-tight);
     }
 
     /* ── Solution frame — fixed 3-col × 2-row + anchor col (STYLE_SPEC § Card-frame) */
@@ -240,7 +233,7 @@
   <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-06-15.1';
+  var VERSION = '2026-06-15.3';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   var FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -283,8 +276,9 @@
   var _dashboard     = null;
   var _construct     = null;   // 'growth' | 'standout' | 'fandom' | null
   var _solutions     = null;   // current solution list (render model)
-  var _insightResult = null;   // { type: 'bespoke'|'empty'|'structural', text?, col?, sheet? }
-  var _resizeTimer   = null;
+  var _insightResult          = null;   // { type: 'bespoke'|'empty'|'structural', text?, col?, sheet? }
+  var _insightFieldNamesLogged = false; // log actual fieldNames once on first live read
+  var _resizeTimer             = null;
 
   // ─── SAMPLE FIXTURE ───────────────────────────────────────────────────────
   // PROVISIONAL — five solutions across three constructs for one run/client.
@@ -430,16 +424,6 @@
       'Solutions for ' + b + ' provide a structured pathway to measurable brand improvement.';
   }
 
-  // ─── SUBTITLE RESOLVER ────────────────────────────────────────────────────
-  function resolveSubtitle(construct) {
-    var copy = {
-      growth:   'Priority levers to grow market participation and commercial return.',
-      standout: 'Priority moves to sharpen differentiation and build distinctive signal.',
-      fandom:   'Priority paths to deepen brand loyalty and convert preference into advocacy.',
-    };
-    return (construct && copy[construct]) || 'Priority solutions for measurable brand improvement.';
-  }
-
   // ─── HELPERS ──────────────────────────────────────────────────────────────
   function escHtml(s) {
     return String(s == null ? '' : s)
@@ -466,9 +450,19 @@
     return tpl.replace(/\{\{client\}\}/g, b);
   }
 
+  // Normalise a Tableau fieldName for tolerant matching:
+  //   lowercase; strip trailing " (...)" source qualifier; spaces/hyphens → underscores.
+  // e.g. "Opps Growth (Insights1)" → "opps_growth"; "OPPS_GROWTH" → "opps_growth".
+  function normaliseFieldName(s) {
+    return s.toLowerCase()
+      .replace(/\s*\([^)]*\)\s*$/, '')
+      .replace(/[\s-]+/g, '_');
+  }
+
   // Read the construct's insight column from the `insights` sheet.
   // Returns a Promise<{ type: 'bespoke'|'empty'|'structural', text?, col?, sheet? }>.
   // Per TABLEAU_API_REALITY: fields-on-shelf gotcha; null → '%null%' string sentinel.
+  // Matches fieldName via normaliseFieldName so Tableau caption variants are tolerated.
   function readInsightAsync(dashboard, construct) {
     var col = INSIGHT_COL_MAP[construct];
     if (!col) {
@@ -489,12 +483,21 @@
         console.warn('[solutions_nav] insight sheet "' + INSIGHTS_SHEET + '" returned 0 columns — add "' + col + '" to a Rows/Columns shelf');
         return { type: 'structural', col: col, sheet: INSIGHTS_SHEET };
       }
-      var colIdx = -1;
+      // Log actual fieldNames once so the real Tableau caption is confirmed (spec_029).
+      if (!_insightFieldNamesLogged) {
+        _insightFieldNamesLogged = true;
+        console.log('[solutions_nav] insight sheet fieldNames:', dt.columns.map(function(c) { return c.fieldName; }));
+      }
+      var colNorm = normaliseFieldName(col);
+      var colIdx  = -1;
       for (var i = 0; i < dt.columns.length; i++) {
-        if (dt.columns[i].fieldName === col) { colIdx = i; break; }
+        if (normaliseFieldName(dt.columns[i].fieldName) === colNorm) {
+          colIdx = i;
+          break;
+        }
       }
       if (colIdx === -1) {
-        console.warn('[solutions_nav] insight column "' + col + '" missing in sheet "' + INSIGHTS_SHEET +
+        console.warn('[solutions_nav] insight column "' + col + '" (normalised: "' + colNorm + '") missing in sheet "' + INSIGHTS_SHEET +
           '" — add it to a Rows/Columns shelf. Available: ' +
           dt.columns.map(function(c) { return c.fieldName; }).join(', '));
         return { type: 'structural', col: col, sheet: INSIGHTS_SHEET };
@@ -584,10 +587,9 @@
       (construct ? construct.charAt(0).toUpperCase() + construct.slice(1) : 'Solutions');
     var constructLabel = rawTitle.replace(/\{\{client\}\}/g, CONFIG.clientBrand || 'the brand');
 
-    // Page header — Display title + strategic subtitle
+    // Page header — Display title
     var html = '<div class="page-header">' +
       '<div class="construct-title">' + escHtml(constructLabel) + '</div>' +
-      '<div class="construct-subtitle">' + escHtml(resolveSubtitle(construct)) + '</div>' +
       '</div>';
 
     // Insight lead paragraph — below Display title, above grid (STYLE_SPEC § Insight lead paragraph)
@@ -687,11 +689,6 @@
     if (titleEl) {
       check('sol-v8-display-56px', parseFloat(window.getComputedStyle(titleEl).fontSize) === 56,
         'fontSize=' + window.getComputedStyle(titleEl).fontSize);
-    }
-    var subtitleEl = document.querySelector('.construct-subtitle');
-    if (subtitleEl) {
-      check('sol-v8-subtitle-19px', parseFloat(window.getComputedStyle(subtitleEl).fontSize) === 19,
-        'fontSize=' + window.getComputedStyle(subtitleEl).fontSize);
     }
     var nameEl = frame.querySelector('.sol-name');
     if (nameEl) {

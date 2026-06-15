@@ -158,6 +158,11 @@ fallback strings are debugging placeholders pending the copywriter (STYLE_SPEC �
 paragraph). Tokens in STYLE_SPEC → Solutions surface → Construct title. Remaining composition
 items (IN PRACTICE data source, CTA copy, extension-vs-native split) stay open.
 
+**Subtitle — REMOVED.** The solutions surface carries no separate subtitle beneath the title; the
+insight lead paragraph is the sole narrative zone (title → insight → grid). The former
+`.construct-subtitle` / `resolveSubtitle` is removed as a pre-spec_026 leftover that duplicated the
+insight's role.
+
 Light-surface tokens (off the proto render; confirm vs Figma file for canonical):
 - surface / card fill #FFFFFF · divider hairline #DDDDDD
 - headline (serif) + card title + CTA near-black ~#1A1A1A
@@ -260,12 +265,17 @@ definition string must say so; cells are greyscale scale-bands, never RAG.
   each row and `PRIORITIES_VIEW` exposes it. The standard shelf sorts by `display_order` (stable,
   brand-independent, tier-independent); the prioritised top row sorts by `severity`. No `item_id`
   fallback needed.
-- **Solutions build target is the post-refactor engine, not the current repo.** As built the
-  insights engine is flat (no `dim_group`, one-pass pills, no standard shelf). Per-construct is
-  specced (`SPEC_4_OPPORTUNITIES` §3) and pending a Code session (dimension-aware 4A) that adds
-  `dim_group`, snapshots `display_order`, and writes the full pool with the prioritised subset
-  flagged. Do not wire the grid against the current flat repo state; the `dim_group` filter
-  column, the `display_order` sort key, and the standard shelf all land with that session.
+- **Solutions engine refactor (4A) has landed in code — blocker is now operator config + DDL,
+  not a build.** The dimension-aware engine is implemented (Cell 4A, applied 2026-06-11): pool
+  filtered on the menu `construct` column → `dim_group`; the full per-construct pool written (one
+  PRIORITIES row per service); `display_order` snapshotted from the menu; `severity` 1/2/3 on
+  prioritised rows, NULL on standard. There is **no** standalone `SPEC_4_OPPORTUNITIES.md`; the
+  record is `PIPELINE_STATE.md` (INS-001) + `INSIGHTS_DESIGN.md` §4 (engine repo). What remains is
+  operator: author `solution_menu` (`construct`/`display_order`/`suggests`/`requires`), author
+  `priority_prompts`, add `opps_*` rows to `insight_prompts`, apply the PRIORITIES DDL + VIEW to
+  live Snowflake, add `fact_keys` entries. **Do not wire the grid until `PRIORITIES_VIEW` is live
+  in Snowflake** (DDL applied + one run with the menu authored) — the columns exist in code but the
+  view isn't populated until those steps complete. `[engine finding 2026-06-11]`
 
 ## "Looks wrong if…" (quick visual checks)
 - A primary brand isn't highlighted, or two brands share the highlight colour.
