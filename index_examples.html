@@ -3406,12 +3406,40 @@ var DATA = (function(){
   }
 
   // ── donor: fetchScoreData (verbatim score read) ──
+  // Resolve the score worksheet WITHOUT config: explicit CONFIG.scoreWorksheet
+  // override if set, otherwise auto-detect the worksheet whose columns include
+  // brand + indicator + score. No settings dialog / no hard-coded name needed.
+  function _hasCol(cols, field){
+    var norm = field.toLowerCase().replace(/[\s_]+/g,'');
+    return cols.some(function(c){ return c.fieldName.toLowerCase().replace(/[\s_]+/g,'')===norm; });
+  }
+  async function pickScoreWorksheet(){
+    if(!_dashboard) return null;
+    var sheets = _dashboard.worksheets || [];
+    if(CONFIG.scoreWorksheet){
+      var named = sheets.find(function(w){ return w.name===CONFIG.scoreWorksheet; });
+      if(named){ console.log('[scoreWorksheet] using configured sheet:', named.name); return named; }
+      console.warn('[scoreWorksheet] configured sheet not found — auto-detecting:', CONFIG.scoreWorksheet);
+    }
+    for(var i=0;i<sheets.length;i++){
+      try{
+        var probe = await sheets[i].getSummaryDataAsync({ maxRows:1 });
+        if(_hasCol(probe.columns,CONFIG.brandField) &&
+           _hasCol(probe.columns,CONFIG.indicatorIdField) &&
+           _hasCol(probe.columns,CONFIG.scoreField)){
+          console.log('[scoreWorksheet] auto-detected:', sheets[i].name);
+          return sheets[i];
+        }
+      }catch(e){ /* worksheet not readable from this extension — skip */ }
+    }
+    console.warn('[scoreWorksheet] no worksheet has brand+indicator+score columns. Sheets on dashboard:',
+      sheets.map(function(w){ return w.name; }).join(', '));
+    return null;
+  }
+
   async function fetchScoreData(){
-    if(!_dashboard || !CONFIG.scoreWorksheet) return null;
-    var ws = _dashboard.worksheets.find(function(w){ return w.name===CONFIG.scoreWorksheet; });
-    if(!ws){ console.warn('[scoreWorksheet] not found:', CONFIG.scoreWorksheet); return null; }
-    try { await ws.getSummaryDataAsync({ maxRows:1 }); }
-    catch(e){ console.warn('[scoreWorksheet probe FAILED]', e); return null; }
+    var ws = await pickScoreWorksheet();
+    if(!ws) return null;
     try {
       var dt = await ws.getSummaryDataAsync({ maxRows:5000 });
       var cols=dt.columns, dataRows=dt.data;
