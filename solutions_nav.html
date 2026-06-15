@@ -240,7 +240,7 @@
   <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-06-14.2';
+  var VERSION = '2026-06-15.1';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   var FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -251,6 +251,15 @@
   // The three canonical construct ids. All construct resolution draws from this
   // one constant — do not hardcode tokens anywhere else.
   var CONSTRUCT_TOKENS = ['growth', 'standout', 'fandom'];
+
+  // ─── TITLE MAP ────────────────────────────────────────────────────────────
+  // Per-construct editorial title (Display role, verbatim authored case).
+  // {{client}}-interpolable; fallback → construct word (prior behaviour).
+  var TITLE_MAP = {
+    growth:   'Capitalise on the market',
+    standout: 'Extend the advantage',
+    fandom:   'Build what lasts',
+  };
 
   // ─── INSIGHTS ────────────────────────────────────────────────────────────
   // Hardcoded — no settings cog (CLAUDE.md § Sibling extensions, spec_026).
@@ -445,9 +454,9 @@
   // Generic fallback copy — {{client}} interpolated at render time.
   // Re-resolved on every render so ParameterChanged picks up a new clientBrand.
   var FALLBACK_INSIGHTS = {
-    growth:   'For {{client}}, growth is the size of the prize still on the table — the demand, occasions, and audiences the brand is positioned to win as the category expands.',
-    standout: 'Standout is what makes {{client}} hard to substitute — the distinctive assets and experiences that earn attention and resist being swapped for the nearest rival.',
-    fandom:   'Fandom is loyalty turned active — the point where {{client}}\'s customers don\'t just stay, but choose, defend, and recommend the brand to others.',
+    growth:   'This text is automatically replaced with the read on growth for {{client}} — where the brand can win share, which audiences and occasions are in reach, and which levers move category participation and commercial return.',
+    standout: 'This text is automatically replaced with the read on standout for {{client}} — how distinctive the brand is in a crowded category, and where it can sharpen the difference that keeps it from being swapped for a rival.',
+    fandom:   'This text is automatically replaced with the read on fandom for {{client}} — how loyal the brand\'s base really is, and where that loyalty can be turned into advocacy, repeat, and recommendation.',
   };
 
   function resolveInsightFallback(brand, construct) {
@@ -571,9 +580,9 @@
       return;
     }
 
-    var constructLabel = construct
-      ? construct.charAt(0).toUpperCase() + construct.slice(1)
-      : 'Solutions';
+    var rawTitle = (construct && TITLE_MAP[construct]) ||
+      (construct ? construct.charAt(0).toUpperCase() + construct.slice(1) : 'Solutions');
+    var constructLabel = rawTitle.replace(/\{\{client\}\}/g, CONFIG.clientBrand || 'the brand');
 
     // Page header — Display title + strategic subtitle
     var html = '<div class="page-header">' +

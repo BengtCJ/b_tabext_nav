@@ -516,6 +516,16 @@ label (Caption 11, uppercase) + verdict (Baskerville italic 24px) + reading (Lab
 reading clamped. Image is inset 2px, **not full-bleed** (intentional divergence from the
 Figma). The 2px inset and one-row height align the image with the solution cells.
 
+### Construct title (Display title — text source)
+The solutions construct page title renders `TITLE_MAP[construct]` — a per-construct editorial
+title (hardcoded interim copy, `{{client}}`-interpolable, swappable for a real source later).
+Role: Display (Baskerville italic, 56px), rendered **verbatim in the authored case** — editorial
+phrases are sentence-case ("Capitalise on the market"); the Title-case note on the Display role
+applied to the bare construct word and does not force-case editorial titles. Construct from the
+existing `dashboard.name` self-id. Fallback: if no title is mapped, render the construct word
+(prior behaviour). No pink (solutions-surface exemption). Interim placeholders: growth →
+"Capitalise on the market", standout → "Extend the advantage", fandom → "Build what lasts".
+
 ### Insight lead paragraph (per-construct commentary)
 Extension-rendered. Bespoke per-construct commentary read from the `insights` worksheet,
 placed below the Display construct title, above the card grid, full content width.
@@ -537,6 +547,11 @@ placed below the Display construct title, above the card grid, full content widt
   expected sheet, the expected column, and the Rows/Columns-shelf requirement — and log the
   same to console. Distinct from the empty-value fallback.
 - Preview mode (`typeof tableau === 'undefined'`): render a sample insight sentence.
+
+The shipped `FALLBACK_INSIGHTS` strings are **debugging placeholder copy pending the copywriter's
+final text** — a deliberate, self-describing temporary state (the copy names itself as
+auto-replaced) and an explicit, owned exception to the "no visible pending state" copy rule above.
+Swapped for real copy when the copywriter delivers (additive, no code change beyond the strings).
 
 ### Pink-accent exemption
 

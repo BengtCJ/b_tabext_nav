@@ -151,6 +151,13 @@ Solutions surface → Insight lead paragraph. `insights` is separate from `PRIOR
 this is independent of the §4 hold. The remaining composition elements (serif headline source,
 IN PRACTICE panel, CTA, extension-vs-native split) stay open.
 
+**Serif title — RESOLVED (extension-rendered).** The solutions construct page title is an
+extension-rendered per-construct editorial title from `TITLE_MAP` (hardcoded interim, swappable),
+replacing the bare construct word; the construct word is the fallback. The current insight
+fallback strings are debugging placeholders pending the copywriter (STYLE_SPEC → Insight lead
+paragraph). Tokens in STYLE_SPEC → Solutions surface → Construct title. Remaining composition
+items (IN PRACTICE data source, CTA copy, extension-vs-native split) stay open.
+
 Light-surface tokens (off the proto render; confirm vs Figma file for canonical):
 - surface / card fill #FFFFFF · divider hairline #DDDDDD
 - headline (serif) + card title + CTA near-black ~#1A1A1A
