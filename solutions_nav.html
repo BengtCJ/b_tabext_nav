@@ -77,7 +77,7 @@
       color: var(--title-color);
     }
 
-    /* ── Solution frame — fixed 3-col × 2-row + anchor col (STYLE_SPEC § Card-frame) */
+    /* ── Solution frame — fixed 4-col × 2-row + anchor col (STYLE_SPEC § Card-frame) */
     .sol-frame {
       flex: 1;
       min-height: 0;
@@ -85,7 +85,7 @@
       border-radius: 10px;             /* frame-radius = cell-radius 8 + gutter 2 */
       padding: var(--gutter);
       display: grid;
-      grid-template-columns: repeat(3, 1fr) minmax(0, 1fr);
+      grid-template-columns: repeat(4, 1fr) minmax(0, 1fr);
       grid-template-rows: 1fr 1fr;
       gap: var(--gutter);
     }
@@ -152,11 +152,11 @@
     .sol-pill-t2 { border-color: var(--pill-t2); color: var(--pill-t2); }
     .sol-pill-t3 { border-color: var(--pill-t3); color: var(--pill-t3); }
 
-    /* ── In Practice anchor — col 4, spans both rows (STYLE_SPEC § Card-frame) ── */
+    /* ── In Practice anchor — col 5, spans both rows (STYLE_SPEC § Card-frame) ── */
     .in-practice-anchor {
       background: var(--card-bg);
       border-radius: 8px;
-      grid-column: 4;
+      grid-column: 5;
       grid-row: 1 / 3;
       display: flex;
       flex-direction: column;
@@ -233,7 +233,7 @@
   <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-06-15.3';
+  var VERSION = '2026-06-15.4';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   var FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -271,96 +271,181 @@
     clientBrand: '',               // resolved from 'Select Client Brand' parameter
     parameter:   'Select Client Brand',
   };
+  var PRIORITIES_SHEET = 'PRIORITIES_VIEW';
 
   // ─── STATE ────────────────────────────────────────────────────────────────
   var _dashboard     = null;
   var _construct     = null;   // 'growth' | 'standout' | 'fandom' | null
   var _solutions     = null;   // current solution list (render model)
-  var _insightResult          = null;   // { type: 'bespoke'|'empty'|'structural', text?, col?, sheet? }
-  var _insightFieldNamesLogged = false; // log actual fieldNames once on first live read
-  var _resizeTimer             = null;
+  var _insightResult           = null;   // { type: 'bespoke'|'empty'|'structural', text?, col?, sheet? }
+  var _insightFieldNamesLogged  = false; // log actual fieldNames once on first live read
+  var _priFieldNamesLogged      = false; // log PRIORITIES_VIEW fieldNames once
+  var _resizeTimer              = null;
 
   // ─── SAMPLE FIXTURE ───────────────────────────────────────────────────────
-  // PROVISIONAL — five solutions across three constructs for one run/client.
-  // The read-adapter (adaptSolutionsView) is the ONLY place §4 column names appear.
+  // Preview/dev mode only — 7 solutions per construct, matching PRIORITIES_VIEW schema.
+  // severity: 1/2/3 = priority pill; null = standard card (no pill).
   var SAMPLE_SOLUTIONS = [
-    {
-      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
-      solution_id: 'sol_001',
-      name: 'Insight',
-      description: 'Research and audience understanding that grounds strategy in real market and consumer data.',
-      display_order: 1, tier: 1, source: 'bp_engine', menu_version: '2.0', construct: 'growth'
-    },
-    {
-      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
-      solution_id: 'sol_002',
-      name: 'Innovation',
-      description: 'Identifying and developing new product, service, or category opportunities.',
-      display_order: 2, tier: 1, source: 'bp_engine', menu_version: '2.0', construct: 'growth'
-    },
-    {
-      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
-      solution_id: 'sol_003',
-      name: 'Employer Brand',
-      description: 'Shaping how a company presents itself to talent, from EVP through to recruitment and culture.',
-      display_order: 3, tier: 3, source: 'bp_engine', menu_version: '2.0', construct: 'growth'
-    },
-    {
-      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
-      solution_id: 'sol_004',
-      name: 'Architecture / Portfolio Strategy',
-      description: 'Structuring how a brand\'s products and sub-brands relate, compete, and grow together.',
-      display_order: 4, tier: 2, source: 'bp_engine', menu_version: '2.0', construct: 'growth'
-    },
-    {
-      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
-      solution_id: 'sol_005',
-      name: 'Positioning',
-      description: 'Defining the single territory a brand owns in the market — what it stands for and why it\'s chosen.',
-      display_order: 5, tier: 3, source: 'bp_engine', menu_version: '2.0', construct: 'growth'
-    },
-    {
-      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
-      solution_id: 'sol_006',
-      name: 'Distinctive Asset Investment',
-      description: 'Strengthen visual and verbal identifiers that drive brand recognition in crowded shelf and social environments.',
-      display_order: 1, tier: 1, source: 'bp_engine', menu_version: '2.0', construct: 'standout'
-    },
-    {
-      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
-      solution_id: 'sol_007',
-      name: 'Tone Sharpening',
-      description: 'Tighten verbal distinctiveness across key touchpoints to improve recognisability and reduce tonal drift.',
-      display_order: 2, tier: 3, source: 'bp_engine', menu_version: '2.0', construct: 'standout'
-    },
-    {
-      run_id: 'run_001', business_id: 'biz_001', brand_name: 'Demo Brand',
-      solution_id: 'sol_008',
-      name: 'Advocacy Activation',
-      description: 'Convert high-preference buyers into active brand advocates through targeted community and referral mechanics.',
-      display_order: 1, tier: 2, source: 'bp_engine', menu_version: '2.0', construct: 'fandom'
-    },
+    // ── growth (7 solutions) ──────────────────────────────────────────────
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_g01', dim_group:'growth',
+      name:'Insight',
+      description:'Research and audience understanding that grounds strategy in real market and consumer data.',
+      display_order:1, severity:1, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_g02', dim_group:'growth',
+      name:'Innovation',
+      description:'Identifying and developing new product, service, or category opportunities.',
+      display_order:2, severity:2, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_g03', dim_group:'growth',
+      name:'Architecture / Portfolio Strategy',
+      description:'Structuring how a brand\'s products and sub-brands relate, compete, and grow together.',
+      display_order:3, severity:null, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_g04', dim_group:'growth',
+      name:'Positioning',
+      description:'Defining the single territory a brand owns in the market — what it stands for and why it\'s chosen.',
+      display_order:4, severity:null, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_g05', dim_group:'growth',
+      name:'Employer Brand',
+      description:'Shaping how a company presents itself to talent, from EVP through to recruitment and culture.',
+      display_order:5, severity:3, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_g06', dim_group:'growth',
+      name:'Pricing Strategy',
+      description:'Establishing the pricing approach that maximises commercial return across segments and occasions.',
+      display_order:6, severity:null, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_g07', dim_group:'growth',
+      name:'Go-to-Market',
+      description:'Defining the route to market and launch approach for new products, repositions, or entry into new segments.',
+      display_order:7, severity:null, source:'bp_engine' },
+    // ── standout (7 solutions) ────────────────────────────────────────────
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_s01', dim_group:'standout',
+      name:'Distinctive Asset Investment',
+      description:'Strengthen visual and verbal identifiers that drive brand recognition in crowded shelf and social environments.',
+      display_order:1, severity:1, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_s02', dim_group:'standout',
+      name:'Tone Sharpening',
+      description:'Tighten verbal distinctiveness across key touchpoints to improve recognisability and reduce tonal drift.',
+      display_order:2, severity:2, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_s03', dim_group:'standout',
+      name:'Brand Tracking',
+      description:'A systematic programme to monitor brand health metrics and competitive positioning over time.',
+      display_order:3, severity:null, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_s04', dim_group:'standout',
+      name:'Campaign Strategy',
+      description:'Designing communication campaigns that land the brand\'s difference credibly and memorably.',
+      display_order:4, severity:null, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_s05', dim_group:'standout',
+      name:'Experience Design',
+      description:'Mapping and improving the touchpoints where the brand promise is made or broken.',
+      display_order:5, severity:null, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_s06', dim_group:'standout',
+      name:'Competitor Intelligence',
+      description:'A structured analysis of competitor brand strategies, assets, and moves to sharpen positioning.',
+      display_order:6, severity:null, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_s07', dim_group:'standout',
+      name:'Purpose & Values',
+      description:'Defining or refreshing the brand\'s reason for being and the values that guide its decisions.',
+      display_order:7, severity:null, source:'bp_engine' },
+    // ── fandom (7 solutions) ──────────────────────────────────────────────
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_f01', dim_group:'fandom',
+      name:'Advocacy Activation',
+      description:'Convert high-preference buyers into active brand advocates through targeted community and referral mechanics.',
+      display_order:1, severity:1, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_f02', dim_group:'fandom',
+      name:'Community Building',
+      description:'Designing and nurturing the spaces — digital or physical — where loyal customers connect with the brand and each other.',
+      display_order:2, severity:2, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_f03', dim_group:'fandom',
+      name:'Loyalty Programme',
+      description:'A structured rewards scheme that incentivises repeat purchase, deepens engagement, and generates first-party data.',
+      display_order:3, severity:null, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_f04', dim_group:'fandom',
+      name:'CX Optimisation',
+      description:'Identifying and closing the gaps in the customer experience that undermine satisfaction and erode loyalty.',
+      display_order:4, severity:null, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_f05', dim_group:'fandom',
+      name:'Creator & Influencer',
+      description:'Partnering with creators who can authentically amplify the brand to engaged, relevant audiences.',
+      display_order:5, severity:null, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_f06', dim_group:'fandom',
+      name:'Employee Advocacy',
+      description:'Activating internal brand believers to carry the brand story credibly into their own networks.',
+      display_order:6, severity:null, source:'bp_engine' },
+    { run_id:'run_001', business_id:'biz_001', brand_name:'Demo Brand',
+      item_type:'solution', item_id:'sol_f07', dim_group:'fandom',
+      name:'Ritual & Habit Design',
+      description:'Engineering the micro-behaviours and moments that turn occasional use into habitual brand engagement.',
+      display_order:7, severity:null, source:'bp_engine' },
   ];
 
   // ─── READ ADAPTER ─────────────────────────────────────────────────────────
-  // PROVISIONAL §4 column names — engine owns final names.
-  // This is the ONLY function that knows the §4 view's column names.
-  // Live-view swap = point getSummaryDataAsync rows at this function (one line).
-  function adaptSolutionsView(rows) {
-    return rows.map(function(r) {
+  // Adapts a PRIORITIES_VIEW getSummaryDataAsync result to the render model.
+  // Uses tolerant fieldName normalisation (same as insight reader) so Tableau
+  // title-cased captions are matched correctly.
+  // severity: null = standard card (no pill); 1/2/3 = priority pill.
+  function adaptPrioritiesData(dt) {
+    if (!dt || !dt.columns || dt.columns.length === 0 || !dt.data || dt.data.length === 0) {
+      return [];
+    }
+    if (!_priFieldNamesLogged) {
+      _priFieldNamesLogged = true;
+      console.log('[solutions_nav] PRIORITIES_VIEW fieldNames:', dt.columns.map(function(c) { return c.fieldName; }));
+    }
+    var colIdx = {};
+    dt.columns.forEach(function(col, i) {
+      colIdx[normaliseFieldName(col.fieldName)] = i;
+    });
+    function getVal(row, key) {
+      var i = colIdx[key];
+      return i !== undefined ? row[i].value : null;
+    }
+    function getStr(row, key) {
+      var v = getVal(row, key);
+      return (v === null || v === undefined || v === '%null%' || v === 'Null') ? '' : String(v);
+    }
+    function getSev(row) {
+      var v = getVal(row, 'severity');
+      if (v === null || v === undefined || v === '%null%' || v === 'Null' || v === '') return null;
+      var n = Number(v);
+      return isNaN(n) ? null : n;
+    }
+    function getNum(row, key) {
+      var v = getVal(row, key);
+      if (v === null || v === undefined || v === '%null%' || v === 'Null' || v === '') return 0;
+      var n = Number(v);
+      return isNaN(n) ? 0 : n;
+    }
+    return dt.data.map(function(row) {
       return {
-        run_id:        String(r['run_id']        || ''),
-        business_id:   String(r['business_id']   || ''),
-        brand_name:    String(r['brand_name']     || ''),
-        solution_id:   String(r['solution_id']   || ''),
-        name:          String(r['name']           || ''),
-        description:   String(r['description']   || ''),
-        display_order: Number(r['display_order']) || 0,
-        tier:          Number(r['tier'])          || 3,
-        source:        String(r['source']         || ''),
-        menu_version:  String(r['menu_version']  || ''),
-        construct:     String(r['construct']      || ''),
-        image_url:     r['image_url'] ? String(r['image_url']) : '',
+        item_type:     getStr(row, 'item_type'),
+        item_id:       getStr(row, 'item_id'),
+        name:          getStr(row, 'name'),
+        description:   getStr(row, 'description'),
+        severity:      getSev(row),
+        dim_group:     getStr(row, 'dim_group'),
+        display_order: getNum(row, 'display_order'),
+        source:        getStr(row, 'source'),
+        run_id:        getStr(row, 'run_id'),
+        business_id:   getStr(row, 'business_id'),
+        brand_name:    getStr(row, 'brand_name'),
       };
     });
   }
@@ -570,10 +655,12 @@
       return;
     }
 
-    // Filter to current construct — carry-all-rows / filter-in-JS pattern (CHART_SPEC).
-    var shown = solutions.filter(function(s) { return s.construct === construct; });
+    // Filter to current construct + item_type='solution' — carry-all-rows / filter-in-JS (CHART_SPEC).
+    var shown = solutions.filter(function(s) {
+      return s.dim_group === construct && s.item_type === 'solution';
+    });
 
-    // Fixed display_order sort (never re-sort by tier)
+    // Fixed display_order sort (NEVER re-sort by severity/tier)
     shown = shown.slice().sort(function(a, b) { return a.display_order - b.display_order; });
 
     // No-data / empty-construct state
@@ -595,21 +682,26 @@
     // Insight lead paragraph — below Display title, above grid (STYLE_SPEC § Insight lead paragraph)
     html += renderInsightHtml(construct);
 
-    // Solution frame — fixed 3×2 scaffold + anchor col (STYLE_SPEC § Card-frame)
+    // Solution frame — fixed 4×2 scaffold + anchor col (STYLE_SPEC § Card-frame)
     html += '<div class="sol-frame">';
 
-    // Fixed 6 solution holding cells — fill from shown, remainder = empty
-    var SLOT_COUNT = 6;
+    // Fixed 8-cell scaffold (4 cols × 2 rows) — fill from shown in display_order; surplus = empty
+    var SLOT_COUNT = 8;
     for (var i = 0; i < SLOT_COUNT; i++) {
       var sol = shown[i];
       if (sol) {
-        var pillCls   = sol.tier === 1 ? 'sol-pill-t1' : sol.tier === 2 ? 'sol-pill-t2' : 'sol-pill-t3';
-        var pillLabel = sol.tier === 1 ? 'Essential' : sol.tier === 2 ? 'Important' : 'Optional';
+        // Pill only when severity not null — null = standard card, never coerced
+        var pillHtml = '';
+        if (sol.severity !== null && sol.severity !== undefined) {
+          var pillCls   = sol.severity === 1 ? 'sol-pill-t1' : sol.severity === 2 ? 'sol-pill-t2' : 'sol-pill-t3';
+          var pillLabel = sol.severity === 1 ? 'Essential' : sol.severity === 2 ? 'Important' : 'Optional';
+          pillHtml = '<span class="sol-pill ' + pillCls + '" style="flex-shrink:0">' + escHtml(pillLabel) + '</span>';
+        }
         html +=
           '<div class="sol-card" data-grouped-cell>' +
             '<div class="sol-card-header">' +
               '<div class="sol-name">' + escHtml(sol.name) + '</div>' +
-              '<span class="sol-pill ' + pillCls + '" style="flex-shrink:0">' + escHtml(pillLabel) + '</span>' +
+              pillHtml +
             '</div>' +
             '<div class="sol-desc">' + escHtml(sol.description) + '</div>' +
           '</div>';
@@ -618,7 +710,7 @@
       }
     }
 
-    // In Practice anchor — col 4, spans both rows; image inset 2px when available
+    // In Practice anchor — col 5, spans both rows; image inset 2px when available
     var imageUrl = shown.length && shown[0] && shown[0].image_url ? shown[0].image_url : '';
     var verdict  = escHtml(resolveInPracticeVerdict(brand, construct));
     var reading  = escHtml(resolveInPractice(brand, construct));
@@ -680,7 +772,7 @@
 
     // ── v8: 6 solution slots + anchor ──────────────────────────────────────
     var solSlots = frame.querySelectorAll('.sol-card, .sol-empty');
-    check('sol-v8-6-slots', solSlots.length === 6, solSlots.length + ' solution slot(s)');
+    check('sol-v8-8-slots', solSlots.length === 8, solSlots.length + ' solution slot(s)');
     var anchor = frame.querySelector('.in-practice-anchor');
     check('sol-v8-anchor-exists', anchor !== null);
 
@@ -775,25 +867,27 @@
     tableau.extensions.initializeAsync().then(function() {
       _dashboard = tableau.extensions.dashboardContent.dashboard;
       _construct = resolveConstruct();
-      _solutions = SAMPLE_SOLUTIONS;
+      _solutions = [];
 
-      // TODO §4 live-view wiring (HELD — pending engine §4 lock):
-      // When ready, replace the SAMPLE_SOLUTIONS line above with:
-      //   var ws = _dashboard.worksheets.find(function(w) {
-      //     return w.name === PRIORITIES_SHEET;
-      //   });
-      //   if (ws) {
-      //     ws.getSummaryDataAsync({ maxRows: 5000 }).then(function(dt) {
-      //       _solutions = adaptSolutionsView(dt.data.map(function(row) {
-      //         var obj = {};
-      //         dt.columns.forEach(function(col, i) { obj[col.fieldName] = row[i].value; });
-      //         return obj;
-      //       }));
-      //       render();
-      //     });
-      //   }
+      // Read PRIORITIES_VIEW — all rows; filter construct + item_type in JS (carry-all-rows).
+      var priWs = null;
+      var priSheets = _dashboard.worksheets;
+      for (var priI = 0; priI < priSheets.length; priI++) {
+        if (priSheets[priI].name === PRIORITIES_SHEET) { priWs = priSheets[priI]; break; }
+      }
+      if (priWs) {
+        priWs.getSummaryDataAsync({ maxRows: 5000 }).then(function(dt) {
+          _solutions = adaptPrioritiesData(dt);
+          render();
+        }).catch(function(err) {
+          console.warn('[solutions_nav] PRIORITIES_VIEW read error:', err);
+          render();
+        });
+      } else {
+        console.warn('[solutions_nav] PRIORITIES_VIEW sheet "' + PRIORITIES_SHEET + '" not found on dashboard');
+      }
 
-      // Initial render with what we have; async ops below trigger re-renders.
+      // Initial render with empty solutions; async read triggers re-render on arrival.
       render();
 
       // Resolve client brand from parameter; re-render on change.

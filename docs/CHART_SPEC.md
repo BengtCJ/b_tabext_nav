@@ -81,12 +81,14 @@ retired from Snowflake (a Config-tab generation candidate list only) and is neve
 extension.
 
 Render contract:
-- Cards in a FIXED display order — the menu's `display_order`, **snapshotted onto each PRIORITIES
-  row** and exposed by the view — never severity-sorted at the shelf level; order does not change
-  when severities change run-to-run. Within a construct: the **standard shelf** sorts by
-  `display_order`; the **prioritised top row** sorts by `severity` (1 first). See the
-  prioritised-vs-standard rule in Data sanity.
-- Fixed 6-cell scaffold: always render six solution holding cells. Fill with the construct's solutions in display_order; surplus cells render as empty holding cells (faint `--empty` fill), not omitted. (If re-decided to per-construct sizing, render exactly the construct's count with no empties.)
+- Cards render in a single scaffold, FIXED by `display_order` (snapshotted onto each PRIORITIES row,
+  exposed by the view) — never severity- or tier-sorted; order does not change when severities
+  change run-to-run. The priority pill (tier 1/2/3) shows INLINE on a card when its `severity` is not
+  null; standard cards (`severity` NULL) render with no pill. There is no separate severity-sorted
+  top row.
+- Fixed 8-cell scaffold: always render eight solution holding cells (4 columns × 2 rows). Fill with
+  the construct's solutions in `display_order`; the pool is 7, so typically one trailing cell renders
+  as an empty holding cell (faint `--empty` fill), not omitted. N-robust to pool size.
 - Each card: name + description (verbatim from the view) + one priority pill.
 - rationale NOT rendered (hidden from users).
 
@@ -100,10 +102,9 @@ Status semantics (solutions — deliberately distinct from problems):
 Data sanity (verify, don't eyeball):
 - Membership = **all** of the construct's `item_type='solution'` rows the view returns for this
   run + construct (matched on `dim_group`). The engine materialises the **whole service pool**
-  (~7 per construct), not a selected few, not a hardcoded count, and not a menu cross-check. The
-  brand-relevant subset is flagged by `severity IS NOT NULL` (rendered as the top row); the rest
-  are standard (`severity` NULL, the bottom shelf). The render stays N-robust regardless of pool
-  size.
+  (~7 per construct), not a selected few, not a hardcoded count, and not a menu cross-check. Cards
+  with `severity IS NOT NULL` carry an inline priority pill (tier 1/2/3); cards with `severity`
+  NULL are standard (no pill). The render stays N-robust regardless of pool size.
 - Each prioritised card's tier (the 1/2/3 pill) comes from the view's `severity` column
   (1 = highest); human-win ordering is already resolved view-side (`source` = human over llm).
   **Standard cards have `severity` NULL and render with no pill** — that NULL is the

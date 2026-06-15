@@ -487,14 +487,11 @@ defined for completeness but **not used on this surface** — see pink-accent ex
 Full dark RAG palette (for reference): `#e0584f` / `#e0992e` / `#57bf6a` (matching existing
 Scorecard RAG constants).
 
-### Grid (fixed 6-cell scaffold)
-
-Card grid renders solutions in `display_order` (fixed; never re-sorted by tier or any other
-field). Layout is a **fixed 3×2 scaffold** (3 solution columns × 2 rows) with one In Practice
-anchor column at right — always 4 columns, 2 rows. Always render six solution holding cells:
-fill from the construct's solutions in display_order; surplus cells render as empty holding
-cells (faint `--empty` fill, not omitted). The anchor spans both rows (grid-column 4,
-grid-row 1/3). `--gutter: 2px` is unchanged throughout.
+### Grid (fixed 8-cell scaffold)
+Fixed 4×2 scaffold — 4 solution columns × 2 rows = 8 cells — with one In Practice anchor column at
+right: 5 columns, 2 rows. The anchor spans both rows (grid-column 5, grid-row 1/3). Always render
+eight solution holding cells; fill from the construct's solutions in `display_order`; surplus cells
+render as empty holding cells (faint `--empty` fill, not omitted). `--gutter: 2px` throughout.
 
 ### Card-frame and cell layout
 
@@ -507,7 +504,7 @@ Solution name: Heading 18px, uppercase. Solution description: bottom-pinned (`ma
 and clamped (`-webkit-line-clamp`) — never overspills the cell.
 Forward navigation is a native Navigation object — no CTA rendered inside the card.
 
-**In Practice anchor** — ONE white, border-less card spanning both rows (grid-column 4,
+**In Practice anchor** — ONE white, border-less card spanning both rows (grid-column 5,
 grid-row 1/3). When a case-study image exists: image inset 2px from the card edge (the
 `--gutter`; inner radius nests = card radius − 2 = 6px) and sized to exactly one
 solution-card row (`calc((100% − var(--gutter)) / 2)`) at the top; text beneath fills
