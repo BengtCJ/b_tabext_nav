@@ -1,22 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest manifest-version="0.1" xmlns="http://www.tableau.com/xml/extension_manifest">
-  <dashboard-extension id="com.bengtcj.b-indicator-nav-examples" extension-version="2026.06.15">
+<manifest manifest-version="0.1"
+          xmlns="http://www.tableau.com/xml/extension_manifest">
+  <dashboard-extension id="com.brandscore.examples" extension-version="1.0.0">
     <default-locale>en_US</default-locale>
-    <name resource-id="name">BP Nav + Charts + Examples</name>
-    <description>Indicator navigation table with D3 charts and inline examples drawer. Click a row to open an in-place drawer showing the committed chart alongside qualitative case-study examples.</description>
-    <author name="BengtCJ" email="" organization="" website="https://bengtcj.github.io"/>
-    <min-api-version>1.4</min-api-version>
+    <name resource-id="name"/>
+    <description>Brand scorecard with case-study examples.</description>
+    <author name="Brand Scoring"
+            email=""
+            organization="Brand Scoring"
+            website="https://YOUR-USER.github.io/YOUR-REPO/"/>
+
+    <!-- Minimum dashboard-extensions API the code needs:
+         dashboardContent, worksheet.getSummaryDataAsync, getParametersAsync,
+         settings, ParameterChanged event — all available in 1.1+. -->
+    <min-api-version>1.1</min-api-version>
+
+    <!-- ▼▼▼ THE ONE FIELD YOU MUST SET ▼▼▼
+         Exact HTTPS URL of the hosted file on GitHub Pages.
+         If you replaced the old extension, this is …/index.html instead. -->
     <source-location>
-      <url>https://bengtcj.github.io/b_tabext_nav/index_examples.html</url>
+      <url>https://YOUR-USER.github.io/YOUR-REPO/index_examples.html</url>
     </source-location>
-    <icon>iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAF0lEQVQ4y2NgYGBg+E8GPgwMBBIHAAAkAAQAkJbGpQAAAABJRU5ErkJggg==</icon>
+
+    <!-- REQUIRED: the extension reads worksheet summary data
+         (getSummaryDataAsync). Without this permission Tableau blocks the
+         read and the grid stays on sample data. Triggers a one-time
+         "allow full data" consent dialog when the extension is first added. -->
     <permissions>
       <permission>full data</permission>
     </permissions>
   </dashboard-extension>
+
   <resources>
     <resource id="name">
-      <text locale="en_US">BP Nav + Charts + Examples</text>
+      <text locale="en_US">Brand Scorecard — Examples</text>
     </resource>
   </resources>
 </manifest>
