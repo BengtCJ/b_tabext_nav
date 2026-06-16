@@ -41,10 +41,20 @@ Key schema changes from the Phase-2A seed:
 - Per-brand indicators: ≥1 row per brand (5 brands) → `detectLayout` → `"strip"` at base coverage.
 - Market indicators (`tam`, `cagr`, `mcon`): exactly 1 `scope='category'` row each.
 
-**`loadExamples(runId, businessId)`** filters the flat array by `run_id` + `business_id`, groups by
-`indicator_id`, deduplicates latest-wins per `(indicator_id, brand, example_id)`, and returns the
-`indicator_id → [rows]` map the drawer consumes. Real-view swap = replace only its body.
+**`loadExamples(runId, businessId)`** groups ALL rows by `indicator_id`, deduplicates latest-wins per
+`(brand, example_id)`, and returns the `indicator_id → [rows]` map. **NOT filtered by `run_id` or
+`business_id`** — scoping is upstream (the view). A stale active `run_id` must not blank the seeded
+examples. Real-view swap = replace only the body of `loadExamples`.
 See `EXAMPLES_CONTRACT.md` for the full field list and swap notes.
+
+**`mergeExamples(indicators)`** replaces both formerly-duplicated merge blocks (preview + live path).
+Routes rows by `r.scope`: `'category'` → `ind.sources` + `ind.note`; anything else → `ind.examples`.
+Brand field maps from `r.brand` with fallback `|| r.business_id` for legacy rows.
+
+**Scope routing** is independent of `ind.kind`: a brand-kind indicator (e.g. `svt`) can have
+`scope='category'` rows that land in `ind.sources` (the shared comparison artifact). Render fallback:
+if `ind.examples` is empty but `ind.sources[0]` exists, `layStrip` renders the source via `laySource`
+instead of the "no example" empty state.
 
 ## Data layer
 

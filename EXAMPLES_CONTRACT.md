@@ -62,6 +62,13 @@ loadExamples(runId, businessId)
 
 ---
 
+## run_id scoping rule
+
+The static `EXAMPLES_DATA` is grouped/returned by `indicator_id` and is **NEVER** `run_id`-filtered; run
+scoping is upstream (the view) only. A stale active `run_id` must not blank the seeded examples.
+
+---
+
 ## Real-view swap
 
 When `SCORER_EXAMPLES_VIEW` is live, replace only the body of `loadExamples` with a `getSummaryDataAsync` call on that view, mapping its columns to the same flat row shape. The filter/group/latest-wins logic, `rowToExample`, `embedToMedia`, and all drawer code remain unchanged.
