@@ -3003,6 +3003,18 @@ var INDICATORS=[
     }
   ];
 
+// ─── INDICATOR DECIMALS ───────────────────────────────────────────────────
+// Decimal places for metric chart value labels — single source, mirrors index.html.
+var INDICATOR_DECIMALS = {
+  mcon: 0,
+  cagr: 1, tam: 1,
+  nps:  1, bt: 1, sop: 1, dvtr: 1, ba: 1,
+  svt:  2, vom: 2,
+  cra:  1,
+  bss: 0, sstsr: 0, eqr: 0, sov: 0, ebl: 0,
+};
+function indDec(id){ return INDICATOR_DECIMALS[id] !== undefined ? INDICATOR_DECIMALS[id] : 1; }
+
 // merge the examples layer onto the score/chart layer (joined by id)
 INDICATORS.forEach(function(ind){
   var rows = EXAMPLES_SEED[ind.id] || [];
@@ -3149,7 +3161,7 @@ function scaleFigma(ind, big){
     return '<div class="srow" data-brand="'+b+'" style="cursor:pointer"><div class="snm" style="color:'+nmCol+';width:'+nmw+'px;font-size:'+nf+'px">'+esc(BNAME[b])+'</div>'
       + '<div class="strack" style="height:'+th+'px"><div class="stick" style="left:0%"></div><div class="stick" style="left:25%"></div><div class="stick" style="left:50%"></div><div class="stick" style="left:75%"></div><div class="stick" style="left:100%"></div>'
       + '<div class="sdot" style="left:'+pct.toFixed(1)+'%;background:'+dotCol+';width:'+dsz+'px;height:'+dsz+'px;top:'+dtop+'px;transform:translateX(-'+(dsz/2)+'px)"></div></div>'
-      + '<div class="sval" style="color:'+valCol+';font-size:'+vf+'px">'+v.toFixed(1)+'</div></div>';
+      + '<div class="sval" style="color:'+valCol+';font-size:'+vf+'px">'+v.toFixed(indDec(ind.id))+'</div></div>';
   }).join("")+'</div>';
 }
 function treemap(ind, big){
@@ -3160,7 +3172,7 @@ function treemap(ind, big){
     var frac=vals[b]/total, w=frac*W, isC=b===CLIENT, isSel=b===selectedBrand;
     var fill=isC?ROSE:(isSel?"#3a3a3a":"#1c1c1c"), stroke=isSel?"#ededed":(isC?ROSE:"#2a2a2a"), tc=isC?"#000":(isSel?"#ededed":"#9a9a9a");
     var g='<g data-brand="'+b+'" style="cursor:pointer"><rect x="'+x.toFixed(1)+'" y="0" width="'+Math.max(2,w-2).toFixed(1)+'" height="'+H+'" rx="6" fill="'+fill+'" stroke="'+stroke+'" stroke-width="'+(isSel?2:1)+'"/>'
-      + (w>52?'<text x="'+(x+9)+'" y="'+(big?26:22)+'" font-family="'+SANS+'" font-size="'+nf+'" fill="'+tc+'">'+esc(BNAME[b])+'</text><text x="'+(x+9)+'" y="'+(big?56:46)+'" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+tc+'">'+vals[b]+'</text>':'')+'</g>';
+      + (w>52?'<text x="'+(x+9)+'" y="'+(big?26:22)+'" font-family="'+SANS+'" font-size="'+nf+'" fill="'+tc+'">'+esc(BNAME[b])+'</text><text x="'+(x+9)+'" y="'+(big?56:46)+'" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+tc+'">'+vals[b].toFixed(indDec(ind.id))+'</text>':'')+'</g>';
     x+=w; return g;
   }).join("");
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+cells+'</svg>';
@@ -3171,12 +3183,13 @@ function lineStraight(ind, big){
   var W=big?660:400, H=big?262:210, padL=14, padR=big?56:44, padT=big?22:16, padB=big?34:28, plotH=H-padT-padB;
   var top=Math.max(maxV,0),bot=Math.min(minV,0),rng=(top-bot)||1, zeroY=padT+(top/rng)*plotH;
   var n=BRANDS.length, slot=(W-padL-padR)/n, bw=slot*(big?0.52:0.5), vf=big?18:14, lf=big?12:10, parts=[];
+  var dec=indDec(ind.id);
   if(hasNeg) parts.push('<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+zeroY.toFixed(1)+'" y2="'+zeroY.toFixed(1)+'" stroke="#2a2a2a"/>');
   BRANDS.forEach(function(b,i){
     var v=vals[b], isC=b===CLIENT, isSel=b===selectedBrand, cx=padL+slot*i+slot/2, h=Math.abs(v)/rng*plotH, y=v>=0?zeroY-h:zeroY;
     var fill=isC?ROSE:(isSel?"#ededed":"#4f4f4f"), vy=v>=0?y-8:y+h+(big?18:13), nm=BNAME[b]; if(nm.length>9) nm=nm.slice(0,8)+"…";
     parts.push('<rect data-brand="'+b+'" x="'+(cx-bw/2).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(2,h).toFixed(1)+'" rx="3" fill="'+fill+'" style="cursor:pointer"/>');
-    parts.push('<text x="'+cx.toFixed(1)+'" y="'+vy.toFixed(1)+'" text-anchor="middle" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+(isC?ROSE:"#ededed")+'">'+v+'</text>');
+    parts.push('<text x="'+cx.toFixed(1)+'" y="'+vy.toFixed(1)+'" text-anchor="middle" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+(isC?ROSE:"#ededed")+'">'+v.toFixed(dec)+'</text>');
     parts.push('<text x="'+cx.toFixed(1)+'" y="'+(H-(big?12:10))+'" text-anchor="middle" font-family="'+SANS+'" font-size="'+lf+'" fill="'+(isSel?(isC?ROSE:"#ededed"):(isC?ROSE:"#9a9a9a"))+'">'+esc(nm)+'</text>');
     if(isSel) parts.push('<rect x="'+(cx-10)+'" y="'+(H-(big?6:5))+'" width="20" height="3" rx="1.5" fill="'+(isC?ROSE:"#ededed")+'"/>');
   });
@@ -3185,23 +3198,23 @@ function lineStraight(ind, big){
 function hbar(ind, big){
   var vals=ind.metric.vals, max=Math.max.apply(null,BRANDS.map(function(b){return vals[b];}));
   var rowH=big?40:28, gap=big?16:10, padL=big?100:86, padR=big?48:40, W=big?620:380, H=BRANDS.length*(rowH+gap);
-  var nf=big?13:11, vf=big?19:15;
+  var nf=big?13:11, vf=big?19:15, dec=indDec(ind.id);
   var bars=BRANDS.map(function(b,i){
     var v=vals[b], isC=b===CLIENT, isSel=b===selectedBrand, y=i*(rowH+gap), bw=Math.max(2,(v/max)*(W-padL-padR)), fill=isC?ROSE:(isSel?"#ededed":"#4f4f4f");
     return '<text x="'+(padL-9)+'" y="'+(y+rowH/2+4)+'" text-anchor="end" font-family="'+SANS+'" font-size="'+nf+'" fill="'+(isSel?(isC?ROSE:"#ededed"):(isC?ROSE:"#9a9a9a"))+'">'+esc(BNAME[b])+'</text>'
       + '<rect data-brand="'+b+'" x="'+padL+'" y="'+y+'" width="'+bw.toFixed(1)+'" height="'+rowH+'" rx="3" fill="'+fill+'" style="cursor:pointer"/>'
-      + '<text x="'+(padL+bw+8)+'" y="'+(y+rowH/2+5)+'" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+(isC?ROSE:"#ededed")+'">'+v+'</text>';
+      + '<text x="'+(padL+bw+8)+'" y="'+(y+rowH/2+5)+'" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+(isC?ROSE:"#ededed")+'">'+v.toFixed(dec)+'</text>';
   }).join("");
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+bars+'</svg>';
 }
 function vbar(ind, big){
   var vals=ind.metric.vals, max=Math.max.apply(null,BRANDS.map(function(b){return vals[b];}));
   var W=big?660:400, H=big?262:210, padX=14, padT=big?26:20, padB=big?34:30, plotH=H-padT-padB, n=BRANDS.length, slot=(W-2*padX)/n, bw=slot*(big?0.56:0.5), baseY=H-padB;
-  var vf=big?19:15, lf=big?12:10;
+  var vf=big?19:15, lf=big?12:10, dec=indDec(ind.id);
   var bars=BRANDS.map(function(b,i){
     var v=vals[b], isC=b===CLIENT, isSel=b===selectedBrand, cx=padX+slot*i+slot/2, h=(v/max)*plotH, y=baseY-h, fill=isC?ROSE:(isSel?"#ededed":"#4f4f4f"), nm=BNAME[b]; if(nm.length>9) nm=nm.slice(0,8)+"…";
     return '<rect data-brand="'+b+'" x="'+(cx-bw/2).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(2,h).toFixed(1)+'" rx="3" fill="'+fill+'" style="cursor:pointer"/>'
-      + '<text x="'+cx.toFixed(1)+'" y="'+(y-8).toFixed(1)+'" text-anchor="middle" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+(isC?ROSE:"#ededed")+'">'+v+'</text>'
+      + '<text x="'+cx.toFixed(1)+'" y="'+(y-8).toFixed(1)+'" text-anchor="middle" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+(isC?ROSE:"#ededed")+'">'+v.toFixed(dec)+'</text>'
       + '<text x="'+cx.toFixed(1)+'" y="'+(H-(big?12:10))+'" text-anchor="middle" font-family="'+SANS+'" font-size="'+lf+'" fill="'+(isSel?(isC?ROSE:"#ededed"):(isC?ROSE:"#9a9a9a"))+'">'+esc(nm)+'</text>'
       + (isSel?'<rect x="'+(cx-10)+'" y="'+(H-(big?6:5))+'" width="20" height="3" rx="1.5" fill="'+(isC?ROSE:"#ededed")+'"/>':'');
   }).join("");
