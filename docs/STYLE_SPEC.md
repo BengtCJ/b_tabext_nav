@@ -302,6 +302,51 @@ reading) fills the card height; no ranges-disclaimer.
 **States** — too-small and no-data inherited from the shared rules; band-less is a normal render,
 not a degraded state. Validate at `1421 × 773` and at the host `1600 × 900` (PowerPoint).
 
+## Scale-figma (Likert) chart
+
+The `scale-figma` renderer is the Likert default for `bt`/`nps`/`sop`/`dvtr` (CHART_SPEC). It must
+**fill its pane at any height** — the brand rows are equal vertical bands, never floating mid-pane.
+
+**Fill mechanism (the fix — state it exactly).** The chart root flexes to fill the pane; rows are
+equal flex bands. **No fixed chart height anywhere.**
+
+```
+.scalefig { height:100%; display:flex; flex-direction:column; }   /* fills the pane */
+.sf-rows  { flex:1; display:flex; flex-direction:column; min-height:0; }
+.sf-row   { flex:1; }                                             /* equal bands → fills any height */
+```
+
+If the chart still doesn't fill, the bug is an ancestor without height (the `height:100%` chain
+breaks) — fix the ancestor (the pane is height-resolved by EX-W10); **do not** give the chart a
+fixed px height or re-introduce vertical centring.
+
+**Layout (pinned — tier order)**
+
+1. **Presence:** every brand row = label + track + dot + value; one shared `1–5` axis under the
+   track column.
+2. **Placement:** client (Illy) row forced to top; columns `92px | 1fr | 50px` (label | track |
+   value); label right-justified in its column, value right-justified; dot x =
+   `((v − 1) / (5 − 1)) × 100%` of the track; axis integers placed by the same formula so they sit
+   under the tick they label; integer ticks at 1–5.
+3. **Proportion:** rows are equal flex bands (above). Client dot slightly larger (16px vs 14px) for
+   emphasis.
+4. **Spacing (4px grid):** pane padding `16px` vertical / `24px` horizontal; column-gap `16px`;
+   tick height `8px`. All multiples of 4.
+5. **Colour:** baseline line neutral `#343434`, ticks `#2a2a2a`, comparator dot `#7c7c7c` (2px
+   `#161616` border to lift off the line); client dot `#e994a2` + a soft pink ring
+   (`0 0 0 4px rgba(233,148,162,.16)`). Label: client `#e994a2`, comparators `#cfcfcf`. Value:
+   client `#e994a2`, comparators `#ededed`. The client pink is the guaranteed accent (CHART_SPEC).
+6. **Format:** value = **Value-numeral** role — Baskerville italic 24px, 1 decimal
+   (`INDICATOR_DECIMALS` for the Likert metrics), no `/5` per value. Brand labels = Tableau Light,
+   UPPERCASE — **Label** role 14px (corrects the live screenshot's title-case; the work-order prose
+   said 13px, reconciled here to the Label token, since brand names are Label/14px per § Type roles
+   and no off-role size is permitted). Axis numerals + the `mean · /5` caption = **Caption** 11px.
+   The caption is the scale reminder only — the indicator name is **not** repeated here (it lives in
+   the drawer header).
+7. **States:** below the min pane height → the chart's too-small state (don't crush the bands);
+   no-data → no-data state. Layout is **N-robust** (works for the metric's brand set, not hardcoded
+   to 5) and holds in both the narrower split pane and the full chart pane.
+
 ## Detail page header (above the card — extension-rendered)
 The page-level header that sits in the **transparent area above the card**, left-aligned
 to the card edge. **Distinct from** the Scorecard "Title block" (the `BULLETPROOF` SVG
