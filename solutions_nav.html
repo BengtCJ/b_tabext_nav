@@ -99,6 +99,15 @@
       flex-direction: column;
     }
 
+    .sol-card-label {
+      font-size: 11px;   /* Caption */
+      font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
+      color: var(--t3-color);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: var(--sp-tight);
+    }
+
     /* header row: name left, pill right */
     .sol-card-header {
       display: flex;
@@ -699,6 +708,7 @@
         }
         html +=
           '<div class="sol-card" data-grouped-cell>' +
+            '<div class="sol-card-label">POW / ACTION</div>' +
             '<div class="sol-card-header">' +
               '<div class="sol-name">' + escHtml(sol.name) + '</div>' +
               pillHtml +
