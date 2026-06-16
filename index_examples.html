@@ -27,10 +27,12 @@
   .demo-note kbd { font-family:var(--f-body); color:var(--t3); background:#1a1a1a; border:1px solid #2a2a2a; border-radius:4px; padding:1px 6px; font-size:10px; }
   .demo-note b { color:var(--t3); font-weight:400; }
 
-  #ex-root { width:100%; height:100%; background:var(--card); overflow:hidden; position:relative; border-radius:16px; transform:translateZ(0); }
+  #ex-root { width:100%; height:100%; background:transparent; overflow:hidden; position:relative; }
+  #tv-inner { position:relative; background:var(--card); border-radius:10px; }
   html.demo-mode, body.demo-mode { overflow:auto; height:auto; }
   body.demo-mode { background:#050505; }
-  body.demo-mode #ex-root { height:684px; border:1px solid var(--frame-border); }
+  body.demo-mode #ex-root { height:684px; }
+  body.demo-mode #tv-inner { border:1px solid var(--frame-border); }
   .stage { height:100%; overflow-y:auto; padding:0; }
   .stage::-webkit-scrollbar { width:10px; } .stage::-webkit-scrollbar-thumb { background:#222; border-radius:5px; border:2px solid var(--card); }
 
@@ -245,7 +247,6 @@
 </head>
 <body>
 <div id="ex-root">
-<div id="ver-badge"></div>
   <div class="stage" id="stage">
     <div id="tv-inner">
       <div class="detail-header" id="detailHeader" style="display:none">
@@ -253,6 +254,7 @@
         <div class="dh-q" id="dhQ"></div>
       </div>
       <div class="scorecard" id="scorecard"></div>
+      <div id="ver-badge"></div>
     </div>
   </div>
 </div>
@@ -571,7 +573,7 @@ var EXAMPLES_DATA=[
   document.body.classList.add('demo-mode');
 })();
 
-var VERSION='2026-06-16.24';
+var VERSION='2026-06-16.25';
 var CLIENT="ILLY";
 var BRANDS=["ILLY","NESPRESSO","STARBUCKS","PEETS","LAVAZZA"];
 var BNAME={ILLY:"Illycaffè",NESPRESSO:"Nespresso",STARBUCKS:"Starbucks",PEETS:"Peet's",LAVAZZA:"Lavazza"};
