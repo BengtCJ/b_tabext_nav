@@ -1,0 +1,3351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Examples extension — PoC (real embeds, schema-shaped seed)</title>
+<script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
+<style>
+  :root {
+    --card:#0d0d0d;  --frame-border:#262626;
+    --cell:#242424;  --cell-client:#484848;  --client:#e994a2;
+    --divider:#1e1e1e;  --row-sel-bg:#1c1c1c;
+    --t1:#ededed; --t2:#cfcfcf; --t3:#a4a4a4; --t4:#808080; --t5:#666; --t6:#555;
+    --green:#57bf6a; --red:#e0584f; --amber:#e0992e;
+    --f-title:'Baskerville','Libre Baskerville',Georgia,serif;
+    --f-body:'Tableau Regular','Helvetica Neue',Arial,sans-serif;
+    --f-light:'Tableau Light','Helvetica Neue',Arial,sans-serif;
+    --tx:240ms; --ease:cubic-bezier(.4,0,.2,1);
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; padding:0; background:#050505; color:var(--t1); font-family:var(--f-body); }
+
+  .demo-wrap { max-width:1120px; margin:0 auto; padding:28px 24px 60px; }
+  .demo-cap { font-family:var(--f-light); font-size:12px; color:var(--t5); letter-spacing:.04em; margin:0 4px 8px; }
+  .demo-cap b { color:var(--t3); font-family:var(--f-body); font-weight:400; }
+  .demo-note { font-family:var(--f-light); font-size:11px; color:var(--t6); margin:14px 4px 0; line-height:1.7; }
+  .demo-note kbd { font-family:var(--f-body); color:var(--t3); background:#1a1a1a; border:1px solid #2a2a2a; border-radius:4px; padding:1px 6px; font-size:10px; }
+  .demo-note b { color:var(--t3); font-weight:400; }
+
+  .obj { height:684px; background:var(--card); border:1px solid var(--frame-border); border-radius:16px; overflow:hidden; position:relative; }
+  .stage { height:100%; overflow-y:auto; padding:18px; }
+  .stage::-webkit-scrollbar { width:10px; } .stage::-webkit-scrollbar-thumb { background:#222; border-radius:5px; border:2px solid var(--card); }
+
+  .detail-header { overflow:hidden;
+    transition:opacity var(--tx) var(--ease), transform var(--tx) var(--ease), max-height var(--tx) var(--ease), margin var(--tx) var(--ease);
+    max-height:240px; margin-bottom:16px; }
+  .stage.focus .detail-header { opacity:0; transform:translateY(-12px); max-height:0; margin-bottom:0; pointer-events:none; }
+  .dh-title { font-family:var(--f-body); font-size:44px; line-height:1; text-transform:uppercase; letter-spacing:-.01em; }
+  .dh-q { font-family:var(--f-light); font-size:17px; line-height:1.3; margin-top:10px; max-width:680px; }
+
+  .scorecard { display:flex; flex-direction:column; gap:2px; }
+  .sc-row { display:grid; gap:2px; align-items:stretch; cursor:pointer;
+            transition:max-height var(--tx) var(--ease), opacity var(--tx) var(--ease), margin var(--tx) var(--ease); max-height:120px; }
+  .sc-row.header { cursor:default; }
+  .stage.focus .sc-row.collapse { max-height:0; opacity:0; margin:0; pointer-events:none; overflow:hidden; }
+
+  .hc { padding:11px 10px; display:flex; flex-direction:column; gap:5px; border-radius:8px; min-width:0; }
+  .hc.lab { background:transparent; }
+  .hc.comp { background:#161616; }
+  .hc.client { background:var(--client); }
+  .hc .wm { font-family:var(--f-title); font-style:italic; font-size:19px; color:var(--t2); }
+  .hc .stype { font-family:var(--f-light); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--t5); }
+  .hc .bn { font-family:var(--f-body); font-size:14px; color:var(--t2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .hc.client .bn { color:#000; }
+  .hc .hs { font-family:var(--f-title); font-style:italic; font-size:22px; color:var(--t2); }
+  .hc.client .hs { color:#000; font-size:26px; }
+  .hc .hs .suf { font-size:.5em; }
+
+  .lab-cell { background:var(--cell); padding:10px 12px; display:flex; align-items:center; gap:10px;
+              border-left:3px solid transparent; border-radius:8px; transition:background .14s, border-color .14s; }
+  .sc-row:not(.header):hover .lab-cell { background:#2a2a2a; }
+  .lab-in { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+  .ind-name { font-family:var(--f-title); font-style:italic; font-size:16px; color:var(--t1); line-height:1.15; }
+  .ind-src  { font-family:var(--f-light); font-size:11px; color:var(--t4); }
+
+  /* more-info / less-info pill with arrow */
+  .ex-pill { flex-shrink:0; appearance:none; border:1px solid #333; background:#1c1c1c; border-radius:7px;
+             display:inline-flex; align-items:center; gap:7px; padding:5px 10px; cursor:pointer; color:var(--t3);
+             font-family:var(--f-light); font-size:10px; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap;
+             transition:background .14s, color .14s, border-color .14s; }
+  .sc-row:hover .ex-pill { background:#262626; color:var(--t1); border-color:#444; }
+  .ex-pill .chev { font-size:9px; transition:transform .22s var(--ease); display:inline-block; }
+  .sc-row.promoted .ex-pill { background:var(--client); border-color:var(--client); color:#000; }
+  .sc-row.promoted .ex-pill .chev { transform:rotate(180deg); }
+
+  .score-cell { padding:10px 10px; display:flex; align-items:center; border-radius:8px;
+                transition:background .14s, box-shadow .14s, padding .2s var(--ease); }
+  .score-cell.comp   { background:var(--cell); }
+  .score-cell.client { background:var(--cell-client); }
+  .sc-val { font-family:var(--f-title); font-style:italic; font-size:21px; transition:font-size .2s var(--ease); }
+  .score-cell.client .sc-val { font-size:26px; }
+  .sc-val .suf { font-size:.5em; color:#7c7c7c; }
+  .cell-brand { display:none; font-family:var(--f-light); font-size:9px; letter-spacing:.03em; color:var(--t5);
+                white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+
+  /* promoted (sticky header) — keeps SCORES, adds brand names, lights selected */
+  .sc-row.promoted { position:sticky; top:0; z-index:20; background:var(--card); max-height:none; }
+  .sc-row.promoted .lab-cell { background:var(--row-sel-bg); border-left-color:var(--client); }
+  .sc-row.promoted .hc { padding-top:8px; padding-bottom:8px; }
+  .sc-row.promoted .score-cell { flex-direction:column; align-items:flex-start; justify-content:center; gap:2px; padding:7px 10px; }
+  .sc-row.promoted .score-cell .cell-brand { display:block; }
+  .sc-row.promoted .score-cell.client .cell-brand { color:#000; opacity:.65; }
+  .sc-row.promoted .sc-val { font-size:18px; }
+  .sc-row.promoted .score-cell.client .sc-val { font-size:20px; }
+  .score-cell.sel { box-shadow:0 0 0 2px var(--client) inset; }
+  .score-cell.client.sel { box-shadow:0 0 0 2px #fff inset; }
+
+  .drawer { grid-column:1 / -1; overflow:hidden; max-height:0; opacity:0; cursor:default;
+            transition:max-height var(--tx) var(--ease), opacity var(--tx) var(--ease); }
+  .drawer.open { opacity:1; }
+  .drawer-inner { background:#0c0c0c; border:1px solid var(--divider); border-radius:10px; margin-top:2px; overflow:hidden; }
+
+  .drawer-tb { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:10px; padding:9px 12px; background:#0c0c0c; border-bottom:1px solid var(--divider); }
+  .seg { display:flex; background:#111; border-radius:8px; padding:3px; gap:2px; }
+  .seg button { appearance:none; border:none; height:26px; padding:0 12px; font-size:10px; font-family:var(--f-light); letter-spacing:.1em; text-transform:uppercase; cursor:pointer; background:transparent; color:#555; border-radius:6px; transition:background .14s, color .14s; }
+  .seg button.active { background:#2e2e2e; color:var(--t1); box-shadow:0 1px 2px rgba(0,0,0,.5); }
+  .tb-meta { margin-left:auto; display:flex; align-items:center; gap:12px; }
+  .sel-pill { font-family:var(--f-light); font-size:10px; letter-spacing:.04em; color:var(--t4); display:flex; align-items:center; gap:6px; }
+  .sel-pill .sw { width:8px; height:8px; border-radius:2px; }
+  .sel-pill b { font-family:var(--f-body); font-weight:400; color:var(--t2); }
+  .chart-chip { font-family:var(--f-light); font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--t5); }
+  .chart-chip b { color:var(--t3); font-family:var(--f-body); font-weight:400; }
+
+  .drawer-body { display:grid; height:356px; }
+  .drawer-body.mode-split    { grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr); }
+  .drawer-body.mode-chart    { grid-template-columns:1fr; }
+  .drawer-body.mode-examples { grid-template-columns:1fr; }
+
+  .pane-chart { padding:14px 16px 12px; border-right:1px solid var(--divider); min-width:0; display:flex; flex-direction:column; overflow:hidden; }
+  .mode-chart .pane-chart, .mode-examples .pane-chart { border-right:none; }
+  .pane-chart .ttl { font-family:var(--f-light); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--t5); margin-bottom:3px; flex-shrink:0; }
+  .pane-chart .sub { font-family:var(--f-light); font-size:10px; color:var(--t6); margin-bottom:10px; flex-shrink:0; }
+  .pane-chart .plot { flex:1; min-height:0; position:relative; }
+  .pane-chart svg { width:100%; height:100%; display:block; overflow:visible; }
+
+  .ban-ed { height:100%; display:flex; flex-direction:column; justify-content:center; gap:14px; }
+  .ban-ed .hero { font-family:var(--f-title); font-style:italic; font-size:54px; line-height:.92; color:var(--t1); }
+  .ban-ed .hero .u { font-size:.42em; color:var(--t4); }
+  .ban-ed .cap { font-family:var(--f-light); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--t5); margin-top:7px; }
+  .ban-ed .second { font-family:var(--f-title); font-style:italic; font-size:28px; color:var(--t3); }
+  .ban-ed .second .u { font-size:.5em; color:var(--t5); }
+
+  .scale { height:100%; display:flex; flex-direction:column; justify-content:center; gap:10px; }
+  .scale .srow { display:flex; align-items:center; gap:10px; }
+  .scale .snm { font-family:var(--f-light); font-size:11px; width:72px; text-align:right; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .scale .strack { position:relative; flex:1; height:8px; background:#1a1a1a; border-radius:999px; }
+  .scale .stick { position:absolute; top:-3px; width:2px; height:14px; background:#262626; border-radius:2px; }
+  .scale .sdot { position:absolute; top:-3px; width:14px; height:14px; border-radius:50%; transform:translateX(-7px); border:2px solid #0c0c0c; }
+  .scale .sval { font-family:var(--f-title); font-style:italic; font-size:15px; width:30px; flex-shrink:0; }
+
+  .media { position:relative; border:1px solid var(--frame-border); border-radius:8px; overflow:hidden; background:#000; }
+  .media.hero::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--client); z-index:2; }
+  .media iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+  .phm { position:absolute; inset:0; display:flex; flex-direction:column; gap:5px; align-items:center; justify-content:center; text-align:center; padding:10px;
+         background:repeating-linear-gradient(135deg,#1b1b1b,#1b1b1b 9px,#161616 9px,#161616 18px); font-family:var(--f-light); font-size:10px; color:var(--t6); }
+  .phm .ic { font-size:20px; opacity:.5; }
+  .thumb-ph { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
+  .thumb-ph .ph-glyph { width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.13);
+                        display:flex; align-items:center; justify-content:center; font-size:14px; color:#d7d7d7; }
+  .thumb-ph .ph-glyph.c { background:rgba(233,148,162,.16); border-color:rgba(233,148,162,.4); color:var(--client); }
+  .thumb-ph .ph-cap { font-family:var(--f-light); font-size:9px; color:var(--t4); letter-spacing:.03em; max-width:88%; text-align:center;
+                      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .web { position:absolute; inset:0; display:grid; grid-template-columns:104px 1fr; background:#161616; text-decoration:none; }
+  .web .thumb { background:linear-gradient(135deg,#3a2a30,#161616 70%); display:flex; align-items:flex-end; padding:8px; }
+  .web .thumb span { font-family:var(--f-light); font-size:9px; color:#9a8a90; }
+  .web .meta { padding:11px 13px; overflow:hidden; }
+  .web .src { font-family:var(--f-light); font-size:10px; color:var(--client); }
+  .web .t { font-family:var(--f-body); font-size:12px; margin:3px 0; line-height:1.3; }
+  .web .d { font-family:var(--f-light); font-size:11px; color:var(--t3); line-height:1.35; }
+  .trends { position:absolute; inset:0; background:#121212; }
+  .trends .tbadge { position:absolute; top:7px; left:9px; font-family:var(--f-light); font-size:9px; color:var(--t3); background:rgba(0,0,0,.55); padding:2px 7px; border-radius:4px; z-index:2; }
+  .trends svg { position:absolute; inset:0; width:100%; height:100%; }
+
+  .pane-ex { padding:12px 14px; min-width:0; display:flex; flex-direction:column; overflow:hidden; }
+  .ex-frame { display:flex; align-items:center; gap:8px; margin-bottom:9px; flex-shrink:0; }
+  .src-badge { font-family:var(--f-light); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--t2); background:#222; border-radius:999px; padding:2px 8px; }
+  .ex-illnote { font-family:var(--f-light); font-size:10px; color:var(--t5); font-style:italic; }
+  .lay { flex:1; min-height:0; display:flex; flex-direction:column; }
+  .hline { display:flex; align-items:center; gap:8px; margin-bottom:7px; flex-shrink:0; }
+  .hbrand { font-family:var(--f-body); font-size:14px; color:var(--t1); }
+  .role-tag { font-family:var(--f-light); font-size:10px; color:var(--t2); background:#2a2a2a; border-radius:999px; padding:2px 8px; }
+  .role-tag.client { color:#000; background:var(--client); }
+  .role-tag.exemplar { color:#000; background:#cfcfcf; }
+  .lay .media { flex:1; min-height:0; }
+  .own { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; flex-shrink:0; }
+  .own .chip { display:inline-flex; align-items:baseline; gap:4px; background:#1a1a1a; border:1px solid #242424; border-radius:6px; padding:3px 8px; }
+  .own .chip .v { font-family:var(--f-body); font-size:11px; color:var(--t2); }
+  .own .chip .k { font-family:var(--f-light); font-size:10px; color:var(--t5); }
+  .react { font-family:var(--f-body); font-size:11.5px; color:var(--t3); line-height:1.42; margin-top:8px; flex-shrink:0;
+           display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .react .l { font-family:var(--f-light); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--t6); display:block; margin-bottom:2px; }
+  .brand-strip { display:flex; gap:6px; overflow-x:auto; margin-top:9px; padding-bottom:2px; flex-shrink:0; }
+  .brand-strip::-webkit-scrollbar { height:5px; } .brand-strip::-webkit-scrollbar-thumb { background:#222; border-radius:3px; }
+  .bt2 { flex:0 0 auto; appearance:none; border:1px solid #262626; background:#161616; border-radius:7px; padding:5px 9px; cursor:pointer; display:flex; flex-direction:column; gap:1px; min-width:82px; transition:border-color .14s; }
+  .bt2:hover { border-color:#3a3a3a; }
+  .bt2[aria-current="true"] { border-color:var(--client); box-shadow:0 0 0 1px var(--client) inset; }
+  .bt2 .n { font-family:var(--f-body); font-size:11px; color:var(--t2); white-space:nowrap; }
+  .bt2.client .n { color:var(--client); }
+  .bt2 .s { font-family:var(--f-light); font-size:9px; color:var(--t5); white-space:nowrap; }
+  .bt2.empty .s { color:#444; font-style:italic; }
+  .no-art { flex:1; min-height:0; display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center; text-align:center; border:1px dashed #2a2a2a; border-radius:8px; }
+  .no-art .h { font-family:var(--f-body); font-size:12px; color:var(--t3); }
+  .no-art .d { font-family:var(--f-light); font-size:11px; color:var(--t6); max-width:250px; line-height:1.4; }
+  .market-note { font-family:var(--f-light); font-size:11px; color:var(--t5); font-style:italic; line-height:1.5; margin-top:9px; flex-shrink:0; }
+
+  /* CAROUSEL — one brand, many examples */
+  .lay-car { flex:1; min-height:0; display:flex; flex-direction:column; }
+  .lay-car .media { flex:1; min-height:0; }
+  .lay-car .cap { font-family:var(--f-light); font-size:11px; color:var(--t4); margin-top:7px; line-height:1.4; flex-shrink:0;
+                  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .filmstrip { display:flex; gap:7px; overflow-x:auto; margin-top:9px; padding-bottom:3px; flex-shrink:0; }
+  .filmstrip::-webkit-scrollbar { height:5px; } .filmstrip::-webkit-scrollbar-thumb { background:#222; border-radius:3px; }
+  .fthumb { flex:0 0 110px; appearance:none; border:1px solid #262626; background:#161616; border-radius:7px; overflow:hidden; cursor:pointer; padding:0; transition:border-color .14s; }
+  .fthumb:hover { border-color:#3a3a3a; }
+  .fthumb[aria-current="true"] { border-color:var(--client); box-shadow:0 0 0 1px var(--client) inset; }
+  .fthumb .ft-t { aspect-ratio:16/9; position:relative; }
+  .fthumb .ft-c { padding:4px 7px; font-family:var(--f-light); font-size:9px; color:var(--t4); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left; }
+
+  /* GRID — 7-12 examples across brands */
+  .ex-grid { flex:1; min-height:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); grid-auto-rows:min-content; gap:8px; overflow:hidden; align-content:start; }
+  .gcard { border:1px solid #232323; background:#151515; border-radius:9px; overflow:hidden; display:flex; flex-direction:column; cursor:pointer; transition:border-color .14s, opacity .14s; }
+  .gcard.dim { opacity:.4; }
+  .gcard.hit { border-color:var(--client); box-shadow:0 0 0 1px var(--client) inset; opacity:1; }
+  .gcard .gt { aspect-ratio:16/9; position:relative; }
+  .gcard .gb { padding:6px 9px; display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .gcard .gbrand { font-family:var(--f-body); font-size:11px; color:var(--t2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .gcard.client .gbrand { color:var(--client); }
+  .gcard .gstat { font-family:var(--f-light); font-size:10px; color:var(--t5); white-space:nowrap; flex-shrink:0; }
+  .gmore { border:1px dashed #2a2a2a; border-radius:9px; display:flex; align-items:center; justify-content:center; font-family:var(--f-light); font-size:11px; color:var(--t5); min-height:70px; }
+
+  /* MOSAIC — many brands × many examples */
+  .lay-mos { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+  .mos-head { display:flex; align-items:baseline; gap:10px; margin-bottom:8px; flex-shrink:0; }
+  .mos-head .big { font-family:var(--f-title); font-style:italic; font-size:28px; color:var(--t1); }
+  .mos-head .lab { font-family:var(--f-light); font-size:11px; color:var(--t4); }
+  .mosaic { flex:1; min-height:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); grid-auto-rows:72px; gap:5px; overflow:hidden; align-content:start; }
+  .mtile { border:1px solid #202020; border-radius:6px; overflow:hidden; position:relative; cursor:pointer; transition:opacity .14s, border-color .14s; }
+  .mtile.dim { opacity:.3; }
+  .mtile.hit { border-color:var(--client); box-shadow:0 0 0 1px var(--client) inset; opacity:1; }
+  .mtile .mt-lab { position:absolute; left:0; right:0; bottom:0; padding:2px 5px; font-family:var(--f-light); font-size:8px; color:var(--t3); background:linear-gradient(transparent,rgba(0,0,0,.75)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mtile.client .mt-lab { color:var(--client); }
+</style>
+</head>
+<body>
+<div class="demo-wrap">
+  <div class="demo-cap"><b>OPPORTUNITY PATHWAY scorecard</b> · examples drawer v0.12</div>
+
+  <div class="obj">
+    <div class="stage" id="stage">
+      <div id="tv-inner">
+        <div class="detail-header" id="detailHeader">
+          <div class="dh-title">OPPORTUNITY<br>PATHWAY</div>
+          <div class="dh-q">Is there a clear market opportunity for Illycaffè and a clear demand for the product / service?</div>
+        </div>
+        <div class="scorecard" id="scorecard"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-note">
+    Click <b>anywhere in a row</b> to open its drawer; click the row again to close it (the pill shows
+    <kbd>more info ▾</kbd> / <kbd>less info ▴</kbd>). The row keeps the <b>0–5 scores</b>; when open, each cell names its brand.
+    The chart shows the <b>committed metric</b> (raw); the example shows the artifact's <b>own reach</b>. Select a brand from the
+    chart or the brand strip — its score cell, its chart mark and its example all light up together.
+  </div>
+</div>
+
+<script>
+"use strict";
+
+var CLIENT="ILLY";
+var BRANDS=["ILLY","NESPRESSO","STARBUCKS","PEETS","LAVAZZA"];
+var BNAME={ILLY:"Illycaffè",NESPRESSO:"Nespresso",STARBUCKS:"Starbucks",PEETS:"Peet's",LAVAZZA:"Lavazza"};
+var ROSE="#e994a2", SERIF="Baskerville,'Libre Baskerville',Georgia,serif", SANS="'Tableau Light','Helvetica Neue',Arial,sans-serif";
+
+function esc(s){ return String(s).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
+function scoreColour(v){ return v>4?"var(--green)":v<2?"var(--red)":"var(--amber)"; }
+function exa(brand,role,source,media,own,react){ return {brand:brand,role:role||"competitor",source:source||"Post",media:media||{type:"placeholder"},own:own||[],react:react||"Sample characterised reaction."}; }
+function spark(d){ return {type:"trends",data:d}; }
+/* compact generator for the dense layouts (grid/mosaic) */
+function gen(brand,role,note,ownK,ownV,react){ return exa(brand, role, "Social", {type:"placeholder",note:note}, ownV?[{k:ownK,v:ownV}]:[], react||"A representative artifact in the wild."); }
+
+/* scores = the 0-5 indicator score (the ROW). metric.vals = the committed raw metric (the CHART). */
+// ===== EXAMPLES_SEED — Phase 2A static pull (single source; = EXAMPLES_SEED.js) =====
+// View-row shape. Phase B: loadExamples() reads SCORER_EXAMPLES_VIEW; drawer unchanged.
+var EXAMPLES_SEED = {
+    "tam": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "tam",
+        "role": "category",
+        "source": "YouTube",
+        "embed": {
+          "platform": "youtube",
+          "id": null
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "840K"
+          }
+        ],
+        "summary_text": "A category-sizing explainer — what a $4.2B premium segment looks like. Illustrative context, not a brand result.",
+        "comment_digest": null,
+        "market_note": "Category-level context — the headroom the brand plays into, not a brand-specific result.",
+        "layout_hint": "source-strip"
+      }
+    ],
+    "cagr": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "cagr",
+        "role": "category",
+        "source": "YouTube",
+        "embed": {
+          "platform": "youtube",
+          "id": null
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "410K"
+          }
+        ],
+        "summary_text": "A growth-outlook explainer — why premium coffee is compounding. Illustrative, not a brand result.",
+        "comment_digest": null,
+        "market_note": "Category growth context — the tailwind the brand rides, not a brand-specific result.",
+        "layout_hint": "source-strip"
+      }
+    ],
+    "svt": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "svt_1",
+        "role": "client",
+        "source": "Google Trends",
+        "embed": {
+          "platform": "trends",
+          "query": "illy",
+          "geo": "US",
+          "time": "today 12-m",
+          "sparkline": [
+            20,
+            22,
+            19,
+            24,
+            21,
+            23,
+            20,
+            26,
+            22,
+            21,
+            23,
+            22
+          ]
+        },
+        "own_stats": [
+          {
+            "k": "peak",
+            "v": "26"
+          }
+        ],
+        "summary_text": "Live Google Trends for “illy” — branded search over 12 months. A real Trends artifact, not the score.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "svt_2",
+        "role": "client",
+        "source": "Google Trends",
+        "embed": {
+          "platform": "trends",
+          "sparkline": [
+            12,
+            14,
+            11,
+            13,
+            18,
+            16,
+            14,
+            12,
+            15,
+            13,
+            12,
+            14
+          ]
+        },
+        "own_stats": [
+          {
+            "k": "query",
+            "v": "“illy pods”"
+          }
+        ],
+        "summary_text": "Product-query interest is thin against pod-led peers.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "svt_3",
+        "role": "client",
+        "source": "Google Trends",
+        "embed": {
+          "platform": "trends",
+          "sparkline": [
+            8,
+            9,
+            10,
+            12,
+            15,
+            19,
+            22,
+            26,
+            30,
+            33,
+            36,
+            38
+          ]
+        },
+        "own_stats": [
+          {
+            "k": "query",
+            "v": "sustainable coffee"
+          }
+        ],
+        "summary_text": "A rising category query the brand could lean into.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "svt_4",
+        "role": "client",
+        "source": "Google Trends",
+        "embed": {
+          "platform": "trends",
+          "sparkline": [
+            30,
+            28,
+            26,
+            24,
+            22,
+            20,
+            18,
+            17,
+            16,
+            15,
+            14,
+            13
+          ]
+        },
+        "own_stats": [
+          {
+            "k": "query",
+            "v": "“capsules”"
+          }
+        ],
+        "summary_text": "Declining generic interest — context, not a brand result.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "svt_5",
+        "role": "client",
+        "source": "Google Trends",
+        "embed": {
+          "platform": "trends",
+          "sparkline": [
+            18,
+            19,
+            17,
+            20,
+            22,
+            21,
+            24,
+            23,
+            25,
+            24,
+            26,
+            27
+          ]
+        },
+        "own_stats": [
+          {
+            "k": "query",
+            "v": "“espresso at home”"
+          }
+        ],
+        "summary_text": "At-home espresso interest ticking up.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "svt_6",
+        "role": "client",
+        "source": "Google Trends",
+        "embed": {
+          "platform": "trends",
+          "sparkline": [
+            22,
+            24,
+            21,
+            23,
+            20,
+            22,
+            19,
+            21,
+            18,
+            20,
+            19,
+            18
+          ]
+        },
+        "own_stats": [
+          {
+            "k": "region",
+            "v": "US metros"
+          }
+        ],
+        "summary_text": "Interest concentrates in a few metros; national reach is shallow.",
+        "comment_digest": null
+      }
+    ],
+    "sop": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sop_1",
+        "role": "client",
+        "source": "YouTube",
+        "embed": {
+          "platform": "youtube",
+          "id": "Ym1xYASwZS0"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "220K"
+          }
+        ],
+        "summary_text": "illy vs the field on roast depth — a comparison clip; choice content, not the preference score.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sop_2",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "blind taste test"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "410K"
+          }
+        ],
+        "summary_text": "Blind taste test; preference split on body.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sop_3",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "pods vs beans"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "180K"
+          }
+        ],
+        "summary_text": "Format comparison — where illy wins and loses.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sop_4",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "barista pick"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "96K"
+          }
+        ],
+        "summary_text": "A barista's head-to-head pick.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sop_5",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "price-vs-quality"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "140K"
+          }
+        ],
+        "summary_text": "The value comparison viewers keep making.",
+        "comment_digest": null
+      }
+    ],
+    "cra": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "cra_1",
+        "role": "client",
+        "source": "Press",
+        "embed": {
+          "platform": "placeholder",
+          "note": "funnel write-up"
+        },
+        "own_stats": [
+          {
+            "k": "source",
+            "v": "analytics"
+          }
+        ],
+        "summary_text": "A conversion-funnel write-up vs competitors — thin on social artifact; link-card floor.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "cra_2",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "DTC funnel"
+        },
+        "own_stats": [
+          {
+            "k": "source",
+            "v": "case study"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "cra_3",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "app funnel"
+        },
+        "own_stats": [
+          {
+            "k": "source",
+            "v": "report"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "cra_4",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "store funnel"
+        },
+        "own_stats": [
+          {
+            "k": "source",
+            "v": "note"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "cra_5",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "retail funnel"
+        },
+        "own_stats": [
+          {
+            "k": "source",
+            "v": "note"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      }
+    ],
+    "bss": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "bss_1",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 1"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "40K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "bss_2",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 2"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "55K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "bss_3",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 3"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "70K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "bss_4",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 1"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "40K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "bss_5",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 2"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "55K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "bss_6",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 3"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "70K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "bss_7",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 4"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "85K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "bss_8",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 5"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "100K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "bss_9",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 1"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "40K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "bss_10",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 2"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "55K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "bss_11",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 3"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "70K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "bss_12",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 4"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "85K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "bss_13",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 1"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "40K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "bss_14",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 2"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "55K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "bss_15",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 1"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "40K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "bss_16",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "search result 2"
+        },
+        "own_stats": [
+          {
+            "k": "impressions",
+            "v": "55K"
+          }
+        ],
+        "summary_text": "A branded-search result in the set.",
+        "comment_digest": null
+      }
+    ],
+    "dvtr": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "dvtr_1",
+        "role": "client",
+        "source": "YouTube",
+        "embed": {
+          "platform": "youtube",
+          "id": "j3GAuYfQSSA"
+        },
+        "own_stats": [
+          {
+            "k": "shares",
+            "v": "3.4K"
+          }
+        ],
+        "summary_text": "illy's own voice on screen — the tone carries it; the stat is incidental (showcase).",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "dvtr_2",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "caption post"
+        },
+        "own_stats": [
+          {
+            "k": "shares",
+            "v": "9K"
+          }
+        ],
+        "summary_text": "A recognisable house voice.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "dvtr_3",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "brand reply"
+        },
+        "own_stats": [
+          {
+            "k": "shares",
+            "v": "6K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "dvtr_4",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "caption"
+        },
+        "own_stats": [
+          {
+            "k": "shares",
+            "v": "1K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "dvtr_5",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "ad voiceover"
+        },
+        "own_stats": [
+          {
+            "k": "shares",
+            "v": "2K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      }
+    ],
+    "sstsr": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sstsr_1",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "hook short 1"
+        },
+        "own_stats": [
+          {
+            "k": "3s view",
+            "v": "62%"
+          }
+        ],
+        "summary_text": "The scroll-stopper — a hooky first-3-seconds short.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sstsr_2",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "hook short 2"
+        },
+        "own_stats": [
+          {
+            "k": "3s view",
+            "v": "48%"
+          }
+        ],
+        "summary_text": "A weaker open; viewers drop before the reveal.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sstsr_3",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "hook short 3"
+        },
+        "own_stats": [
+          {
+            "k": "3s view",
+            "v": "55%"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sstsr_4",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "hook short 4"
+        },
+        "own_stats": [
+          {
+            "k": "3s view",
+            "v": "51%"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sstsr_5",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "hook short 5"
+        },
+        "own_stats": [
+          {
+            "k": "3s view",
+            "v": "44%"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sstsr_6",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "hook short 6"
+        },
+        "own_stats": [
+          {
+            "k": "3s view",
+            "v": "58%"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      }
+    ],
+    "eqr": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "eqr_1",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "saves-heavy reel"
+        },
+        "own_stats": [
+          {
+            "k": "saves",
+            "v": "31K"
+          }
+        ],
+        "summary_text": "Saves and shares beat likes — quality over volume.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "eqr_2",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "tutorial"
+        },
+        "own_stats": [
+          {
+            "k": "shares",
+            "v": "18K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "eqr_3",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "client reel"
+        },
+        "own_stats": [
+          {
+            "k": "saves",
+            "v": "2.4K"
+          }
+        ],
+        "summary_text": "Some saves, lighter sharing.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "eqr_4",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "recipe post"
+        },
+        "own_stats": [
+          {
+            "k": "shares",
+            "v": "1.1K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "eqr_5",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "clip"
+        },
+        "own_stats": [
+          {
+            "k": "shares",
+            "v": "12K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "eqr_6",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "poll"
+        },
+        "own_stats": [
+          {
+            "k": "saves",
+            "v": "6K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "eqr_7",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "reel"
+        },
+        "own_stats": [
+          {
+            "k": "saves",
+            "v": "4K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "eqr_8",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "post"
+        },
+        "own_stats": [
+          {
+            "k": "shares",
+            "v": "800"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      }
+    ],
+    "sov": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sov_1",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 1"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "300K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sov_2",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 2"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "500K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "sov_3",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 3"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "700K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "sov_4",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 1"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "300K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "sov_5",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 2"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "500K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "sov_6",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 3"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "700K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "sov_7",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 4"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "900K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "sov_8",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 5"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "1100K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "sov_9",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 1"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "300K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "sov_10",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 2"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "500K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "sov_11",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 3"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "700K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "sov_12",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 4"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "900K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "sov_13",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 1"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "300K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "sov_14",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 2"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "500K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "sov_15",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 1"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "300K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "sov_16",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 2"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "500K"
+          }
+        ],
+        "summary_text": "A mention in the conversation.",
+        "comment_digest": null
+      }
+    ],
+    "vom": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "vom_1",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 1"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "2K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "vom_2",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 2"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "3K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "vom_3",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 3"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "4K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "vom_4",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 1"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "2K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "vom_5",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 2"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "3K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "vom_6",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 3"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "4K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "vom_7",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 4"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "5K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "vom_8",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 5"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "6K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "vom_9",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 1"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "2K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "vom_10",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 2"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "3K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "vom_11",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 3"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "4K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "vom_12",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 4"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "5K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "vom_13",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 5"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "6K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "vom_14",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 1"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "2K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "vom_15",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 2"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "3K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "vom_16",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 1"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "2K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "vom_17",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 2"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "3K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "vom_18",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "mention 3"
+        },
+        "own_stats": [
+          {
+            "k": "reach",
+            "v": "4K"
+          }
+        ],
+        "summary_text": "A mention in the spike.",
+        "comment_digest": null
+      }
+    ],
+    "nps": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "nps_1",
+        "role": "client",
+        "source": "YouTube",
+        "embed": {
+          "platform": "youtube",
+          "id": "Zr14oI1mGyM"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "318K"
+          },
+          {
+            "k": "likes",
+            "v": "12K"
+          }
+        ],
+        "summary_text": "A 'why I recommend illy' advocacy review — illustrative of loyalty, not a measure of it.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "nps_2",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "switch story"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "1.1M"
+          }
+        ],
+        "summary_text": "A high-reach 'why I switched' video.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "nps_3",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "loyalty vlog"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "540K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "nps_4",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "recommend"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "96K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "nps_5",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "review"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "210K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      }
+    ],
+    "ba": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "ba_1",
+        "role": "client",
+        "source": "YouTube",
+        "embed": {
+          "platform": "youtube",
+          "id": "Ym1xYASwZS0"
+        },
+        "own_stats": [
+          {
+            "k": "likes",
+            "v": "24K"
+          }
+        ],
+        "summary_text": "An unprompted morning-ritual video featuring illy — affinity shown, not asked for.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "ba_2",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "fan ritual"
+        },
+        "own_stats": [
+          {
+            "k": "likes",
+            "v": "12K"
+          }
+        ],
+        "summary_text": "A daily-ritual post; quiet, habitual affection.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "ba_3",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "desk setup"
+        },
+        "own_stats": [
+          {
+            "k": "likes",
+            "v": "8K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "ba_4",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "ritual reel"
+        },
+        "own_stats": [
+          {
+            "k": "likes",
+            "v": "58K"
+          }
+        ],
+        "summary_text": "Strong unprompted affection.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "ba_5",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "collection"
+        },
+        "own_stats": [
+          {
+            "k": "likes",
+            "v": "41K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "ba_6",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "haul"
+        },
+        "own_stats": [
+          {
+            "k": "likes",
+            "v": "31K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "ba_7",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "routine"
+        },
+        "own_stats": [
+          {
+            "k": "likes",
+            "v": "22K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "ba_8",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "ritual"
+        },
+        "own_stats": [
+          {
+            "k": "likes",
+            "v": "15K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "ba_9",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "routine"
+        },
+        "own_stats": [
+          {
+            "k": "likes",
+            "v": "9K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      }
+    ],
+    "ebl": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "ebl_1",
+        "role": "exemplar",
+        "source": "YouTube",
+        "embed": {
+          "platform": "youtube",
+          "id": null
+        },
+        "own_stats": [
+          {
+            "k": "comments",
+            "v": "9.7K"
+          }
+        ],
+        "summary_text": "Comments run long and conversational — viewers debate technique and tag friends.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "ebl_2",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "reel thread"
+        },
+        "own_stats": [
+          {
+            "k": "comments",
+            "v": "6.1K"
+          }
+        ],
+        "summary_text": "Strong reply threads carry the conversation.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "ebl_3",
+        "role": "client",
+        "source": "YouTube",
+        "embed": {
+          "platform": "youtube",
+          "id": "j3GAuYfQSSA"
+        },
+        "own_stats": [
+          {
+            "k": "comments",
+            "v": "1.1K"
+          }
+        ],
+        "summary_text": "An illy coffee-shops clip — a real comment thread to abstract in Phase B.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "ebl_4",
+        "role": "client",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "client post"
+        },
+        "own_stats": [
+          {
+            "k": "saves",
+            "v": "820"
+          }
+        ],
+        "summary_text": "Some saves, little discussion.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "ebl_5",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "clip"
+        },
+        "own_stats": [
+          {
+            "k": "comments",
+            "v": "4.0K"
+          }
+        ],
+        "summary_text": "High views, lighter discussion.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "ebl_6",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "poll post"
+        },
+        "own_stats": [
+          {
+            "k": "replies",
+            "v": "3.2K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "ebl_7",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "reel"
+        },
+        "own_stats": [
+          {
+            "k": "comments",
+            "v": "2.2K"
+          }
+        ],
+        "summary_text": "Steady engagement.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "ebl_8",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "story set"
+        },
+        "own_stats": [
+          {
+            "k": "replies",
+            "v": "1.4K"
+          }
+        ],
+        "summary_text": "A representative artifact in the wild.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "ebl_9",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "post"
+        },
+        "own_stats": [
+          {
+            "k": "comments",
+            "v": "410"
+          }
+        ],
+        "summary_text": "Limited reach.",
+        "comment_digest": null
+      }
+    ],
+    "bt": [
+      {
+        "run_id": "POC_RUN",
+        "business_id": "ILLY",
+        "example_id": "bt_1",
+        "role": "client",
+        "source": "YouTube",
+        "embed": {
+          "platform": "youtube",
+          "id": "Zr14oI1mGyM"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "318K"
+          },
+          {
+            "k": "likes",
+            "v": "12K"
+          }
+        ],
+        "summary_text": "illy's own brand film — heritage and craft. Illustrative of the trust the survey captures, not a measure of it.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "NESPRESSO",
+        "example_id": "bt_2",
+        "role": "exemplar",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "sustainability explainer"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "1.1M"
+          }
+        ],
+        "summary_text": "Widely-shared explainer; reach reflects spread, not the trust score.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "PEETS",
+        "example_id": "bt_3",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "founder story"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "96K"
+          }
+        ],
+        "summary_text": "Founder-story piece; modest reach.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "STARBUCKS",
+        "example_id": "bt_4",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "news segment"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "540K"
+          }
+        ],
+        "summary_text": "Mixed-sentiment news segment.",
+        "comment_digest": null
+      },
+      {
+        "run_id": "POC_RUN",
+        "business_id": "LAVAZZA",
+        "example_id": "bt_5",
+        "role": "competitor",
+        "source": "Social",
+        "embed": {
+          "platform": "placeholder",
+          "note": "heritage film"
+        },
+        "own_stats": [
+          {
+            "k": "views",
+            "v": "210K"
+          }
+        ],
+        "summary_text": "Heritage brand film.",
+        "comment_digest": null
+      }
+    ]
+  };
+
+function embedToMedia(e){
+  if(!e||e.platform==="placeholder") return {type:"placeholder", note:(e&&e.note)||""};
+  if(e.platform==="youtube") return {type:"youtube", id:e.id||"REPLACE_ID"};
+  if(e.platform==="trends") return e.query?{type:"trends",live:true,query:e.query,geo:e.geo,time:e.time,data:e.sparkline||[]}
+                                          :{type:"trends",data:e.sparkline||[]};
+  if(e.platform==="link") return {type:"webpage", web:e};
+  return {type:"placeholder", note:""};
+}
+function rowToExample(r){
+  return {brand:r.business_id, role:r.role, source:r.source, media:embedToMedia(r.embed), own:r.own_stats||[], react:r.summary_text||""};
+}
+
+var INDICATORS=[
+    {
+      "id": "tam",
+      "name": "Total Addressable Market (TAM)",
+      "src": "+snowflake",
+      "cls": "headline",
+      "chart": "ban_editorial",
+      "kind": "market",
+      "scores": {
+        "ILLY": 3.8,
+        "NESPRESSO": 3.8,
+        "STARBUCKS": 3.8,
+        "PEETS": 3.8,
+        "LAVAZZA": 3.8
+      },
+      "metric": {
+        "unit": "",
+        "market": true,
+        "headline": [
+          {
+            "n": "$4.2",
+            "u": "B",
+            "c": "Total addressable market"
+          },
+          {
+            "n": "8.1",
+            "u": "%",
+            "c": "CAGR to 2028"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cagr",
+      "name": "Compound Annual Growth Rate (CAGR)",
+      "src": "+snowflake",
+      "cls": "headline",
+      "chart": "ban_editorial",
+      "kind": "market",
+      "scores": {
+        "ILLY": 3.9,
+        "NESPRESSO": 3.9,
+        "STARBUCKS": 3.9,
+        "PEETS": 3.9,
+        "LAVAZZA": 3.9
+      },
+      "metric": {
+        "unit": "",
+        "market": true,
+        "headline": [
+          {
+            "n": "8.1",
+            "u": "%",
+            "c": "Category CAGR to 2028"
+          },
+          {
+            "n": "4.2",
+            "u": "%",
+            "c": "5-yr historical avg"
+          }
+        ]
+      }
+    },
+    {
+      "id": "svt",
+      "name": "Search Volume and Trends",
+      "src": "+snowflake",
+      "cls": "signed_float",
+      "chart": "line-straight",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 2.1,
+        "NESPRESSO": 4.2,
+        "STARBUCKS": 3.9,
+        "PEETS": 2.4,
+        "LAVAZZA": 3.1
+      },
+      "metric": {
+        "unit": "/100",
+        "vals": {
+          "ILLY": 31,
+          "NESPRESSO": 84,
+          "STARBUCKS": 77,
+          "PEETS": 36,
+          "LAVAZZA": 58
+        }
+      }
+    },
+    {
+      "id": "sop",
+      "name": "Share of Preference",
+      "src": "+survey",
+      "cls": "likert",
+      "chart": "scale-figma",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 2.9,
+        "NESPRESSO": 3.8,
+        "STARBUCKS": 3.2,
+        "PEETS": 2.6,
+        "LAVAZZA": 3.1
+      },
+      "metric": {
+        "unit": "/5",
+        "vals": {
+          "ILLY": 2.9,
+          "NESPRESSO": 3.8,
+          "STARBUCKS": 3.2,
+          "PEETS": 2.6,
+          "LAVAZZA": 3.1
+        }
+      }
+    },
+    {
+      "id": "cra",
+      "name": "Conversion Rate Analysis",
+      "src": "+snowflake",
+      "cls": "unbounded",
+      "chart": "hbar",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 2,
+        "NESPRESSO": 3.5,
+        "STARBUCKS": 2.9,
+        "PEETS": 1.8,
+        "LAVAZZA": 2.5
+      },
+      "metric": {
+        "unit": "",
+        "vals": {
+          "ILLY": 2.1,
+          "NESPRESSO": 3.4,
+          "STARBUCKS": 2.8,
+          "PEETS": 1.9,
+          "LAVAZZA": 2.4
+        }
+      }
+    },
+    {
+      "id": "bss",
+      "name": "Branded Search Share",
+      "src": "+snowflake",
+      "cls": "compositional",
+      "chart": "treemap",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 2.2,
+        "NESPRESSO": 4.1,
+        "STARBUCKS": 3.7,
+        "PEETS": 1.9,
+        "LAVAZZA": 2.8
+      },
+      "metric": {
+        "unit": "%",
+        "vals": {
+          "ILLY": 11,
+          "NESPRESSO": 36,
+          "STARBUCKS": 29,
+          "PEETS": 8,
+          "LAVAZZA": 16
+        }
+      }
+    },
+    {
+      "id": "dvtr",
+      "name": "Distinctive Verbal Tone Recognition",
+      "src": "+survey",
+      "cls": "likert",
+      "chart": "scale-figma",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 3.7,
+        "NESPRESSO": 3,
+        "STARBUCKS": 3.3,
+        "PEETS": 2.8,
+        "LAVAZZA": 2.9
+      },
+      "metric": {
+        "unit": "/5",
+        "vals": {
+          "ILLY": 3.7,
+          "NESPRESSO": 3,
+          "STARBUCKS": 3.3,
+          "PEETS": 2.8,
+          "LAVAZZA": 2.9
+        }
+      }
+    },
+    {
+      "id": "sstsr",
+      "name": "Scroll-stop / Thumb-stop Ratio",
+      "src": "+social",
+      "cls": "ratio",
+      "chart": "vbar",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 2.3,
+        "NESPRESSO": 3.6,
+        "STARBUCKS": 3.2,
+        "PEETS": 2,
+        "LAVAZZA": 2.8
+      },
+      "metric": {
+        "unit": "/100",
+        "vals": {
+          "ILLY": 41,
+          "NESPRESSO": 63,
+          "STARBUCKS": 58,
+          "PEETS": 35,
+          "LAVAZZA": 49
+        }
+      }
+    },
+    {
+      "id": "eqr",
+      "name": "Engagement Quality Ratio",
+      "src": "+social",
+      "cls": "ratio",
+      "chart": "vbar",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 2.5,
+        "NESPRESSO": 3.6,
+        "STARBUCKS": 3.1,
+        "PEETS": 2,
+        "LAVAZZA": 2.8
+      },
+      "metric": {
+        "unit": "/100",
+        "vals": {
+          "ILLY": 52,
+          "NESPRESSO": 70,
+          "STARBUCKS": 60,
+          "PEETS": 41,
+          "LAVAZZA": 55
+        }
+      }
+    },
+    {
+      "id": "sov",
+      "name": "Share of Voice (SOV)",
+      "src": "+social",
+      "cls": "compositional",
+      "chart": "treemap",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 2.4,
+        "NESPRESSO": 4,
+        "STARBUCKS": 3.6,
+        "PEETS": 2,
+        "LAVAZZA": 2.9
+      },
+      "metric": {
+        "unit": "%",
+        "vals": {
+          "ILLY": 12,
+          "NESPRESSO": 34,
+          "STARBUCKS": 28,
+          "PEETS": 9,
+          "LAVAZZA": 17
+        }
+      }
+    },
+    {
+      "id": "vom",
+      "name": "Velocity of Mentions",
+      "src": "+social",
+      "cls": "signed_float",
+      "chart": "line-straight",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 2.3,
+        "NESPRESSO": 3.9,
+        "STARBUCKS": 4.1,
+        "PEETS": 2.1,
+        "LAVAZZA": 2.9
+      },
+      "metric": {
+        "unit": "%",
+        "vals": {
+          "ILLY": 6,
+          "NESPRESSO": 41,
+          "STARBUCKS": 48,
+          "PEETS": -3,
+          "LAVAZZA": 22
+        }
+      }
+    },
+    {
+      "id": "nps",
+      "name": "Brand Loyalty / NPS",
+      "src": "+survey",
+      "cls": "likert",
+      "chart": "scale-figma",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 3.5,
+        "NESPRESSO": 3.9,
+        "STARBUCKS": 3,
+        "PEETS": 3.2,
+        "LAVAZZA": 3.3
+      },
+      "metric": {
+        "unit": "/5",
+        "vals": {
+          "ILLY": 3.5,
+          "NESPRESSO": 3.9,
+          "STARBUCKS": 3,
+          "PEETS": 3.2,
+          "LAVAZZA": 3.3
+        }
+      }
+    },
+    {
+      "id": "ba",
+      "name": "Brand Affinity",
+      "src": "+survey",
+      "cls": "unbounded",
+      "chart": "hbar",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 3.6,
+        "NESPRESSO": 4.1,
+        "STARBUCKS": 3.4,
+        "PEETS": 3.2,
+        "LAVAZZA": 3.5
+      },
+      "metric": {
+        "unit": "",
+        "vals": {
+          "ILLY": 3.6,
+          "NESPRESSO": 4.1,
+          "STARBUCKS": 3.4,
+          "PEETS": 3.2,
+          "LAVAZZA": 3.5
+        }
+      }
+    },
+    {
+      "id": "ebl",
+      "name": "Brand Engagement",
+      "src": "+social",
+      "cls": "ratio",
+      "chart": "vbar",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 2.4,
+        "NESPRESSO": 3.7,
+        "STARBUCKS": 3,
+        "PEETS": 2,
+        "LAVAZZA": 2.8
+      },
+      "metric": {
+        "unit": "/100",
+        "vals": {
+          "ILLY": 48,
+          "NESPRESSO": 72,
+          "STARBUCKS": 57,
+          "PEETS": 39,
+          "LAVAZZA": 54
+        }
+      }
+    },
+    {
+      "id": "bt",
+      "name": "Brand Trust",
+      "src": "+survey",
+      "cls": "likert",
+      "chart": "scale-figma",
+      "kind": "brand",
+      "scores": {
+        "ILLY": 3.4,
+        "NESPRESSO": 3.1,
+        "STARBUCKS": 2.6,
+        "PEETS": 3,
+        "LAVAZZA": 2.8
+      },
+      "metric": {
+        "unit": "/5",
+        "vals": {
+          "ILLY": 3.4,
+          "NESPRESSO": 3.1,
+          "STARBUCKS": 2.6,
+          "PEETS": 3,
+          "LAVAZZA": 2.8
+        }
+      }
+    }
+  ];
+
+// merge the examples layer onto the score/chart layer (joined by id)
+INDICATORS.forEach(function(ind){
+  var rows = EXAMPLES_SEED[ind.id] || [];
+  if(ind.kind==="market"){ ind.sources = rows.map(rowToExample); ind.note = (rows[0]&&rows[0].market_note)||""; ind.examples=[]; }
+  else { ind.examples = rows.map(rowToExample); }
+});
+
+var openId=null, viewMode={}, selectedBrand=CLIENT;
+
+function detectLayout(ind){
+  if(ind.kind==="market") return "source-strip";
+  var exs=ind.examples||[], brands={}; exs.forEach(function(e){brands[e.brand]=1;});
+  var nB=Object.keys(brands).length, nE=exs.length;
+  if(nB===1 && nE>1) return "carousel";
+  if(nB>=4 && nE>=14) return "mosaic";
+  if(nE>=7) return "grid";
+  return "strip";
+}
+function defaultMode(layout){ return (layout==="grid"||layout==="mosaic"||layout==="source-strip") ? "examples" : "split"; }
+function pickExample(ind){ var e=ind.examples||[]; for(var i=0;i<e.length;i++) if(e[i].brand===selectedBrand) return e[i]; return null; }
+
+/* ── scorecard ── */
+function gridCols(){ return "minmax(300px,2.2fr) 1.3fr repeat("+(BRANDS.length-1)+",1fr)"; }
+function brandMean(b){ var v=INDICATORS.map(function(i){return i.scores[b];}); return v.reduce(function(a,c){return a+c;},0)/v.length; }
+
+function buildScorecard(){
+  var sc=document.getElementById("scorecard"), html="";
+  html+='<div class="sc-row header" style="grid-template-columns:'+gridCols()+'">';
+  html+='<div class="hc lab"><div class="wm">illy bp · nav</div><div class="stype">Indicator score</div></div>';
+  BRANDS.forEach(function(b,i){ var isC=i===0; html+='<div class="hc '+(isC?"client":"comp")+'"><div class="bn">'+esc(BNAME[b])+'</div><div class="hs">'+brandMean(b).toFixed(1)+(isC?'<span class="suf">/5</span>':'')+'</div></div>'; });
+  html+='</div>';
+  INDICATORS.forEach(function(ind){
+    html+='<div class="sc-row" data-row="'+ind.id+'" style="grid-template-columns:'+gridCols()+'">';
+    html+='<div class="lab-cell"><div class="lab-in"><div class="ind-name">'+esc(ind.name)+'</div><div class="ind-src">'+esc(ind.src)+'</div></div>'
+        +'<button class="ex-pill" tabindex="-1"><span class="lbl">more info</span><span class="chev">&#9662;</span></button></div>';
+    BRANDS.forEach(function(b,i){
+      var isC=i===0, v=ind.scores[b], col=isC?scoreColour(v):"#d2d2d2";
+      html+='<div class="score-cell '+(isC?"client":"comp")+'" data-sc="'+b+'">'
+          +'<span class="cell-brand"'+(isC?' style="color:#000"':'')+'>'+esc(BNAME[b])+'</span>'
+          +'<div class="sc-val" style="color:'+col+'">'+v.toFixed(1)+(isC?'<span class="suf">/5</span>':'')+'</div></div>';
+    });
+    html+='</div>';
+  });
+  sc.innerHTML=html;
+  /* whole-row click toggles; clicks inside the drawer are ignored */
+  INDICATORS.forEach(function(ind){
+    var row=sc.querySelector('.sc-row[data-row="'+ind.id+'"]');
+    row.addEventListener("click", function(e){ if(e.target.closest(".drawer")) return; toggle(ind); });
+  });
+}
+
+function toggle(ind){ if(openId===ind.id) closeFocus(); else openFocus(ind); }
+
+/* ── focus ── */
+function openFocus(ind){
+  if(openId) closeFocus(true);
+  openId=ind.id;
+  var stage=document.getElementById("stage"), sc=document.getElementById("scorecard");
+  stage.classList.add("focus");
+  sc.querySelectorAll(".sc-row").forEach(function(r){
+    if(r.getAttribute("data-row")===ind.id){ r.classList.add("promoted"); r.querySelector(".ex-pill .lbl").textContent="less info"; }
+    else r.classList.add("collapse");
+  });
+  var layout=detectLayout(ind);
+  if(!viewMode[ind.id]) viewMode[ind.id]=defaultMode(layout);
+  var drawer=document.createElement("div"); drawer.className="drawer"; drawer.setAttribute("data-drawer",ind.id);
+  drawer.innerHTML='<div class="drawer-inner">'+drawerToolbar(ind)+'<div class="drawer-body" data-body="'+ind.id+'"></div></div>';
+  sc.querySelector('.sc-row.promoted').appendChild(drawer);
+  renderBody(ind); wireToolbar(ind,drawer); paintSelection(ind);
+  requestAnimationFrame(function(){ drawer.classList.add("open"); drawer.style.maxHeight=drawer.scrollHeight+"px"; setTimeout(function(){ if(drawer.classList.contains("open")) drawer.style.maxHeight="none"; },260); });
+  setTimeout(function(){ document.getElementById("stage").scrollTo({top:0,behavior:"smooth"}); },60);
+}
+function closeFocus(){
+  var stage=document.getElementById("stage"), sc=document.getElementById("scorecard");
+  var drawer=sc.querySelector('.drawer[data-drawer="'+openId+'"]');
+  if(drawer){ drawer.style.maxHeight=drawer.scrollHeight+"px"; requestAnimationFrame(function(){ drawer.style.maxHeight="0"; drawer.classList.remove("open"); }); setTimeout(function(){ if(drawer.parentNode) drawer.parentNode.removeChild(drawer); },260); }
+  sc.querySelectorAll(".sc-row").forEach(function(r){
+    r.classList.remove("collapse","promoted");
+    r.querySelectorAll(".score-cell.sel").forEach(function(c){c.classList.remove("sel");});
+    var p=r.querySelector(".ex-pill .lbl"); if(p) p.textContent="more info";
+  });
+  stage.classList.remove("focus"); openId=null;
+}
+
+/* ── toolbar ── */
+function drawerToolbar(ind){
+  var m=viewMode[ind.id];
+  function b(id,l){ return '<button data-mode="'+id+'"'+(m===id?' class="active"':'')+'>'+l+'</button>'; }
+  var sel = ind.kind!=="market" ? '<div class="sel-pill"><span class="sw" style="background:'+(selectedBrand===CLIENT?"var(--client)":"#bbb")+'"></span>selected · <b>'+esc(BNAME[selectedBrand])+'</b></div>' : '';
+  return '<div class="drawer-tb"><div class="seg">'+b("chart","Chart")+b("split","Split")+b("examples","Examples")+'</div>'
+    +'<div class="tb-meta">'+sel+'<span class="chart-chip">examples · <b style="color:var(--client)">'+detectLayout(ind)+'</b></span><span class="chart-chip">chart · <b>'+ind.chart.replace("_","-")+'</b></span></div></div>';
+}
+function wireToolbar(ind,drawer){ drawer.querySelectorAll('[data-mode]').forEach(function(btn){ btn.addEventListener("click",function(){ viewMode[ind.id]=btn.getAttribute("data-mode"); drawer.querySelectorAll('[data-mode]').forEach(function(x){ x.classList.toggle("active",x===btn); }); renderBody(ind); paintSelection(ind); drawer.style.maxHeight="none"; }); }); }
+
+/* ── selection reflected across score / chart / example ── */
+function setSelected(brand,ind){ if(brand===selectedBrand) return; selectedBrand=brand; renderBody(ind); paintSelection(ind); var d=document.querySelector('.drawer[data-drawer="'+ind.id+'"]'); if(d) d.style.maxHeight="none"; }
+function paintSelection(ind){
+  var row=document.querySelector('.sc-row.promoted'); if(!row) return;
+  row.querySelectorAll(".score-cell").forEach(function(c){ c.classList.toggle("sel", ind.kind!=="market" && c.getAttribute("data-sc")===selectedBrand); });
+  var sp=document.querySelector('.drawer[data-drawer="'+ind.id+'"] .sel-pill');
+  if(sp && ind.kind!=="market") sp.innerHTML='<span class="sw" style="background:'+(selectedBrand===CLIENT?"var(--client)":"#bbb")+'"></span>selected · <b>'+esc(BNAME[selectedBrand])+'</b>';
+}
+
+/* ── body ── */
+function renderBody(ind){
+  var body=document.querySelector('.drawer-body[data-body="'+ind.id+'"]'); if(!body) return;
+  var mode=viewMode[ind.id]; body.className="drawer-body mode-"+mode;
+  var chartHTML='<div class="pane-chart"><div class="ttl">Committed metric'+(ind.metric.unit?' · '+esc(ind.metric.unit):'')+'</div>'
+    +'<div class="sub">the raw metric · '+esc(ind.chart.replace("_","-"))+'</div><div class="plot">'+chartForm(ind, mode==="chart")+'</div></div>';
+  var exHTML='<div class="pane-ex">'+examplesPane(ind)+'</div>';
+  if(mode==="chart") body.innerHTML=chartHTML; else if(mode==="examples") body.innerHTML=exHTML; else body.innerHTML=chartHTML+exHTML;
+  wireChart(ind,body); wireExamples(ind,body); hydrateTrends(body);
+}
+
+/* ── per-class chart forms (big = chart-only mode → fill the whole drawer) ── */
+function chartForm(ind, big){
+  if(ind.chart==="ban_editorial") return banEditorial(ind, big);
+  if(ind.chart==="scale-figma")   return scaleFigma(ind, big);
+  if(ind.chart==="treemap")       return treemap(ind, big);
+  if(ind.chart==="line-straight") return lineStraight(ind, big);
+  if(ind.chart==="hbar")          return hbar(ind, big);
+  return vbar(ind, big);
+}
+function banEditorial(ind, big){
+  var h=ind.metric.headline||[], first=h[0], rest=h.slice(1);
+  var hs=big?86:54, ss=big?44:28;
+  return '<div class="ban-ed"'+(big?' style="gap:22px"':'')+'><div><div class="hero" style="font-size:'+hs+'px">'+esc(first.n)+'<span class="u">'+esc(first.u)+'</span></div><div class="cap">'+esc(first.c)+'</div></div>'
+    + rest.map(function(b){ return '<div><span class="second" style="font-size:'+ss+'px">'+esc(b.n)+'<span class="u">'+esc(b.u)+'</span></span> <span class="cap" style="display:inline">'+esc(b.c)+'</span></div>'; }).join("")+'</div>';
+}
+function scaleFigma(ind, big){
+  var vals=ind.metric.vals;
+  var gap=big?20:10, th=big?11:8, dot=big?18:14, nmw=big?92:72, nf=big?14:11, vf=big?19:15;
+  return '<div class="scale" style="gap:'+gap+'px">'+BRANDS.map(function(b){
+    var v=vals[b], isC=b===CLIENT, isSel=b===selectedBrand, pct=((v-1)/4)*100;
+    var dotCol=isC?ROSE:(isSel?"#ededed":"#5a5a5a"), nmCol=isSel?(isC?ROSE:"#ededed"):(isC?ROSE:"#9a9a9a"), valCol=isC?ROSE:"#ededed";
+    var dsz=isSel?dot+2:dot, dtop=-(dsz-th)/2;
+    return '<div class="srow" data-brand="'+b+'" style="cursor:pointer"><div class="snm" style="color:'+nmCol+';width:'+nmw+'px;font-size:'+nf+'px">'+esc(BNAME[b])+'</div>'
+      + '<div class="strack" style="height:'+th+'px"><div class="stick" style="left:0%"></div><div class="stick" style="left:25%"></div><div class="stick" style="left:50%"></div><div class="stick" style="left:75%"></div><div class="stick" style="left:100%"></div>'
+      + '<div class="sdot" style="left:'+pct.toFixed(1)+'%;background:'+dotCol+';width:'+dsz+'px;height:'+dsz+'px;top:'+dtop+'px;transform:translateX(-'+(dsz/2)+'px)"></div></div>'
+      + '<div class="sval" style="color:'+valCol+';font-size:'+vf+'px">'+v.toFixed(1)+'</div></div>';
+  }).join("")+'</div>';
+}
+function treemap(ind, big){
+  var vals=ind.metric.vals, total=BRANDS.reduce(function(a,b){return a+vals[b];},0);
+  var order=BRANDS.slice().sort(function(a,b){return vals[b]-vals[a];}), x=0, W=big?640:380, H=big?250:210;
+  var nf=big?14:11, vf=big?26:20;
+  var cells=order.map(function(b){
+    var frac=vals[b]/total, w=frac*W, isC=b===CLIENT, isSel=b===selectedBrand;
+    var fill=isC?ROSE:(isSel?"#3a3a3a":"#1c1c1c"), stroke=isSel?"#ededed":(isC?ROSE:"#2a2a2a"), tc=isC?"#000":(isSel?"#ededed":"#9a9a9a");
+    var g='<g data-brand="'+b+'" style="cursor:pointer"><rect x="'+x.toFixed(1)+'" y="0" width="'+Math.max(2,w-2).toFixed(1)+'" height="'+H+'" rx="6" fill="'+fill+'" stroke="'+stroke+'" stroke-width="'+(isSel?2:1)+'"/>'
+      + (w>52?'<text x="'+(x+9)+'" y="'+(big?26:22)+'" font-family="'+SANS+'" font-size="'+nf+'" fill="'+tc+'">'+esc(BNAME[b])+'</text><text x="'+(x+9)+'" y="'+(big?56:46)+'" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+tc+'">'+vals[b]+'</text>':'')+'</g>';
+    x+=w; return g;
+  }).join("");
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+cells+'</svg>';
+}
+function lineStraight(ind, big){
+  var vals=ind.metric.vals, nums=BRANDS.map(function(b){return vals[b];});
+  var maxV=Math.max.apply(null,nums), minV=Math.min.apply(null,nums), hasNeg=minV<0;
+  var W=big?660:400, H=big?262:210, padL=14, padR=big?56:44, padT=big?22:16, padB=big?34:28, plotH=H-padT-padB;
+  var top=Math.max(maxV,0),bot=Math.min(minV,0),rng=(top-bot)||1, zeroY=padT+(top/rng)*plotH;
+  var n=BRANDS.length, slot=(W-padL-padR)/n, bw=slot*(big?0.52:0.5), vf=big?18:14, lf=big?12:10, parts=[];
+  if(hasNeg) parts.push('<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+zeroY.toFixed(1)+'" y2="'+zeroY.toFixed(1)+'" stroke="#2a2a2a"/>');
+  BRANDS.forEach(function(b,i){
+    var v=vals[b], isC=b===CLIENT, isSel=b===selectedBrand, cx=padL+slot*i+slot/2, h=Math.abs(v)/rng*plotH, y=v>=0?zeroY-h:zeroY;
+    var fill=isC?ROSE:(isSel?"#ededed":"#4f4f4f"), vy=v>=0?y-8:y+h+(big?18:13), nm=BNAME[b]; if(nm.length>9) nm=nm.slice(0,8)+"…";
+    parts.push('<rect data-brand="'+b+'" x="'+(cx-bw/2).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(2,h).toFixed(1)+'" rx="3" fill="'+fill+'" style="cursor:pointer"/>');
+    parts.push('<text x="'+cx.toFixed(1)+'" y="'+vy.toFixed(1)+'" text-anchor="middle" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+(isC?ROSE:"#ededed")+'">'+v+'</text>');
+    parts.push('<text x="'+cx.toFixed(1)+'" y="'+(H-(big?12:10))+'" text-anchor="middle" font-family="'+SANS+'" font-size="'+lf+'" fill="'+(isSel?(isC?ROSE:"#ededed"):(isC?ROSE:"#9a9a9a"))+'">'+esc(nm)+'</text>');
+    if(isSel) parts.push('<rect x="'+(cx-10)+'" y="'+(H-(big?6:5))+'" width="20" height="3" rx="1.5" fill="'+(isC?ROSE:"#ededed")+'"/>');
+  });
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+parts.join("")+'</svg>';
+}
+function hbar(ind, big){
+  var vals=ind.metric.vals, max=Math.max.apply(null,BRANDS.map(function(b){return vals[b];}));
+  var rowH=big?40:28, gap=big?16:10, padL=big?100:86, padR=big?48:40, W=big?620:380, H=BRANDS.length*(rowH+gap);
+  var nf=big?14:11, vf=big?19:15;
+  var bars=BRANDS.map(function(b,i){
+    var v=vals[b], isC=b===CLIENT, isSel=b===selectedBrand, y=i*(rowH+gap), bw=Math.max(2,(v/max)*(W-padL-padR)), fill=isC?ROSE:(isSel?"#ededed":"#4f4f4f");
+    return '<text x="'+(padL-9)+'" y="'+(y+rowH/2+4)+'" text-anchor="end" font-family="'+SANS+'" font-size="'+nf+'" fill="'+(isSel?(isC?ROSE:"#ededed"):(isC?ROSE:"#9a9a9a"))+'">'+esc(BNAME[b])+'</text>'
+      + '<rect data-brand="'+b+'" x="'+padL+'" y="'+y+'" width="'+bw.toFixed(1)+'" height="'+rowH+'" rx="3" fill="'+fill+'" style="cursor:pointer"/>'
+      + '<text x="'+(padL+bw+8)+'" y="'+(y+rowH/2+5)+'" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+(isC?ROSE:"#ededed")+'">'+v+'</text>';
+  }).join("");
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+bars+'</svg>';
+}
+function vbar(ind, big){
+  var vals=ind.metric.vals, max=Math.max.apply(null,BRANDS.map(function(b){return vals[b];}));
+  var W=big?660:400, H=big?262:210, padX=14, padT=big?26:20, padB=big?34:30, plotH=H-padT-padB, n=BRANDS.length, slot=(W-2*padX)/n, bw=slot*(big?0.56:0.5), baseY=H-padB;
+  var vf=big?19:15, lf=big?12:10;
+  var bars=BRANDS.map(function(b,i){
+    var v=vals[b], isC=b===CLIENT, isSel=b===selectedBrand, cx=padX+slot*i+slot/2, h=(v/max)*plotH, y=baseY-h, fill=isC?ROSE:(isSel?"#ededed":"#4f4f4f"), nm=BNAME[b]; if(nm.length>9) nm=nm.slice(0,8)+"…";
+    return '<rect data-brand="'+b+'" x="'+(cx-bw/2).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(2,h).toFixed(1)+'" rx="3" fill="'+fill+'" style="cursor:pointer"/>'
+      + '<text x="'+cx.toFixed(1)+'" y="'+(y-8).toFixed(1)+'" text-anchor="middle" font-family="'+SERIF+'" font-style="italic" font-size="'+vf+'" fill="'+(isC?ROSE:"#ededed")+'">'+v+'</text>'
+      + '<text x="'+cx.toFixed(1)+'" y="'+(H-(big?12:10))+'" text-anchor="middle" font-family="'+SANS+'" font-size="'+lf+'" fill="'+(isSel?(isC?ROSE:"#ededed"):(isC?ROSE:"#9a9a9a"))+'">'+esc(nm)+'</text>'
+      + (isSel?'<rect x="'+(cx-10)+'" y="'+(H-(big?6:5))+'" width="20" height="3" rx="1.5" fill="'+(isC?ROSE:"#ededed")+'"/>':'');
+  }).join("");
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+bars+'</svg>';
+}
+function wireChart(ind,body){ body.querySelectorAll('[data-brand]').forEach(function(el){ el.addEventListener("click",function(ev){ ev.stopPropagation(); if(ind.kind!=="market") setSelected(el.getAttribute("data-brand"),ind); }); }); }
+
+/* ── media ── */
+function mediaFill(m,name){
+  if(m.type==="youtube"&&m.id&&m.id!=="REPLACE_ID") return '<iframe src="https://www.youtube-nocookie.com/embed/'+encodeURIComponent(m.id)+'" title="'+esc(name)+'" allow="encrypted-media;picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+  if(m.type==="youtube") return thumbPh(name,"video",m.note||"video");
+  if(m.type==="webpage"){ var w=m.web; return '<a class="web" href="'+esc(w.url)+'" target="_blank" rel="noopener noreferrer"><div class="thumb"><span>og:image</span></div><div class="meta"><div class="src">'+esc(w.source)+'</div><div class="t">'+esc(w.title)+'</div><div class="d">'+esc(w.desc)+'</div></div></a>'; }
+  if(m.type==="trends"&&m.live) return '<div class="trends" data-trends-live data-q="'+esc(m.query)+'" data-geo="'+esc(m.geo||"")+'" data-time="'+esc(m.time||"today 12-m")+'"><span class="tbadge">Google Trends · live</span>'+trendsInner(m.data)+'</div>';
+  if(m.type==="trends") return trendsSVG(m.data);
+  return thumbPh(name, /search|impression/i.test(m.note||"")?"search":/funnel|source|report|case/i.test(m.note||"")?"link":"post", m.note||"post");
+}
+/* placeholder content thumbnail — reads as a real (illustrative) artifact, client-tinted */
+function thumbPh(name, kind, label){
+  var isC = (name===BNAME[CLIENT]);
+  var bg = isC ? "linear-gradient(135deg,#3a2a30,#191215)" : "linear-gradient(135deg,#262120,#15110d)";
+  var glyph = kind==="video"?"&#9658;" : kind==="search"?"&#9906;" : kind==="link"?"&#128279;" : "&#9788;";
+  return '<div class="thumb-ph" style="background:'+bg+'"><span class="ph-glyph'+(isC?" c":"")+'">'+glyph+'</span>'
+    + (label?'<span class="ph-cap">'+esc(label)+'</span>':'') + '</div>';
+}
+/* Live Google Trends embed — official widget, no token (the search/market unlock).
+   The sparkline renders immediately as a fallback; the real widget replaces it on load.
+   Phase note: refresh the embed_loader build from a fresh Trends "Embed" snippet if it 404s. */
+function trendsInner(data){ var W=240,H=120,p=10,max=Math.max.apply(null,data),min=Math.min.apply(null,data),rng=(max-min)||1;
+  var pts=data.map(function(v,i){ var x=p+i*((W-2*p)/(data.length-1)); var y=H-p-((v-min)/rng)*(H-2*p); return x.toFixed(1)+","+y.toFixed(1); });
+  var area="M"+pts[0]+" L"+pts.join(" L")+" L"+(W-p)+","+(H-p)+" L"+p+","+(H-p)+" Z", line="M"+pts.join(" L");
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" class="tfallback"><path d="'+area+'" fill="rgba(233,148,162,0.10)"/><path d="'+line+'" fill="none" stroke="#e994a2" stroke-width="2" stroke-linejoin="round"/></svg>'; }
+function hydrateTrends(scope){
+  (scope||document).querySelectorAll('[data-trends-live]').forEach(function(el){
+    if(el.getAttribute("data-hydrated")) return; el.setAttribute("data-hydrated","1");
+    var q=el.getAttribute("data-q"), geo=el.getAttribute("data-geo")||"", time=el.getAttribute("data-time")||"today 12-m";
+    function call(){ try{
+      var fb=el.querySelector(".tfallback"); if(fb) fb.remove();
+      window.trends.embed.renderExploreWidget("TIMESERIES",
+        {comparisonItem:[{keyword:q,geo:geo,time:time}],category:0,property:""},
+        {exploreQuery:"q="+encodeURIComponent(q)+(geo?"&geo="+geo:"")+"&date="+encodeURIComponent(time),guestPath:"https://trends.google.com:443/trends/embed/"});
+      var ifr=el.querySelector("iframe"); if(ifr){ ifr.style.position="absolute"; ifr.style.inset="0"; ifr.style.width="100%"; ifr.style.height="100%"; ifr.style.border="0"; }
+    }catch(e){ /* keep the sparkline fallback */ } }
+    if(window.trends&&window.trends.embed){ var s0=document.createElement("script"); s0.text=";"; el.appendChild(s0); call(); }
+    else { var s=document.createElement("script"); s.src="https://ssl.gstatic.com/trends_nrtr/3700/embed_loader.js"; s.onload=call; s.onerror=function(){}; el.appendChild(s); }
+  });
+}
+function trendsSVG(data){
+  var W=240,H=120,p=10,max=Math.max.apply(null,data),min=Math.min.apply(null,data),rng=(max-min)||1;
+  var pts=data.map(function(v,i){ var x=p+i*((W-2*p)/(data.length-1)); var y=H-p-((v-min)/rng)*(H-2*p); return x.toFixed(1)+","+y.toFixed(1); });
+  var area="M"+pts[0]+" L"+pts.join(" L")+" L"+(W-p)+","+(H-p)+" L"+p+","+(H-p)+" Z", line="M"+pts.join(" L");
+  return '<div class="trends"><span class="tbadge">Google Trends</span><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none"><path d="'+area+'" fill="rgba(233,148,162,0.10)"/><path d="'+line+'" fill="none" stroke="#e994a2" stroke-width="2" stroke-linejoin="round"/></svg></div>';
+}
+function ownChips(arr){ if(!arr||!arr.length) return '<div class="own"><span class="chip"><span class="v" style="color:#555">—</span></span></div>'; return '<div class="own">'+arr.map(function(s){ return '<span class="chip"><span class="v">'+esc(s.v)+'</span><span class="k">'+esc(s.k)+'</span></span>'; }).join("")+'</div>'; }
+
+/* ── examples (format suits the content) ── */
+var carIdx={};   /* carousel feature index per indicator */
+
+function examplesPane(ind){
+  var layout=detectLayout(ind);
+  if(layout==="source-strip") return laySource(ind);
+  if(layout==="carousel")     return layCarousel(ind);
+  if(layout==="grid")         return layGrid(ind);
+  if(layout==="mosaic")       return layMosaic(ind);
+  return layStrip(ind);
+}
+
+function laySource(ind){
+  var s=ind.sources[0];
+  return frameRow(s.source)+'<div class="lay"><div class="hline"><span class="hbrand">Category</span><span class="role-tag">market</span></div>'
+    +'<div class="media hero">'+mediaFill(s.media,"category")+'</div>'+ownChips(s.own)
+    +'<div class="market-note">'+esc(ind.note||"")+'</div></div>';
+}
+
+function layStrip(ind){
+  var hero=pickExample(ind);
+  if(!hero) return frameRow("—")+'<div class="lay"><div class="no-art"><div class="h">No example for '+esc(BNAME[selectedBrand])+' yet</div>'
+    +'<div class="d">The chart still scores this brand. Example artifacts are collected per brand and can be sparse — select another, or this lands in a later pass.</div></div>'+brandStrip(ind)+'</div>';
+  return frameRow(hero.source)+'<div class="lay"><div class="hline"><span class="hbrand">'+esc(BNAME[hero.brand])+'</span><span class="role-tag '+esc(hero.role)+'">'+esc(hero.role)+'</span></div>'
+    +'<div class="media hero">'+mediaFill(hero.media,BNAME[hero.brand])+'</div>'+ownChips(hero.own)
+    +'<div class="react"><span class="l">Characterised · illustrative</span>'+esc(hero.react)+'</div>'+brandStrip(ind)+'</div>';
+}
+
+function layCarousel(ind){
+  var list=(ind.examples||[]).filter(function(e){return e.brand===selectedBrand;});
+  if(!list.length) return frameRow("—")+'<div class="lay"><div class="no-art"><div class="h">No example for '+esc(BNAME[selectedBrand])+' yet</div>'
+    +'<div class="d">This indicator collects a run of artifacts for one brand. The chart still scores every brand — select '+esc(BNAME[CLIENT])+' to browse the set.</div></div></div>';
+  var fk=carIdx[ind.id]||0; if(fk>=list.length) fk=0;
+  var feat=list[fk];
+  var strip=list.map(function(e,i){ return '<button class="fthumb" data-feat="'+i+'" aria-current="'+(i===fk)+'"><div class="ft-t">'+mediaFill(e.media,"ex")+'</div><div class="ft-c">'+esc((e.own[0]&&e.own[0].v)||("clip "+(i+1)))+'</div></button>'; }).join("");
+  return frameRow(feat.source)+'<div class="lay-car"><div class="hline" style="margin-bottom:7px"><span class="hbrand">'+esc(BNAME[feat.brand])+'</span><span class="role-tag '+esc(feat.role)+'">'+esc(feat.role)+'</span><span class="ex-illnote" style="margin-left:auto">'+list.length+' artifacts</span></div>'
+    +'<div class="media hero">'+mediaFill(feat.media,BNAME[feat.brand])+'</div>'+ownChips(feat.own)
+    +'<div class="cap">'+esc(feat.react)+'</div><div class="filmstrip">'+strip+'</div></div>';
+}
+
+function layGrid(ind){
+  var exs=ind.examples||[], CAP=8, show=exs.slice(0, exs.length>CAP?CAP-1:CAP), extra=exs.length-show.length;
+  var cards=show.map(function(e){
+    var isC=e.brand===CLIENT, sel=e.brand===selectedBrand;
+    var stat=(e.own[0]?e.own[0].v+" "+e.own[0].k:e.source);
+    return '<div class="gcard'+(isC?" client":"")+(sel?" hit":" dim")+'" data-sel="'+e.brand+'"><div class="gt">'+mediaFill(e.media,BNAME[e.brand])+'</div>'
+      +'<div class="gb"><span class="gbrand">'+esc(BNAME[e.brand])+'</span><span class="gstat">'+esc(stat)+'</span></div></div>';
+  }).join("");
+  var more=extra>0?'<div class="gmore">+'+extra+' more</div>':'';
+  return frameRow("Mixed")+'<div class="ex-grid">'+cards+more+'</div>';
+}
+
+function layMosaic(ind){
+  var exs=ind.examples||[], brands={}; exs.forEach(function(e){brands[e.brand]=1;});
+  var show=exs.slice(0,24);
+  var tiles=show.map(function(e){
+    var isC=e.brand===CLIENT, sel=e.brand===selectedBrand;
+    return '<div class="mtile'+(isC?" client":"")+(sel?" hit":" dim")+'" data-sel="'+e.brand+'">'+mediaFill(e.media,BNAME[e.brand])+'<div class="mt-lab">'+esc(BNAME[e.brand])+'</div></div>';
+  }).join("");
+  return frameRow("Mentions")+'<div class="lay-mos"><div class="mos-head"><span class="big">'+exs.length+'</span><span class="lab">mentions across '+Object.keys(brands).length+' brands · '+esc(BNAME[selectedBrand])+' highlighted</span></div><div class="mosaic">'+tiles+'</div></div>';
+}
+
+function frameRow(source){ return '<div class="ex-frame"><span class="src-badge">'+esc(source)+'</span><span class="ex-illnote">illustrative — its own reach, not the score</span></div>'; }
+function brandStrip(ind){
+  return '<div class="brand-strip">'+BRANDS.map(function(b){
+    var has=false,src=""; (ind.examples||[]).forEach(function(e){ if(e.brand===b&&!has){has=true;src=e.source;} });
+    var isC=b===CLIENT;
+    return '<button class="bt2'+(isC?" client":"")+(has?"":" empty")+'" data-sel="'+b+'" aria-current="'+(b===selectedBrand)+'"><span class="n">'+esc(BNAME[b])+'</span><span class="s">'+(has?esc(src):"no example")+'</span></button>';
+  }).join("")+'</div>';
+}
+function wireExamples(ind,body){
+  body.querySelectorAll('[data-sel]').forEach(function(el){ el.addEventListener("click",function(ev){ ev.stopPropagation(); setSelected(el.getAttribute("data-sel"),ind); }); });
+  body.querySelectorAll('[data-feat]').forEach(function(el){ el.addEventListener("click",function(ev){ ev.stopPropagation(); carIdx[ind.id]=parseInt(el.getAttribute("data-feat"),10); renderBody(ind); paintSelection(ind); var d=document.querySelector('.drawer[data-drawer="'+ind.id+'"]'); if(d) d.style.maxHeight="none"; }); });
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   DATA SOURCES — two layers, joined by (run_id, business_id, indicator_id)
+   ── Scores + chart metric: INDICATORS[].scores / .metric
+      (Phase B: read from the scores worksheet → _scoreModel, exactly like the
+       live extension's fetchAndCacheData. Same source the retired table used.)
+   ── Examples: INDICATORS[].examples = THE PHASE-A STATIC SEED.
+      Each row is shaped like one SCORER_EXAMPLES_VIEW row (see EXAMPLES_SEED.js).
+      Real embeds are hard-coded from a one-time pull (YouTube ids, live Trends);
+      summaries/own_stats are hand-written/captured-once.
+   ── loadExamples() is the single SWAP SEAM. Phase B: replace its body with a
+      read of SCORER_EXAMPLES_VIEW for (run_id, business_id) and map rows to the
+      same shape. Nothing else in the drawer changes.
+   ─────────────────────────────────────────────────────────────────────────── */
+var RUN_ID = "POC_RUN", BUSINESS_ID = CLIENT;
+function loadExamples(runId, businessId){
+  // PHASE A: the static seed above. PHASE B: read SCORER_EXAMPLES_VIEW (same row shape).
+  return EXAMPLES_SEED;
+}
+
+/* ── Tableau bootstrap (graduation seam) ──────────────────────────────────────
+   New extension; the old chart/table extension is retired. Network-enabled, so
+   live embeds (YouTube, Google Trends) render. In Tableau, EX-3 wires
+   fetchAndCacheData() → INDICATORS and renderChart() (the real 30-form family,
+   copied from the retired extension) into the drawer's chart pane via a
+   target-element param. Standalone (now) runs the preview path below. */
+function boot(){
+  try{
+    if(window.tableau && tableau.extensions && tableau.extensions.initializeAsync){
+      tableau.extensions.initializeAsync().then(function(){
+        /* TODO EX-3: fetchAndCacheData() → _scoreModel → INDICATORS scores/metric;
+           loadExamples() → SCORER_EXAMPLES_VIEW. Then: */
+        buildScorecard();
+      }, function(){ buildScorecard(); /* preview fallback */ });
+      return;
+    }
+  }catch(e){}
+  buildScorecard(); /* standalone preview */
+}
+boot();
+</script>
+</body>
+</html>
