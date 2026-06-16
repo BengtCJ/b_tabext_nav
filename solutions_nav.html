@@ -124,7 +124,7 @@
 
     .sol-desc {
       font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
-      font-size: 13px;   /* Label */
+      font-size: 14px;   /* Label */
       color: var(--body-color);
       line-height: 1.5;
       margin-top: auto;  /* bottom-pin in the flex card */
@@ -203,7 +203,7 @@
       flex-shrink: 0;
     }
     .ip-reading {
-      font-size: 13px;   /* Label */
+      font-size: 14px;   /* Label */
       font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
       color: var(--body-color);
       line-height: 1.5;
@@ -218,7 +218,7 @@
       flex-shrink: 0;
       margin-bottom: var(--sp-section);
       font-family: 'Tableau Regular', 'Helvetica Neue', Arial, sans-serif;
-      font-size: 13px;   /* Label role */
+      font-size: 14px;   /* Label role */
       color: #3C3C3C;    /* body grey — STYLE_SPEC § Solutions surface light tokens */
       line-height: 1.5;
     }
@@ -792,7 +792,7 @@
     var insightEl = document.querySelector('.insight-lead');
     if (insightEl) {
       var iFs = window.getComputedStyle(insightEl);
-      check('sol-insight-13px', parseFloat(iFs.fontSize) === 13,
+      check('sol-insight-14px', parseFloat(iFs.fontSize) === 14,
         'fontSize=' + iFs.fontSize);
       check('sol-insight-color', iFs.color.toLowerCase().indexOf('60') !== -1 ||
         iFs.color === 'rgb(60, 60, 60)',

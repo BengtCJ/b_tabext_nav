@@ -3409,9 +3409,14 @@ var DATA = (function(){
   // Resolve the score worksheet WITHOUT config: explicit CONFIG.scoreWorksheet
   // override if set, otherwise auto-detect the worksheet whose columns include
   // brand + indicator + score. No settings dialog / no hard-coded name needed.
+  // normalise a column name, stripping a Tableau aggregation wrapper
+  // (e.g. AVG(Score) / SUM(Score) → score) so aggregated measures still match.
+  function _normField(s){
+    return String(s).replace(/^[A-Za-z]+\((.*)\)$/,'$1').toLowerCase().replace(/[\s_]+/g,'');
+  }
   function _hasCol(cols, field){
-    var norm = field.toLowerCase().replace(/[\s_]+/g,'');
-    return cols.some(function(c){ return c.fieldName.toLowerCase().replace(/[\s_]+/g,'')===norm; });
+    var nf=_normField(field);
+    return cols.some(function(c){ return _normField(c.fieldName)===nf; });
   }
   async function pickScoreWorksheet(){
     if(!_dashboard) return null;
@@ -3444,13 +3449,14 @@ var DATA = (function(){
       var dt = await ws.getSummaryDataAsync({ maxRows:5000 });
       var cols=dt.columns, dataRows=dt.data;
       function colIdx(name){
-        var norm=name.toLowerCase().replace(/[\s_]+/g,'');
-        return cols.findIndex(function(c){ return c.fieldName.toLowerCase().replace(/[\s_]+/g,'')===norm; });
+        var nf=_normField(name);
+        return cols.findIndex(function(c){ return _normField(c.fieldName)===nf; });
       }
       var brandIdx=colIdx(CONFIG.brandField), indIdx=colIdx(CONFIG.indicatorIdField),
           nameIdx=colIdx(CONFIG.nameField), sourceIdx=colIdx(CONFIG.sourceField),
           subcatIdx=colIdx(CONFIG.subcategoryIdField), scoreIdx=colIdx(CONFIG.scoreField),
           catIdx=colIdx(CONFIG.categoryField), levelIdx=colIdx('level');
+      if(nameIdx===-1) nameIdx=colIdx('Indicator Name');
       if(brandIdx===-1 || indIdx===-1 || scoreIdx===-1){
         console.warn('[scoreWorksheet] required columns missing. Available:',
           cols.map(function(c){return c.fieldName;}).join(', ')); return null;
