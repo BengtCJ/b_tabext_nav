@@ -3341,10 +3341,43 @@ var DATA = (function(){
     parameter:'Select Client Brand', indicatorIdField:'indicator_id',
     nameField:'Display Name', sourceField:'Source',
     subcategoryIdField:'subcategory_id', brandField:'Brand Name Upper',
-    categoryField:'category_id'
+    categoryField:'category_id',
+    worksheet:'', valueField:'SUM(Raw Value)', yearField:'Year',
+    monthField:'Month', quarterField:'Quarter', periodField:''
   };
   var CONFIG = Object.assign({}, DEFAULTS);
   var _dashboard=null, _subgroup=null;
+  var _rawData=[];
+
+  // ── subgroup resolver: name-derived, validates against actual data ──
+  // Precedence: in-extension selection (future) → parameter (future) → dashboard.name (live)
+  // subcatIds is a plain object { id: true } built from metric rows in the score data.
+  function resolveSubgroup(subcatIds){
+    // Branch 1: in-extension selection (future) — not wired
+    // Branch 2: parameter (future) — not wired
+    // Branch 3: dashboard.name — validated against subcategory_ids present in the data
+    if(!_dashboard || !_dashboard.name) return null;
+    var name = _dashboard.name.trim().toLowerCase();
+    return (subcatIds && subcatIds[name]) ? name : null;
+  }
+
+  function toYearMonth(year, month){
+    return Math.round(year)+'-'+String(Math.round(month)).padStart(2,'0');
+  }
+  // INDICATOR_AGG: seam for future Google-Sheet single source. Interim = all-average.
+  var INDICATOR_AGG = {};
+  function metricAgg(id){ return INDICATOR_AGG[id]||'avg'; }
+  function aggregate(pts, id){
+    var agg = metricAgg(id);
+    var vals = pts.filter(function(p){
+      if(p.value===null||isNaN(p.value)) return false;
+      if(id==='svt'&&p.value===0) return false;
+      return true;
+    });
+    if(!vals.length) return null;
+    var sum = vals.reduce(function(acc,p){ return acc+p.value; },0);
+    return agg==='sum' ? sum : sum/vals.length;
+  }
   var BRAND_ALIASES = { "PEET'S COFFEE":'PEETS', "PEET'S":'PEETS' };
   var COMPETITOR_ORDER = ['NESPRESSO','STARBUCKS','PEETS','LAVAZZA'];
   var METRIC_LABELS = {
@@ -3475,27 +3508,142 @@ var DATA = (function(){
           score: isNaN(sc) ? null : sc
         };
       }).filter(function(r){ return r.level==='metric'; });
+      var subcatSet = {};
+      normalised.forEach(function(r){
+        if(r.subcategory_id) subcatSet[r.subcategory_id.trim().toLowerCase()] = true;
+      });
+      _subgroup = resolveSubgroup(subcatSet);
       return buildScoreModel(normalised, CONFIG.clientBrand, _subgroup);
     } catch(e){ console.error('[scoreWorksheet] read failed:', e); return null; }
   }
 
+  // ── raw worksheet auto-detect: brand + indicator + value columns ──
+  async function pickRawWorksheet(){
+    if(!_dashboard) return null;
+    var sheets = _dashboard.worksheets||[];
+    if(CONFIG.worksheet){
+      var named = sheets.find(function(w){ return w.name===CONFIG.worksheet; });
+      if(named){ console.log('[rawWorksheet] using configured:', named.name); return named; }
+      console.warn('[rawWorksheet] configured sheet not found — auto-detecting:', CONFIG.worksheet);
+    }
+    for(var i=0;i<sheets.length;i++){
+      try{
+        var probe = await sheets[i].getSummaryDataAsync({ maxRows:1 });
+        if(_hasCol(probe.columns,CONFIG.brandField) &&
+           _hasCol(probe.columns,CONFIG.indicatorIdField) &&
+           _hasCol(probe.columns,CONFIG.valueField)){
+          console.log('[rawWorksheet] auto-detected:', sheets[i].name);
+          return sheets[i];
+        }
+      }catch(e){ /* worksheet not readable from this extension — skip */ }
+    }
+    console.warn('[rawWorksheet] no worksheet found with brand+indicator+value columns.');
+    return null;
+  }
+
+  async function fetchRawData(){
+    _rawData = [];
+    var ws = await pickRawWorksheet();
+    if(!ws) return;
+    try{
+      var dt = await ws.getSummaryDataAsync({ maxRows:5000 });
+      var cols=dt.columns, rows=dt.data;
+      function colIdx(name){
+        var nf=_normField(name);
+        return cols.findIndex(function(c){ return _normField(c.fieldName)===nf; });
+      }
+      var brandIdx=colIdx(CONFIG.brandField), valueIdx=colIdx(CONFIG.valueField),
+          indIdx=colIdx(CONFIG.indicatorIdField), catIdx=colIdx(CONFIG.categoryField),
+          yearIdx=colIdx(CONFIG.yearField), monthIdx=colIdx(CONFIG.monthField),
+          quarterIdx=colIdx(CONFIG.quarterField),
+          periodIdx=CONFIG.periodField ? colIdx(CONFIG.periodField) : -1;
+      if(brandIdx===-1||valueIdx===-1||indIdx===-1){
+        console.warn('[rawWorksheet] required columns missing.'); return;
+      }
+      _rawData = rows.map(function(row){
+        var rawVal=row[valueIdx].value;
+        var isVNull = !rawVal||rawVal==='%null%'||rawVal==='Null';
+        var val = isVNull ? null : parseFloat(rawVal);
+        var rawBrand=String(row[brandIdx].formattedValue||row[brandIdx].value||'').trim().toUpperCase();
+        var cat = catIdx!==-1 ? (row[catIdx].value||'') : '';
+        var rawY = yearIdx!==-1 ? row[yearIdx].value : null;
+        var isYNull = !rawY||rawY==='%null%'||rawY==='Null';
+        var year = isYNull ? null : parseFloat(rawY);
+        var month  = monthIdx!==-1  ? parseFloat(row[monthIdx].value)  : null;
+        var quarter= quarterIdx!==-1 ? parseFloat(row[quarterIdx].value): null;
+        var period = null;
+        if(periodIdx!==-1){
+          var pRaw=row[periodIdx].value||row[periodIdx].formattedValue||'';
+          if(pRaw&&pRaw!=='%null%'&&pRaw!=='Null') period=String(pRaw).trim();
+        }
+        if(!period){
+          period = (year&&month&&!isNaN(year)&&!isNaN(month))
+            ? toYearMonth(year,month)
+            : (year&&quarter&&!isNaN(year)&&!isNaN(quarter))
+              ? (year+'-Q'+quarter)
+              : null;
+        }
+        return {
+          brand: BRAND_ALIASES[rawBrand]||rawBrand,
+          value: (isVNull||isNaN(val)) ? null : val,
+          indicator: row[indIdx].value||'',
+          category: cat,
+          period: period
+        };
+      }).filter(function(r){ return r.value!==null&&r.category!=='coffee_general'; });
+    }catch(e){ console.error('[rawWorksheet] read failed:', e); }
+  }
+
+  // buildSeries: per-brand period points for one indicator, using cached _rawData.
+  // Returns { BRAND: [{period, value}] } — all brands initialised, coffee_general absent.
+  function buildSeries(indicatorId, brands){
+    var result = {};
+    brands.forEach(function(b){ result[b]=[]; });
+    _rawData.forEach(function(r){
+      if(r.indicator!==indicatorId) return;
+      if(result[r.brand]!==undefined) result[r.brand].push({period:r.period, value:r.value});
+    });
+    return result;
+  }
+
   // ── adapter: score model → the prototype's INDICATORS shape ──
-  function buildIndicatorsFromModel(model){
+  // rawByIndicator: { indicatorId: buildSeries result } — omitted in sample path.
+  // Non-market: uses raw agg vals+series if every brand has ≥1 usable period; else score mirror.
+  function buildIndicatorsFromModel(model, rawByIndicator){
     return model.rows.map(function(r){
-      var unit = MARKET_IDS[r.id] ? '' : '/5';
+      if(MARKET_IDS[r.id]){
+        return {
+          id:r.id, name:r.name, src:(r.source?('+'+r.source):''),
+          cls:'', chart:resolveChart(r.id), kind:'market',
+          scores:r.scores, metric:{unit:'',market:true,headline:[]}
+        };
+      }
+      var ser = rawByIndicator && rawByIndicator[r.id];
+      var aggVals = {};
+      var canUseRaw = ser && model.brands.every(function(b){
+        var a = aggregate(ser[b]||[], r.id);
+        if(a===null) return false;
+        aggVals[b] = a;
+        return true;
+      });
+      if(canUseRaw){
+        return {
+          id:r.id, name:r.name, src:(r.source?('+'+r.source):''),
+          cls:'', chart:resolveChart(r.id), kind:'brand',
+          scores:r.scores, metric:{unit:'', vals:aggVals, series:ser}
+        };
+      }
       return {
         id:r.id, name:r.name, src:(r.source?('+'+r.source):''),
-        cls:'', chart:resolveChart(r.id), kind: MARKET_IDS[r.id] ? 'market' : 'brand',
-        scores: r.scores,
-        // INTERIM: chart values mirror the 0–5 score until raw values are wired
-        // in the chart-rebuild phase (fetchAndCacheData → _rawData).
-        metric: MARKET_IDS[r.id] ? {unit:'',market:true,headline:[]} : {unit:unit, vals:r.scores}
+        cls:'', chart:resolveChart(r.id), kind:'brand',
+        scores:r.scores, metric:{unit:'/5', vals:r.scores}
       };
     });
   }
 
   return { CONFIG:CONFIG, DEFAULTS:DEFAULTS, resolveChart:resolveChart,
            buildScoreModel:buildScoreModel, fetchScoreData:fetchScoreData,
+           fetchRawData:fetchRawData, buildSeries:buildSeries,
            buildIndicatorsFromModel:buildIndicatorsFromModel,
            setDashboard:function(d){ _dashboard=d; } };
 })();
@@ -3515,7 +3663,10 @@ function boot(){
         }catch(e){}
         var model = await DATA.fetchScoreData();
         if(model && model.rows && model.rows.length){
-          INDICATORS = DATA.buildIndicatorsFromModel(model);
+          await DATA.fetchRawData();
+          var rawByIndicator = {};
+          model.rows.forEach(function(r){ rawByIndicator[r.id] = DATA.buildSeries(r.id, model.brands); });
+          INDICATORS = DATA.buildIndicatorsFromModel(model, rawByIndicator);
           BRANDS = model.brands;
           CLIENT = (DATA.CONFIG.clientBrand||model.brands[0]||'').toUpperCase();
           INDICATORS.forEach(function(ind){ var rows=EXAMPLES_SEED[ind.id]||[];

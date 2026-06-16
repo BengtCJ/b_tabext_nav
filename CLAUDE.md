@@ -48,6 +48,7 @@ This repo hosts multiple sibling extensions sharing the same specs (`CHART_SPEC.
 - **`solutions_nav.html` + `solutions_nav.trex`** — per-construct solution grid + pills (light theme).
   `solutions_nav.html` is hardcoded — no settings cog / `configure` callback; sheet/column names
   and copy are constants in the file (edit there, not via a dialog).
+- **`index_examples.html` + `index_examples.trex`** — scorecard grid + case-study example drawer (dark theme). Reads scores from the auto-detected score worksheet and raw metric values from the data worksheet; built on the validated prototype base, with the retired chart extension (`index.html`) as a read-only donor for its data-read path.
 
 Each extension is a self-contained single HTML file + `.trex` manifest. Specs are shared; no code
 is shared between extension files.
@@ -65,6 +66,14 @@ recorded under `TABLEAU_API_REALITY.md` → To verify. The dimension-aware
 Native overview now; the extension gradually absorbs more and may eventually render the
 overview cards itself (Pattern B), becoming the app. Keep subgroup resolution and the
 "carry all rows" rule intact so that step stays additive, not a rewrite.
+
+## Metric metadata — future single source
+Per-indicator metadata that today lives as hardcoded maps (aggregate type, units, decimals,
+display names, definitions) and in the specs is destined to come from the single-source-of-truth
+Google Sheet — most likely surfaced as worksheet columns on the data read (the path `Display
+Name` / `Source` already use), not an in-extension Sheet fetch. Until then, keep each such map
+behind one accessor (e.g. `metricAgg(id)`) so the swap is additive, not a rewrite. Add new
+metadata to the map/accessor and mirror it to the relevant spec — never scatter it inline.
 
 ## Working rules
 - **Verify the foundation before building on it.** If a path depends on an API behaviour
