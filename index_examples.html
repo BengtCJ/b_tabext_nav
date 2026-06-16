@@ -63,7 +63,7 @@
               border-left:3px solid transparent; border-radius:8px; transition:background .14s, border-color .14s; }
   .sc-row:not(.header):hover .lab-cell { background:#2a2a2a; }
   .sc-row:not(.header):hover .score-cell.comp   { background:#222; }
-  .sc-row:not(.header):hover .score-cell.client { background:#232820; }
+  .sc-row:not(.header):hover .score-cell.client { background:#222; }
   .lab-in { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
   .ind-name { font-family:var(--f-light); font-style:normal; font-size:14px; color:var(--t1); line-height:1.15; }
   .ind-src  { font-family:var(--f-light); font-size:11px; color:var(--t4); }
@@ -3356,12 +3356,11 @@ function loadExamples(runId, businessId){
 
 /* ════════════════════════════════════════════════════════════════════════════
    TABLEAU DATA LAYER — transplanted from the old charts extension (donor).
-   Verbatim score-read path: CONFIG, constants, fetchScoreData, buildScoreModel.
-   These read the same scores worksheet the old extension used. The LIVE read can
-   only be confirmed in Tableau Desktop; the sample-data fallback (below) renders
-   the standalone preview here. Set CONFIG.scoreWorksheet to your scores sheet.
-   NOTE: chart raw values (fetchAndCacheData → _rawData) are deferred to the
-   chart-rebuild phase; until then charts render from the 0–5 score (INTERIM).
+   Two reads: (1) scores worksheet → fetchScoreData → buildScoreModel; (2) raw
+   worksheet → fetchRawData → _rawData. Boot calls both; buildIndicatorsFromModel
+   merges them: raw agg vals + series for covered indicators, score mirror for
+   brand-incomplete ones. The LIVE read can only be confirmed in Tableau Desktop;
+   the sample-data fallback (below) renders the standalone preview here.
    ════════════════════════════════════════════════════════════════════════════ */
 var DATA = (function(){
   var DEFAULTS = {
