@@ -239,10 +239,13 @@
   .yt-wrap { position:relative; width:100%; padding-top:56.25%; }
   /* video media box must not flex-stretch — intrinsic 16:9 from .yt-wrap determines height */
   .lay .media.video, .lay-car .media.video { flex:none; }
+
+  #ver-badge { position:absolute; bottom:6px; right:10px; font-family:var(--f-light); font-size:10px; color:var(--t6); pointer-events:none; z-index:9; letter-spacing:.03em; }
 </style>
 </head>
 <body>
 <div id="ex-root">
+<div id="ver-badge"></div>
   <div class="stage" id="stage">
     <div id="tv-inner">
       <div class="detail-header" id="detailHeader" style="display:none">
@@ -281,6 +284,7 @@
   document.body.classList.add('demo-mode');
 })();
 
+var VERSION='2026-06-16.18';
 var CLIENT="ILLY";
 var BRANDS=["ILLY","NESPRESSO","STARBUCKS","PEETS","LAVAZZA"];
 var BNAME={ILLY:"Illycaffè",NESPRESSO:"Nespresso",STARBUCKS:"Starbucks",PEETS:"Peet's",LAVAZZA:"Lavazza"};
@@ -1169,6 +1173,11 @@ var DATA = (function(){
     cra:['hbar'], ba:['hbar']
   };
   var MARKET_IDS = { tam:1, cagr:1, mcon:1 };
+  var BAN_FMT = {
+    tam:  { prefix:'$', suffix:'B',   cap:'Total addressable market' },
+    cagr: { prefix:'',  suffix:'%',   cap:'Category CAGR' },
+    mcon: { prefix:'',  suffix:' HHI', cap:'Market concentration index' },
+  };
   function resolveChart(id){
     var c = (METRIC_CHARTS[id] && METRIC_CHARTS[id][0]) || 'hbar';
     if(/^ban/.test(c)) return 'ban_editorial';
@@ -1392,10 +1401,30 @@ var DATA = (function(){
   function buildIndicatorsFromModel(model, rawByIndicator){
     return model.rows.map(function(r){
       if(MARKET_IDS[r.id]){
+        var bfmt = BAN_FMT[r.id] || {};
+        var mser = rawByIndicator && rawByIndicator[r.id];
+        var mval = null;
+        if(mser){
+          var mbkeys = Object.keys(mser);
+          for(var mi=0; mi<mbkeys.length && mval===null; mi++){
+            var mpts = mser[mbkeys[mi]];
+            if(mpts && mpts.length){
+              var msorted = mpts.slice().sort(function(a,b){ return (b.period||'') > (a.period||'') ? -1 : 1; });
+              for(var mj=0; mj<msorted.length && mval===null; mj++){
+                if(msorted[mj].value !== null) mval = msorted[mj].value;
+              }
+            }
+          }
+        }
+        var mheadline = [];
+        if(mval !== null){
+          var mdecs = INDICATOR_DECIMALS[r.id] !== undefined ? INDICATOR_DECIMALS[r.id] : 1;
+          mheadline = [{ n: (bfmt.prefix||'') + mval.toFixed(mdecs), u: (bfmt.suffix||'').trim(), c: bfmt.cap||r.name }];
+        }
         return {
           id:r.id, name:r.name, src:(r.source?('+'+r.source):''),
           cls:'', chart:resolveChart(r.id), kind:'market',
-          scores:r.scores, metric:{unit:'',market:true,headline:[]}
+          scores:r.scores, metric:{unit:'',market:true,headline:mheadline}
         };
       }
       var ser = rawByIndicator && rawByIndicator[r.id];
@@ -1475,6 +1504,7 @@ function boot(){
   buildScorecard(); /* standalone preview — sample INDICATORS */
 }
 boot();
+document.getElementById('ver-badge').textContent=VERSION;
 </script>
 </body>
 </html>
