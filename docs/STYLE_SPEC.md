@@ -25,7 +25,7 @@ wanted; validate at the container size before final sign-off.
 |---|---|---|---|
 | **Hero** | Baskerville italic (stack in Faces) | the BAN figure, arc centre — the focal number | per-chart override |
 | **Heading** | Tableau Light | table indicator names, section labels | 18px (was 16; sanctioned bump for solutions surface contrast — validate at 1421×773) |
-| **Label** | Tableau Light (brands UPPERCASE) / Regular (values) | brand names, value labels | 13px |
+| **Label** | Tableau Light (brands UPPERCASE) / Regular (values) | brand names, value labels | 14px |
 | **Caption** | Tableau Light | axis ticks, legend, small notes | 11px |
 | **Title** | Baskerville italic (FONT_TITLE stack) | the chart-view indicator title (`#chart-name`) | ~39px (scale step 13×1.2⁶; confirm at 1421×773) |
 | **Display** | Baskerville italic (stack in Faces) | construct page title — solutions surface only | 56px (re-decision: was 40; bumped for scale — record as intentional) |
@@ -53,6 +53,8 @@ wanted; validate at the container size before final sign-off.
 - Below the documented **minimum container size**, a chart shows its "too small" state
   rather than shrinking text. Minimum size: `‹px ×px›` — separate from the validation
   size above; derive it from where a chart actually breaks, not from the current canvas.
+
+**Native-Tableau realization of px tokens.** The Label role is 14px on both extension and native surfaces. The extension was aligned from 13px to 14px — the nearest pickable size in Tableau's native font-size picker (which skips 13) — so that extension and native text match and no 13 enters the scale anywhere. This also matches the locked 14px scorecard indicator-name. (See TABLEAU_API_REALITY → native font-size picker.)
 
 ## Faces (existing constants — keep)
 - Baskerville italic — hero numbers and scorecard numerals. Stack `'Baskerville','Libre Baskerville',Georgia,serif`: macOS **Baskerville** (Monotype) renders where installed and matches the Figma; **Libre Baskerville** (loaded webfont, OFL) is the cross-viewer fallback. Both default to lining figures. The old double-v **Baskervville** (ANRT webfont) is removed — it defaulted to old-style figures and, being first in the cascade, shadowed Baskerville (the uneven-digit bug). Cross-viewer note: Mac viewers see Monotype Baskerville, others see Libre Baskerville; identical rendering for all viewers is a licensing decision, not assumed here.
@@ -135,7 +137,7 @@ roles above, this section wins **for the scorecard table**.
 - Indicator name: 14px, `#ededed`, normal case; **wraps to 2 lines, never truncates/ellipsis**
   (label column widened to suit — see Layout)
 - Source subtitle: 11px, `#777`, prefixed `+` (e.g. `+snowflake`)
-- Brand name (header): 13px, `#bfbfbf`, **title-case** (normalize source casing — e.g.
+- Brand name (header): 14px, `#bfbfbf`, **title-case** (normalize source casing — e.g.
   `Peet's Coffee`, not `PEET'S COFFEE`); on the **pink client cell use black text** for
   contrast (white fails WCAG on the light pink; if the client highlight ever becomes a
   per-client parameter, compute the text colour for contrast rather than hardcoding black).
@@ -199,7 +201,7 @@ colour-coded (white text).
 - The header is the table's **first row**, full height — not a strip above the table.
 - **Label cell** (transparent): the `BULLETPROOF` SVG wordmark + the subtitle **`Score`**
   beneath it, **normal case (not uppercased)** (live text under the wordmark vector; was "Survey Score").
-- **Brand cells:** brand name (13px) above an **overall score** (31px, not RAG-coloured); `/5`
+- **Brand cells:** brand name (14px) above an **overall score** (31px, not RAG-coloured); `/5`
   on the **client column only** (comparators bare). Overall = the **mean of that brand's visible
   indicator scores** (interim). Text white on comparator cells; **black on the pink client cell** for contrast.
 - Fills per Cell fills below: client cell pink, comparator header cells transparent (names +
@@ -212,7 +214,7 @@ colour-coded (white text).
 - Panel: radius 8px, fill `#181818`, padding `section` (16px); **no own border**. Sits
   **2px** below the table (the same 2px gutter as the cells).
 - Verdict (lead sentence): Tableau Regular, 16px, `#b0b0b0` (matches reading — unified, not white).
-- Reading (paragraph): Tableau Regular, 13px, `#b0b0b0`, line-height ~1.5.
+- Reading (paragraph): Tableau Regular, 14px, `#b0b0b0`, line-height ~1.5.
 - Verdict → reading gap: `default` (8px).
 - Content is PLACEHOLDER for now — two slots (verdict, reading) resolved through one
   function so a real source (sheet column / LLM field) is an additive swap, not a rewrite.
@@ -240,11 +242,11 @@ Scorecard frame rules above; each is a small layout delta over that shared base.
   header's right edge. Inactive bands = `--cell` (#242424) + muted text, no dot. Never a pink
   fill, never white-on-pink. (Radial legend: active row = pink dot + bright text; others muted.)
 - Verdict (lead serif sentence) = 24px Baskerville italic — the same size in all three directions.
-  Reading paragraph = 13px (Label). Disclaimer (`Ranges are illustrative…`) = 11px (Caption)
+  Reading paragraph = 14px (Label). Disclaimer (`Ranges are illustrative…`) = 11px (Caption)
   italic, BAND-METRIC ONLY (it references ranges; absent on band-less metrics).
 - Benchmark numerals (band range figures, e.g. `< 3%`) = 40px Baskerville italic, identical
   across all three directions.
-- All other text maps to the four Type roles: indicator title = Heading 16; band label = Label 13
+- All other text maps to the four Type roles: indicator title = Heading 16; band label = Label 14
   (uppercase); subline / `e.g.` / explainer = Caption 11. No off-role sizes; no geometry-derived
   size except the hero.
 
@@ -464,7 +466,7 @@ above.
 | Empty holding cell (`--empty`) | `#F5F5F5` | Faint fill for unfilled scaffold slots; lighter than frame bg (`#E0E0E0`), darker than white |
 | Subtitle | 19px Tableau Light | Construct subtitle beneath Display title (reuse §Detail-header Question size) |
 
-Spacing, type-role sizes (Heading 16px, Label 13px, Caption 11px), and face stack are shared with
+Spacing, type-role sizes (Heading 16px, Label 14px, Caption 11px), and face stack are shared with
 the dark theme. Tokens marked **confirm-against-Figma** are indicative; finalise on the first
 Figma cross-check.
 
@@ -509,7 +511,7 @@ grid-row 1/3). When a case-study image exists: image inset 2px from the card edg
 `--gutter`; inner radius nests = card radius − 2 = 6px) and sized to exactly one
 solution-card row (`calc((100% − var(--gutter)) / 2)`) at the top; text beneath fills
 the rest. No case study → no image; text fills the whole card. Text = default editorial:
-label (Caption 11, uppercase) + verdict (Baskerville italic 24px) + reading (Label 13),
+label (Caption 11, uppercase) + verdict (Baskerville italic 24px) + reading (Label 14),
 reading clamped. Image is inset 2px, **not full-bleed** (intentional divergence from the
 Figma). The 2px inset and one-row height align the image with the solution cells.
 
@@ -529,7 +531,7 @@ placed below the Display construct title, above the card grid, full content widt
 - Source: sheet `insights`, one text column per construct — `opps_growth` / `opps_standout`
   / `opps_fandom`. Construct→column map hardcoded (no settings cog); the matching column for
   the self-identified construct is read verbatim.
-- Type: Label role, 13px, Tableau, body grey `#3C3C3C`, line-height ~1.5. Sanctioned bump to
+- Type: Label role, 14px, Tableau, body grey `#3C3C3C`, line-height ~1.5. Sanctioned bump to
   Heading 18px if the lead needs more presence — build-and-review at 1421×773, record as
   intentional. No other size.
 - No pink: the solutions-surface pink-accent exemption applies; no `#e994a2`.

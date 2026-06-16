@@ -128,7 +128,7 @@
   // ─── VALUE-LABEL HELPERS ─────────────────────────────────────────────────
   // Single source for value-label precision, size, fill, and font.
   // All chart renderers route their numeric value-label text nodes through these.
-  var VL_SIZE = '13px'; // Label role per STYLE_SPEC
+  var VL_SIZE = '14px'; // Label role per STYLE_SPEC
   function vlText(value) {
     var dec = INDICATOR_DECIMALS[CONFIG.metricId];
     return value.toFixed(dec !== undefined ? dec : 2);
@@ -514,7 +514,7 @@
 
     if (defn) {
       var defnEl = document.createElement('div');
-      defnEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;color:#a4a4a4;line-height:1.4;';
+      defnEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:14px;color:#a4a4a4;line-height:1.4;';
       defnEl.textContent = defn;
       left.appendChild(defnEl);
     }
@@ -553,7 +553,7 @@
         lbl.textContent = cell.label;
 
         var rng = document.createElement('div');
-        rng.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#cfcfcf;';
+        rng.style.cssText = 'font-family:' + FONT_BODY + ';font-size:14px;color:#cfcfcf;';
         rng.textContent = cell.range;
 
         cellEl.appendChild(lbl);
@@ -725,7 +725,7 @@
 
       var readingEl = document.createElement('div');
       readingEl.setAttribute('data-ban-reading', '1');
-      readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
+      readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:14px;color:#9a9a9a;line-height:1.5;';
       readingEl.textContent = content.reading;
       readingZone.appendChild(readingEl);
 
@@ -750,7 +750,7 @@
         labelRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
 
         var lbl = document.createElement('div');
-        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;' +
+        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:14px;' +
           'color:' + (band.active ? '#ededed' : '#555') + ';text-transform:uppercase;letter-spacing:0.06em;';
         lbl.textContent = band.label;
         labelRow.appendChild(lbl);
@@ -788,7 +788,7 @@
 
       if (content.def) {
         var defEl = document.createElement('div');
-        defEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;color:#a4a4a4;line-height:1.4;';
+        defEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:14px;color:#a4a4a4;line-height:1.4;';
         defEl.textContent = content.def;
         textZone.appendChild(defEl);
       }
@@ -802,7 +802,7 @@
 
       var readingEl = document.createElement('div');
       readingEl.setAttribute('data-ban-reading', '1');
-      readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
+      readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:14px;color:#9a9a9a;line-height:1.5;';
       readingEl.textContent = content.reading;
       textZone.appendChild(readingEl);
       el.appendChild(textZone);
@@ -926,7 +926,7 @@
       info.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
 
       var bName = document.createElement('div');
-      bName.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;text-transform:uppercase;' +
+      bName.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:14px;text-transform:uppercase;' +
         'letter-spacing:0.06em;color:' + (band.active ? '#ededed' : '#555') + ';';
       bName.textContent = band.label;
 
@@ -970,7 +970,7 @@
 
     var readingEl = document.createElement('div');
     readingEl.setAttribute('data-ban-reading', '1');
-    readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;margin-top:4px;';
+    readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:14px;color:#9a9a9a;line-height:1.5;margin-top:4px;';
     readingEl.textContent = content.reading;
     commentaryZone.appendChild(readingEl);
 
@@ -1061,14 +1061,14 @@
 
     if (!isBand && content.def) {
       var defEl = document.createElement('div');
-      defEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;color:#a4a4a4;line-height:1.4;';
+      defEl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:14px;color:#a4a4a4;line-height:1.4;';
       defEl.textContent = content.def;
       readingCell.appendChild(defEl);
     }
 
     var readingEl = document.createElement('div');
     readingEl.setAttribute('data-ban-reading', '1');
-    readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:13px;color:#9a9a9a;line-height:1.5;';
+    readingEl.style.cssText = 'font-family:' + FONT_BODY + ';font-size:14px;color:#9a9a9a;line-height:1.5;';
     readingEl.textContent = content.reading;
     readingCell.appendChild(readingEl);
 
@@ -1093,7 +1093,7 @@
         labelRow.style.cssText = 'display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
 
         var lbl = document.createElement('div');
-        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:13px;' +
+        lbl.style.cssText = 'font-family:' + FONT_LIGHT + ';font-size:14px;' +
           'color:' + (band.active ? '#ededed' : '#555') + ';text-transform:uppercase;letter-spacing:0.06em;';
         lbl.textContent = band.label;
         labelRow.appendChild(lbl);
@@ -2507,10 +2507,10 @@
     '  font-size:16px;color:#E6E6E6;'                                       +
     '  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'          +
     '}'                                                                     +
-    // Label role (13px, Tableau Regular for values / Tableau Light for brand names)
+    // Label role (14px, Tableau Regular for values / Tableau Light for brand names)
     '.ind-name {'                                                           +
     "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;"    +
-    '  font-size:13px;color:#E6E6E6;'                                       +
+    '  font-size:14px;color:#E6E6E6;'                                       +
     '  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'          +
     '}'                                                                     +
     // Caption role (11px, Tableau Light)
@@ -2565,7 +2565,7 @@
     '.sc-grid{display:grid;gap:2px;}' +
     '.sc-brand-name{' +
     "  font-family:'Tableau Light','Helvetica Neue',Arial,sans-serif;" +
-    '  font-size:13px;color:#bfbfbf;}' +
+    '  font-size:14px;color:#bfbfbf;}' +
     '.sc-cell-hdr-client .sc-brand-name{color:#000000;}' +
     '.sc-cell-label{background:#242424;border-radius:8px;padding:8px 12px;' +
     '  display:flex;flex-direction:row;align-items:center;gap:8px;' +
@@ -2598,7 +2598,7 @@
     '  font-size:16px;color:#b0b0b0;line-height:1.4;}' +
     '.sc-commentary-reading{' +
     "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;" +
-    '  font-size:13px;color:#b0b0b0;line-height:1.5;}' +
+    '  font-size:14px;color:#b0b0b0;line-height:1.5;}' +
     '.detail-header{display:flex;flex-direction:column;gap:8px;flex-shrink:0;}' +
     '.detail-header-title{' +
     "  font-family:'Tableau Regular','Helvetica Neue',Arial,sans-serif;" +
@@ -3025,7 +3025,7 @@
     }
     #chart-source {
       font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
-      font-size: 13px;
+      font-size: 14px;
       color: #777;
     }
     #chart-header-right {
@@ -3077,7 +3077,7 @@
 
     .error {
       color: #e994a2;
-      font-size: 13px;
+      font-size: 14px;
       padding: 16px;
       font-family: monospace;
     }
