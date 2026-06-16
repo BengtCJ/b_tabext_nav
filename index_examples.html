@@ -18,7 +18,7 @@
     --tx:240ms; --ease:cubic-bezier(.4,0,.2,1);
   }
   * { box-sizing:border-box; }
-  html,body { margin:0; padding:0; background:#050505; color:var(--t1); font-family:var(--f-body); }
+  html,body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:transparent; color:var(--t1); font-family:var(--f-body); }
 
   .demo-wrap { max-width:1120px; margin:0 auto; padding:28px 24px 60px; }
   .demo-cap { font-family:var(--f-light); font-size:12px; color:var(--t5); letter-spacing:.04em; margin:0 4px 8px; }
@@ -27,7 +27,10 @@
   .demo-note kbd { font-family:var(--f-body); color:var(--t3); background:#1a1a1a; border:1px solid #2a2a2a; border-radius:4px; padding:1px 6px; font-size:10px; }
   .demo-note b { color:var(--t3); font-weight:400; }
 
-  .obj { height:684px; background:var(--card); border:1px solid var(--frame-border); border-radius:16px; overflow:hidden; position:relative; }
+  #ex-root { width:100%; height:100%; background:var(--card); overflow:hidden; position:relative; }
+  html.demo-mode, body.demo-mode { overflow:auto; height:auto; }
+  body.demo-mode { background:#050505; }
+  body.demo-mode #ex-root { height:684px; border:1px solid var(--frame-border); border-radius:16px; }
   .stage { height:100%; overflow-y:auto; padding:18px; }
   .stage::-webkit-scrollbar { width:10px; } .stage::-webkit-scrollbar-thumb { background:#222; border-radius:5px; border:2px solid var(--card); }
 
@@ -232,31 +235,43 @@
 </style>
 </head>
 <body>
-<div class="demo-wrap">
-  <div class="demo-cap"><b>OPPORTUNITY PATHWAY scorecard</b> · examples drawer v0.12</div>
-
-  <div class="obj">
-    <div class="stage" id="stage">
-      <div id="tv-inner">
-        <div class="detail-header" id="detailHeader" style="display:none">
-          <div class="dh-title" id="dhTitle"></div>
-          <div class="dh-q" id="dhQ"></div>
-        </div>
-        <div class="scorecard" id="scorecard"></div>
+<div id="ex-root">
+  <div class="stage" id="stage">
+    <div id="tv-inner">
+      <div class="detail-header" id="detailHeader" style="display:none">
+        <div class="dh-title" id="dhTitle"></div>
+        <div class="dh-q" id="dhQ"></div>
       </div>
+      <div class="scorecard" id="scorecard"></div>
     </div>
-  </div>
-
-  <div class="demo-note">
-    Click <b>anywhere in a row</b> to open its drawer; click the row again to close it (the pill shows
-    <kbd>more info ▾</kbd> / <kbd>less info ▴</kbd>). The row keeps the <b>0–5 scores</b>; when open, each cell names its brand.
-    The chart shows the <b>committed metric</b> (raw); the example shows the artifact's <b>own reach</b>. Select a brand from the
-    chart or the brand strip — its score cell, its chart mark and its example all light up together.
   </div>
 </div>
 
 <script>
 "use strict";
+
+/* ── preview chrome: inject demo wrap when not in Tableau ─────────────────── */
+(function(){
+  if(typeof tableau !== 'undefined'){ return; }
+  var root = document.getElementById('ex-root');
+  var cap = document.createElement('div');
+  cap.className = 'demo-cap';
+  cap.innerHTML = '<b>OPPORTUNITY PATHWAY scorecard</b> \xb7 examples drawer v0.12';
+  var note = document.createElement('div');
+  note.className = 'demo-note';
+  note.innerHTML = 'Click <b>anywhere in a row</b> to open its drawer; click the row again to close it (the pill shows'
+    +' <kbd>more info ▾</kbd> / <kbd>less info ▴</kbd>). The row keeps the <b>0–5 scores</b>; when open, each cell names its brand.'
+    +' The chart shows the <b>committed metric</b> (raw); the example shows the artifact\'s <b>own reach</b>. Select a brand from the'
+    +' chart or the brand strip — its score cell, its chart mark and its example all light up together.';
+  var wrap = document.createElement('div');
+  wrap.className = 'demo-wrap';
+  document.body.replaceChild(wrap, root);
+  wrap.appendChild(cap);
+  wrap.appendChild(root);
+  wrap.appendChild(note);
+  document.documentElement.classList.add('demo-mode');
+  document.body.classList.add('demo-mode');
+})();
 
 var CLIENT="ILLY";
 var BRANDS=["ILLY","NESPRESSO","STARBUCKS","PEETS","LAVAZZA"];
@@ -3050,7 +3065,10 @@ function openFocus(ind){
     else r.classList.add("collapse");
   });
   var layout=detectLayout(ind);
-  if(!viewMode[ind.id]) viewMode[ind.id]=defaultMode(layout);
+  if(!viewMode[ind.id]){
+    if(ind.kind==="market" && (!ind.sources || !ind.sources.length)) viewMode[ind.id]="chart";
+    else viewMode[ind.id]=defaultMode(layout);
+  }
   var drawer=document.createElement("div"); drawer.className="drawer"; drawer.setAttribute("data-drawer",ind.id);
   drawer.innerHTML='<div class="drawer-inner">'+drawerToolbar(ind)+'<div class="drawer-body" data-body="'+ind.id+'"></div></div>';
   sc.querySelector('.sc-row.promoted').appendChild(drawer);
@@ -3111,6 +3129,10 @@ function chartForm(ind, big){
 }
 function banEditorial(ind, big){
   var h=ind.metric.headline||[], first=h[0], rest=h.slice(1);
+  if(!first){
+    return '<div class="ban-ed"'+(big?' style="gap:22px"':'')+'><div class="no-art" style="border:1px dashed #2a2a2a;border-radius:8px;flex:1"><div class="h">Figure not yet sourced</div>'
+      +'<div class="d">Market-level figures are sourced in a later pass — the score is still active.</div></div></div>';
+  }
   var hs=big?86:54, ss=big?44:28;
   return '<div class="ban-ed"'+(big?' style="gap:22px"':'')+'><div><div class="hero" style="font-size:'+hs+'px">'+esc(first.n)+'<span class="u">'+esc(first.u)+'</span></div><div class="cap">'+esc(first.c)+'</div></div>'
     + rest.map(function(b){ return '<div><span class="second" style="font-size:'+ss+'px">'+esc(b.n)+'<span class="u">'+esc(b.u)+'</span></span> <span class="cap" style="display:inline">'+esc(b.c)+'</span></div>'; }).join("")+'</div>';
@@ -3245,6 +3267,10 @@ function examplesPane(ind){
 }
 
 function laySource(ind){
+  if(!ind.sources || !ind.sources.length){
+    return '<div class="lay"><div class="no-art"><div class="h">Market context lands in a later pass</div>'
+      +'<div class="d">The figure still scores — source artifacts are collected in a subsequent pass.</div></div></div>';
+  }
   var s=ind.sources[0];
   return frameRow(s.source)+'<div class="lay"><div class="hline"><span class="hbrand">Category</span><span class="role-tag">market</span></div>'
     +'<div class="media hero">'+mediaFill(s.media,"category")+'</div>'+ownChips(s.own)

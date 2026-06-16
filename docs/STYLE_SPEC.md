@@ -444,6 +444,15 @@ interpolated value (it is generic).
   - Value suffix appears only where intended (client column only — never on comparators).
   - Value digits are uniform: every digit of a value (including the post-decimal digit) renders at the same size and on the same baseline; only the `/5` suffix may be `0.5em`.
   - Numerals are inset from the cell edge (padding > 0 — not hugging the corner).
+  - No drawer pane renders empty or throws: an absent chart (empty `headline`/`vals`) or absent
+    examples/sources falls to an explicit no-data state, and a drawer's default mode is
+    content-aware — it never opens onto an empty pane (market leads with the chart when it has no
+    sources).
+  - The extension root (`html`/`body`) fills its Tableau zone with `overflow:hidden` and a
+    transparent background (the dark surface lives on the card, not the window); overflow scrolls
+    only within an inner region — the extension never produces an outer/whole-extension
+    scrollbar. Preview-only chrome (demo caption / simulated frame) renders only when
+    `typeof tableau === 'undefined'`.
 
 ## Solutions surface
 
