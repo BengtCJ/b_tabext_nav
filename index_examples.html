@@ -42,7 +42,7 @@
   .dh-title { font-family:var(--f-body); font-size:56px; line-height:1; text-transform:uppercase; letter-spacing:-.01em; }
   .dh-q { font-family:var(--f-light); font-size:19px; line-height:1.3; margin-top:10px; max-width:680px; }
 
-  .scorecard { display:flex; flex-direction:column; gap:2px; background:var(--card); border-radius:10px; }
+  .scorecard { display:flex; flex-direction:column; gap:2px; padding:2px; background:var(--card); clip-path:inset(0 round 10px); }
   .sc-row { display:grid; gap:2px; align-items:stretch; cursor:pointer;
             transition:max-height var(--tx) var(--ease), opacity var(--tx) var(--ease), margin var(--tx) var(--ease); max-height:120px; }
   .sc-row.header { cursor:default; }
@@ -104,7 +104,7 @@
   .drawer { grid-column:1 / -1; overflow:hidden; max-height:0; opacity:0; cursor:default;
             transition:max-height var(--tx) var(--ease), opacity var(--tx) var(--ease); }
   .drawer.open { opacity:1; }
-  .drawer-inner { background:#0c0c0c; border:1px solid var(--divider); border-radius:10px; margin-top:2px; overflow:hidden; }
+  .drawer-inner { background:#0c0c0c; border:1px solid var(--divider); margin-top:2px; overflow:hidden; }
 
   .drawer-tb { display:flex; align-items:center; gap:10px; padding:9px 12px; background:#0c0c0c; border-bottom:1px solid var(--divider); }
   .seg { display:flex; background:#111; border-radius:8px; padding:3px; gap:2px; }
@@ -136,13 +136,30 @@
   .ban-ed .second { font-family:var(--f-title); font-style:italic; font-size:28px; color:var(--t3); }
   .ban-ed .second .u { font-size:.5em; color:var(--t5); }
 
-  .scale { height:100%; display:flex; flex-direction:column; justify-content:center; gap:10px; }
-  .scale .srow { display:flex; align-items:center; gap:10px; }
-  .scale .snm { font-family:var(--f-light); font-size:11px; width:72px; text-align:right; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .scale .strack { position:relative; flex:1; height:8px; background:#1a1a1a; border-radius:999px; }
-  .scale .stick { position:absolute; top:-3px; width:2px; height:14px; background:#262626; border-radius:2px; }
-  .scale .sdot { position:absolute; top:-3px; width:14px; height:14px; border-radius:50%; transform:translateX(-7px); border:2px solid #0c0c0c; }
-  .scale .sval { font-family:var(--f-title); font-style:italic; font-size:15px; width:30px; flex-shrink:0; }
+  /* scale-figma (Likert) — flex-fill chain: root fills the pane, rows are equal bands (EX-W12) */
+  .scalefig { height:100%; display:flex; flex-direction:column; padding:16px 24px; }
+  .sf-rows  { flex:1; display:flex; flex-direction:column; min-height:0; }
+  .sf-row   { flex:1; min-height:0; display:grid; grid-template-columns:92px 1fr 50px; column-gap:16px; align-items:center; cursor:pointer; }
+  .sf-lab   { font-family:var(--f-light); font-size:14px; text-transform:uppercase; letter-spacing:.04em; text-align:right; color:var(--t2);
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sf-row.sf-client .sf-lab { color:var(--client); }
+  .sf-track { position:relative; height:8px; }
+  .sf-base  { position:absolute; left:0; right:0; top:50%; height:1px; transform:translateY(-50%); background:#343434; }
+  .sf-tick  { position:absolute; top:50%; width:2px; height:8px; transform:translate(-50%,-50%); background:#2a2a2a; border-radius:1px; }
+  .sf-dot   { position:absolute; top:50%; width:14px; height:14px; border-radius:50%; transform:translate(-50%,-50%); background:#7c7c7c; border:2px solid #161616; }
+  .sf-row.sf-client .sf-dot { width:16px; height:16px; background:var(--client); border:none; box-shadow:0 0 0 4px rgba(233,148,162,.16); }
+  .sf-val   { font-family:var(--f-title); font-style:italic; font-size:24px; text-align:right; color:var(--t1); }
+  .sf-row.sf-client .sf-val { color:var(--client); }
+  .sf-axis  { flex-shrink:0; margin-top:8px; display:grid; grid-template-columns:92px 1fr 50px; column-gap:16px; }
+  .sf-cap   { font-family:var(--f-light); font-size:11px; text-align:right; color:var(--t4); }
+  .sf-axline { position:relative; height:16px; }
+  .sf-axline span { position:absolute; top:0; transform:translateX(-50%); font-family:var(--f-light); font-size:11px; color:var(--t4); }
+  .sf-msg   { font-family:var(--f-light); font-size:11px; color:var(--t5); text-align:center; }
+  .sf-toosmall { display:none; }
+  .scalefig.sf-center { justify-content:center; }
+  .scalefig.too-small { justify-content:center; }
+  .scalefig.too-small .sf-rows, .scalefig.too-small .sf-axis { display:none; }
+  .scalefig.too-small .sf-toosmall { display:block; }
 
   .media { position:relative; border:1px solid var(--frame-border); border-radius:8px; overflow:hidden; background:#000; }
   .media.hero::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--client); z-index:2; }
@@ -389,7 +406,7 @@ var EXAMPLES_DATA=[
   document.body.classList.add('demo-mode');
 })();
 
-var VERSION='2026-06-16.26';
+var VERSION='2026-06-16.29';
 var CLIENT="ILLY";
 var BRANDS=["ILLY","NESPRESSO","STARBUCKS","PEETS","LAVAZZA"];
 var BNAME={ILLY:"Illycaffè",NESPRESSO:"Nespresso",STARBUCKS:"Starbucks",PEETS:"Peet's",LAVAZZA:"Lavazza"};
@@ -1103,6 +1120,7 @@ function sizeDrawerBody(){
   body.style.height=Math.max(356,h)+"px";
   /* the chart was drawn to the prior plot box — redraw it to the new height (rebind marks) */
   var ind=indById(openId); if(ind && wirePlot(ind,body)) wireChart(ind,body);
+  fitScale(body);
 }
 
 /* ── focus ── */
@@ -1171,6 +1189,7 @@ function renderBody(ind){
   var exHTML='<div class="pane-ex">'+examplesPane(ind)+'</div>';
   if(mode==="chart") body.innerHTML=chartHTML; else if(mode==="examples") body.innerHTML=exHTML; else body.innerHTML=chartHTML+exHTML;
   wirePlot(ind,body); wireChart(ind,body); wireBan(ind,body); wireExamples(ind,body); hydrateTrends(body);
+  requestAnimationFrame(function(){ fitScale(body); });
 }
 
 /* ── per-class chart forms (big = chart-only mode → fill the whole drawer) ── */
@@ -1188,18 +1207,35 @@ function banEditorial(ind, big){
   return '<div class="ban-ed"'+(big?' style="gap:22px"':'')+'><div><div class="hero" style="font-size:'+hs+'px">'+esc(first.n)+'<span class="u">'+esc(first.u)+'</span></div><div class="cap">'+esc(first.c)+'</div></div>'
     + rest.map(function(b){ return '<div><span class="second" style="font-size:'+ss+'px">'+esc(b.n)+'<span class="u">'+esc(b.u)+'</span></span> <span class="cap" style="display:inline">'+esc(b.c)+'</span></div>'; }).join("")+'</div>';
 }
+/* scale-figma (Likert): root flexes to fill the pane; rows are equal flex bands (no fixed
+   chart height, no vertical centring). Client forced to top, pink accent + ring; comparators
+   grey. Shared 1–5 axis under the track column. N-robust over the metric's brand set. */
 function scaleFigma(ind, big){
-  var vals=ind.metric.vals;
-  var gap=big?20:10, th=big?11:8, dot=big?18:14, nmw=big?92:72, nf=big?13:11, vf=big?19:15;
-  return '<div class="scale" style="gap:'+gap+'px">'+BRANDS.map(function(b){
-    var v=vals[b], isC=b===CLIENT, isSel=b===selectedBrand, pct=((v-1)/4)*100;
-    var dotCol=isC?ROSE:(isSel?"#ededed":"#5a5a5a"), nmCol=isSel?(isC?ROSE:"#ededed"):(isC?ROSE:"#9a9a9a"), valCol=isC?ROSE:"#ededed";
-    var dsz=isSel?dot+2:dot, dtop=-(dsz-th)/2;
-    return '<div class="srow" data-brand="'+b+'" style="cursor:pointer"><div class="snm" style="color:'+nmCol+';width:'+nmw+'px;font-size:'+nf+'px">'+esc(BNAME[b])+'</div>'
-      + '<div class="strack" style="height:'+th+'px"><div class="stick" style="left:0%"></div><div class="stick" style="left:25%"></div><div class="stick" style="left:50%"></div><div class="stick" style="left:75%"></div><div class="stick" style="left:100%"></div>'
-      + '<div class="sdot" style="left:'+pct.toFixed(1)+'%;background:'+dotCol+';width:'+dsz+'px;height:'+dsz+'px;top:'+dtop+'px;transform:translateX(-'+(dsz/2)+'px)"></div></div>'
-      + '<div class="sval" style="color:'+valCol+';font-size:'+vf+'px">'+v.toFixed(indDec(ind.id))+'</div></div>';
-  }).join("")+'</div>';
+  var m=ind.metric||{}, vals=m.vals||{};
+  var order=[CLIENT].concat(BRANDS.filter(function(b){ return b!==CLIENT; }))
+              .filter(function(b){ var v=vals[b]; return typeof v==="number" && isFinite(v); });
+  if(!order.length) return '<div class="scalefig sf-center"><div class="sf-msg">No scores available for this metric.</div></div>';
+  var ticks="", axis="";
+  for(var t=1;t<=5;t++){ var x=(((t-1)/4)*100); ticks+='<div class="sf-tick" style="left:'+x+'%"></div>'; axis+='<span style="left:'+x+'%">'+t+'</span>'; }
+  var dec=indDec(ind.id);
+  var rows=order.map(function(b){
+    var v=vals[b], isC=b===CLIENT, pct=((v-1)/4)*100;
+    return '<div class="sf-row'+(isC?' sf-client':'')+'" data-brand="'+b+'">'
+      + '<div class="sf-lab">'+esc(BNAME[b])+'</div>'
+      + '<div class="sf-track"><div class="sf-base"></div>'+ticks+'<div class="sf-dot" style="left:'+pct.toFixed(1)+'%"></div></div>'
+      + '<div class="sf-val">'+v.toFixed(dec)+'</div></div>';
+  }).join("");
+  return '<div class="scalefig"><div class="sf-rows">'+rows+'</div>'
+    + '<div class="sf-axis"><div class="sf-cap">mean · /5</div><div class="sf-axline">'+axis+'</div><div></div></div>'
+    + '<div class="sf-toosmall sf-msg">Open the drawer wider to read the scale.</div></div>';
+}
+/* too-small state: read offsetHeight only to PICK the state (never to size — the fill is flex).
+   Below ~40px/band the bands would crush, so show the reminder instead. Threshold build-and-review. */
+function fitScale(body){
+  var fig=body&&body.querySelector(".scalefig"); if(!fig) return;
+  var rows=fig.querySelector(".sf-rows"); if(!rows) return;
+  var n=rows.children.length||1;
+  fig.classList.toggle("too-small", fig.offsetHeight < n*40 + 56);
 }
 function treemap(ind, big, box){
   var vals=ind.metric.vals, total=BRANDS.reduce(function(a,b){return a+vals[b];},0);
