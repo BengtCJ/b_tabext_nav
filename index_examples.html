@@ -36,7 +36,7 @@
 
   .detail-header { overflow:hidden;
     transition:opacity var(--tx) var(--ease), transform var(--tx) var(--ease), max-height var(--tx) var(--ease), margin var(--tx) var(--ease);
-    max-height:240px; margin-bottom:16px; }
+    max-height:240px; margin-bottom:24px; }
   .stage.focus .detail-header { opacity:0; transform:translateY(-12px); max-height:0; margin-bottom:0; pointer-events:none; }
   .dh-title { font-family:var(--f-body); font-size:56px; line-height:1; text-transform:uppercase; letter-spacing:-.01em; }
   .dh-q { font-family:var(--f-light); font-size:19px; line-height:1.3; margin-top:10px; max-width:680px; }
@@ -59,7 +59,7 @@
   .hc.client .hs { color:#000; font-size:31px; }
   .hc .hs .suf { font-size:.5em; }
 
-  .lab-cell { background:var(--cell); padding:10px 12px; display:flex; align-items:center; gap:10px;
+  .lab-cell { background:var(--cell); padding:14px 12px; display:flex; align-items:center; gap:10px;
               border-left:3px solid transparent; border-radius:8px; transition:background .14s, border-color .14s; }
   .sc-row:not(.header):hover .lab-cell { background:#2a2a2a; }
   .sc-row:not(.header):hover .score-cell.comp   { background:#222; }
@@ -78,7 +78,7 @@
   .sc-row.promoted .ex-pill { background:var(--client); border-color:var(--client); color:#000; }
   .sc-row.promoted .ex-pill .chev { transform:rotate(180deg); }
 
-  .score-cell { padding:10px 10px; display:flex; align-items:center; border-radius:8px;
+  .score-cell { padding:14px 10px; display:flex; align-items:center; border-radius:8px;
                 transition:background .14s, box-shadow .14s, padding .2s var(--ease); }
   .score-cell.comp   { background:var(--cell); }
   .score-cell.client { background:var(--cell-client); }
