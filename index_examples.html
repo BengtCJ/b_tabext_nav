@@ -238,9 +238,9 @@
   <div class="obj">
     <div class="stage" id="stage">
       <div id="tv-inner">
-        <div class="detail-header" id="detailHeader">
-          <div class="dh-title">OPPORTUNITY<br>PATHWAY</div>
-          <div class="dh-q">Is there a clear market opportunity for Illycaffè and a clear demand for the product / service?</div>
+        <div class="detail-header" id="detailHeader" style="display:none">
+          <div class="dh-title" id="dhTitle"></div>
+          <div class="dh-q" id="dhQ"></div>
         </div>
         <div class="scorecard" id="scorecard"></div>
       </div>
@@ -3346,7 +3346,7 @@ var DATA = (function(){
     monthField:'Month', quarterField:'Quarter', periodField:''
   };
   var CONFIG = Object.assign({}, DEFAULTS);
-  var _dashboard=null, _subgroup=null;
+  var _dashboard=null, _subgroup=null, _subcategoryName=null;
   var _rawData=[];
 
   // ── subgroup resolver: name-derived, validates against actual data ──
@@ -3488,7 +3488,8 @@ var DATA = (function(){
       var brandIdx=colIdx(CONFIG.brandField), indIdx=colIdx(CONFIG.indicatorIdField),
           nameIdx=colIdx(CONFIG.nameField), sourceIdx=colIdx(CONFIG.sourceField),
           subcatIdx=colIdx(CONFIG.subcategoryIdField), scoreIdx=colIdx(CONFIG.scoreField),
-          catIdx=colIdx(CONFIG.categoryField), levelIdx=colIdx('level');
+          catIdx=colIdx(CONFIG.categoryField), levelIdx=colIdx('level'),
+          subcatNameIdx=colIdx('subcategory_name');
       if(nameIdx===-1) nameIdx=colIdx('Indicator Name');
       if(brandIdx===-1 || indIdx===-1 || scoreIdx===-1){
         console.warn('[scoreWorksheet] required columns missing. Available:',
@@ -3513,6 +3514,14 @@ var DATA = (function(){
         if(r.subcategory_id) subcatSet[r.subcategory_id.trim().toLowerCase()] = true;
       });
       _subgroup = resolveSubgroup(subcatSet);
+      _subcategoryName = null;
+      if(_subgroup && subcatNameIdx !== -1){
+        var nameRow = dataRows.find(function(row){
+          var sc = subcatIdx !== -1 ? (row[subcatIdx].value||row[subcatIdx].formattedValue||'') : '';
+          return sc.trim().toLowerCase() === _subgroup;
+        });
+        if(nameRow) _subcategoryName = nameRow[subcatNameIdx].formattedValue||nameRow[subcatNameIdx].value||null;
+      }
       return buildScoreModel(normalised, CONFIG.clientBrand, _subgroup);
     } catch(e){ console.error('[scoreWorksheet] read failed:', e); return null; }
   }
@@ -3645,7 +3654,9 @@ var DATA = (function(){
            buildScoreModel:buildScoreModel, fetchScoreData:fetchScoreData,
            fetchRawData:fetchRawData, buildSeries:buildSeries,
            buildIndicatorsFromModel:buildIndicatorsFromModel,
-           setDashboard:function(d){ _dashboard=d; } };
+           setDashboard:function(d){ _dashboard=d; },
+           getSubgroup:function(){ return _subgroup; },
+           getSubcategoryName:function(){ return _subcategoryName; } };
 })();
 
 /* ── boot: real data in Tableau, sample data in standalone preview ──────────── */
@@ -3672,6 +3683,13 @@ function boot(){
           INDICATORS.forEach(function(ind){ var rows=EXAMPLES_SEED[ind.id]||[];
             if(ind.kind==='market'){ ind.sources=rows.map(rowToExample); ind.note=(rows[0]&&rows[0].market_note)||''; ind.examples=[]; }
             else { ind.examples=rows.map(rowToExample); } });
+          var subgroupName = DATA.getSubcategoryName();
+          if(DATA.getSubgroup() && subgroupName){
+            document.getElementById('dhTitle').innerHTML = subgroupName.trim().toUpperCase().split(/\s+/).join('<br>');
+            var clientDisp = BNAME[CLIENT]||CLIENT;
+            document.getElementById('dhQ').textContent = 'Is there a clear market opportunity for '+clientDisp+' and a clear demand for the product / service?';
+            document.getElementById('detailHeader').style.display = '';
+          }
         } else {
           console.warn('[boot] no score model — using sample data. Set CONFIG.scoreWorksheet.');
         }

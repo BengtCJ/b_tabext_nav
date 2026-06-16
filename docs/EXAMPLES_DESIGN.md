@@ -2,12 +2,14 @@
 
 ## Data layer
 
-### Subgroup scoping
+### Subgroup scoping + live header
 
-Subgroup scoping is derived from `dashboard.name`: the scorecard filters to a subgroup only
-when the tab name (trim+lowercased) matches a `subcategory_id` present in the score data;
-a generic/unmatched/ambiguous name or no dashboard shows all indicators. No config flag —
-name-derived. Preserves the self-identification migration hook in CLAUDE.md.
+Subgroup scoping is derived from `dashboard.name` — filter only when the tab name (trim+lower)
+matches a `subcategory_id` present in the score data; generic/unmatched/no-dashboard shows all.
+The detail header is the live label for the scope: `.dh-title` = the resolved
+`subcategory_name` (uppercased, one word per line), `.dh-q` = the interim question template with
+the client display name interpolated; both hidden when unscoped. Name-derived, no config flag.
+The `.dh-title` 56px STYLE_SPEC token vs the PoC 44px is reconciled in EX-W3, not here.
 
 **Implementation** (`index_examples.html` — DATA module):
 - `resolveSubgroup(subcatIds)` — takes a plain-object set of normalised subcategory_ids
