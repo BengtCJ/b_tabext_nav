@@ -571,7 +571,7 @@ var EXAMPLES_DATA=[
   document.body.classList.add('demo-mode');
 })();
 
-var VERSION='2026-06-16.20';
+var VERSION='2026-06-16.22';
 var CLIENT="ILLY";
 var BRANDS=["ILLY","NESPRESSO","STARBUCKS","PEETS","LAVAZZA"];
 var BNAME={ILLY:"Illycaffè",NESPRESSO:"Nespresso",STARBUCKS:"Starbucks",PEETS:"Peet's",LAVAZZA:"Lavazza"};
@@ -1283,6 +1283,8 @@ function sizeDrawerBody(){
   if(!stage||!tb||!body) return;
   var h=stage.offsetHeight - _promotedCellsH - tb.offsetHeight - 24;
   body.style.height=Math.max(356,h)+"px";
+  /* the chart was drawn to the prior plot box — redraw it to the new height (rebind marks) */
+  var ind=indById(openId); if(ind && wirePlot(ind,body)) wireChart(ind,body);
 }
 
 /* ── focus ── */
@@ -1350,17 +1352,13 @@ function renderBody(ind){
     +'<div class="sub">the raw metric · '+esc(ind.chart.replace("_","-"))+'</div><div class="plot">'+chartForm(ind, mode==="chart")+'</div></div>';
   var exHTML='<div class="pane-ex">'+examplesPane(ind)+'</div>';
   if(mode==="chart") body.innerHTML=chartHTML; else if(mode==="examples") body.innerHTML=exHTML; else body.innerHTML=chartHTML+exHTML;
-  wireChart(ind,body); wireBan(ind,body); wireExamples(ind,body); hydrateTrends(body);
+  wirePlot(ind,body); wireChart(ind,body); wireBan(ind,body); wireExamples(ind,body); hydrateTrends(body);
 }
 
 /* ── per-class chart forms (big = chart-only mode → fill the whole drawer) ── */
 function chartForm(ind, big){
-  if(ind.chart==="ban_editorial") return '';  // wireBan renders directly into .plot
-  if(ind.chart==="scale-figma")   return scaleFigma(ind, big);
-  if(ind.chart==="treemap")       return treemap(ind, big);
-  if(ind.chart==="line-straight") return lineStraight(ind, big);
-  if(ind.chart==="hbar")          return hbar(ind, big);
-  return vbar(ind, big);
+  if(ind.chart==="scale-figma") return scaleFigma(ind, big);
+  return '';  // ban + svg charts (treemap/line/hbar/vbar) render post-mount into the measured .plot: wireBan / wirePlot
 }
 function banEditorial(ind, big){
   var h=ind.metric.headline||[], first=h[0], rest=h.slice(1);
@@ -1385,9 +1383,9 @@ function scaleFigma(ind, big){
       + '<div class="sval" style="color:'+valCol+';font-size:'+vf+'px">'+v.toFixed(indDec(ind.id))+'</div></div>';
   }).join("")+'</div>';
 }
-function treemap(ind, big){
+function treemap(ind, big, box){
   var vals=ind.metric.vals, total=BRANDS.reduce(function(a,b){return a+vals[b];},0);
-  var order=BRANDS.slice().sort(function(a,b){return vals[b]-vals[a];}), x=0, W=big?640:380, H=big?250:210;
+  var order=BRANDS.slice().sort(function(a,b){return vals[b]-vals[a];}), x=0, W=(box&&box.w)||(big?640:380), H=(box&&box.h)||(big?250:210);
   var nf=big?13:11, vf=big?26:20;
   var cells=order.map(function(b){
     var frac=vals[b]/total, w=frac*W, isC=b===CLIENT, isSel=b===selectedBrand;
@@ -1398,10 +1396,10 @@ function treemap(ind, big){
   }).join("");
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+cells+'</svg>';
 }
-function lineStraight(ind, big){
+function lineStraight(ind, big, box){
   var vals=ind.metric.vals, nums=BRANDS.map(function(b){return vals[b];});
   var maxV=Math.max.apply(null,nums), minV=Math.min.apply(null,nums), hasNeg=minV<0;
-  var W=big?660:400, H=big?262:210, padL=14, padR=big?56:44, padT=big?22:16, padB=big?34:28, plotH=H-padT-padB;
+  var W=(box&&box.w)||(big?660:400), H=(box&&box.h)||(big?262:210), padL=14, padR=big?56:44, padT=big?22:16, padB=big?34:28, plotH=H-padT-padB;
   var top=Math.max(maxV,0),bot=Math.min(minV,0),rng=(top-bot)||1, zeroY=padT+(top/rng)*plotH;
   var n=BRANDS.length, slot=(W-padL-padR)/n, bw=slot*(big?0.52:0.5), vf=big?18:14, lf=big?12:10, parts=[];
   var dec=indDec(ind.id);
@@ -1416,9 +1414,11 @@ function lineStraight(ind, big){
   });
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+parts.join("")+'</svg>';
 }
-function hbar(ind, big){
+function hbar(ind, big, box){
   var vals=ind.metric.vals, max=Math.max.apply(null,BRANDS.map(function(b){return vals[b];}));
-  var rowH=big?40:28, gap=big?16:10, padL=big?100:86, padR=big?48:40, W=big?620:380, H=BRANDS.length*(rowH+gap);
+  var n=BRANDS.length, gap=big?16:10, padL=big?100:86, padR=big?48:40;
+  var W=(box&&box.w)||(big?620:380), H=(box&&box.h)||(n*((big?40:28)+gap));
+  var rowH=(H-gap*(n-1))/n;   // rows fill the full height (gap between them); no letterbox
   var nf=big?13:11, vf=big?19:15, dec=indDec(ind.id);
   var bars=BRANDS.map(function(b,i){
     var v=vals[b], isC=b===CLIENT, isSel=b===selectedBrand, y=i*(rowH+gap), bw=Math.max(2,(v/max)*(W-padL-padR)), fill=isC?ROSE:(isSel?"#ededed":"#4f4f4f");
@@ -1428,9 +1428,9 @@ function hbar(ind, big){
   }).join("");
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+bars+'</svg>';
 }
-function vbar(ind, big){
+function vbar(ind, big, box){
   var vals=ind.metric.vals, max=Math.max.apply(null,BRANDS.map(function(b){return vals[b];}));
-  var W=big?660:400, H=big?262:210, padX=14, padT=big?26:20, padB=big?34:30, plotH=H-padT-padB, n=BRANDS.length, slot=(W-2*padX)/n, bw=slot*(big?0.56:0.5), baseY=H-padB;
+  var W=(box&&box.w)||(big?660:400), H=(box&&box.h)||(big?262:210), padX=14, padT=big?26:20, padB=big?34:30, plotH=H-padT-padB, n=BRANDS.length, slot=(W-2*padX)/n, bw=slot*(big?0.56:0.5), baseY=H-padB;
   var vf=big?19:15, lf=big?12:10, dec=indDec(ind.id);
   var bars=BRANDS.map(function(b,i){
     var v=vals[b], isC=b===CLIENT, isSel=b===selectedBrand, cx=padX+slot*i+slot/2, h=(v/max)*plotH, y=baseY-h, fill=isC?ROSE:(isSel?"#ededed":"#4f4f4f"), nm=BNAME[b]; if(nm.length>9) nm=nm.slice(0,8)+"…";
@@ -1442,6 +1442,17 @@ function vbar(ind, big){
   return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+bars+'</svg>';
 }
 function wireChart(ind,body){ body.querySelectorAll('[data-brand]').forEach(function(el){ el.addEventListener("click",function(ev){ ev.stopPropagation(); if(ind.kind!=="market") setSelected(el.getAttribute("data-brand"),ind); }); }); }
+/* svg charts are drawn AFTER mount, sized to the measured .plot box → fill it with no
+   letterbox and no distortion; type stays fixed-px (viewBox is 1:1 with the box). */
+function wirePlot(ind,body){
+  var BUILD={ treemap:treemap, "line-straight":lineStraight, hbar:hbar, vbar:vbar };
+  var fn=BUILD[ind.chart]; if(!fn) return false;
+  var plot=body.querySelector('.pane-chart .plot'); if(!plot) return false;
+  var w=plot.clientWidth, h=plot.clientHeight;
+  plot.innerHTML=fn(ind, viewMode[ind.id]==="chart", (w>4&&h>4)?{w:w,h:h}:null);
+  return true;
+}
+function indById(id){ for(var i=0;i<INDICATORS.length;i++){ if(INDICATORS[i].id===id) return INDICATORS[i]; } return null; }
 
 /* ── media ── */
 function mediaFill(m,name){
@@ -1836,18 +1847,29 @@ var DATA = (function(){
       if(named){ console.log('[rawWorksheet] using configured:', named.name); return named; }
       console.warn('[rawWorksheet] configured sheet not found — auto-detecting:', CONFIG.worksheet);
     }
+    // Two-pass: a value-bearing sheet that ALSO carries a period dimension
+    // (Year/Quarter/Month/periodField) is the raw sheet — never the score sheet,
+    // which has no period grain. Fall back to the first value-bearing sheet only
+    // if none has a period dimension. diag captures every sheet's columns so a
+    // live miss is self-explaining in the console.
+    var fallback=null, diag=[];
     for(var i=0;i<sheets.length;i++){
       try{
         var probe = await sheets[i].getSummaryDataAsync({ maxRows:1 });
-        if(_hasCol(probe.columns,CONFIG.brandField) &&
-           _hasCol(probe.columns,CONFIG.indicatorIdField) &&
-           _hasCol(probe.columns,CONFIG.valueField)){
-          console.log('[rawWorksheet] auto-detected:', sheets[i].name);
-          return sheets[i];
-        }
-      }catch(e){ /* worksheet not readable from this extension — skip */ }
+        var cols = probe.columns;
+        diag.push(sheets[i].name+' → '+cols.map(function(c){return c.fieldName;}).join(' | '));
+        if(!(_hasCol(cols,CONFIG.brandField) &&
+             _hasCol(cols,CONFIG.indicatorIdField) &&
+             _hasCol(cols,CONFIG.valueField))) continue;
+        var hasPeriod = _hasCol(cols,CONFIG.yearField)||_hasCol(cols,CONFIG.quarterField)||
+                        _hasCol(cols,CONFIG.monthField)||(CONFIG.periodField&&_hasCol(cols,CONFIG.periodField));
+        if(hasPeriod){ console.log('[rawWorksheet] auto-detected (period-bearing):', sheets[i].name); return sheets[i]; }
+        if(!fallback) fallback=sheets[i];
+      }catch(e){ diag.push(sheets[i].name+' → <unreadable: '+(e&&e.message||e)+'>'); }
     }
-    console.warn('[rawWorksheet] no worksheet found with brand+indicator+value columns.');
+    if(fallback){ console.log('[rawWorksheet] auto-detected (no period dim):', fallback.name); return fallback; }
+    console.warn('[rawWorksheet] no worksheet has brand('+CONFIG.brandField+') + indicator('+
+      CONFIG.indicatorIdField+') + value('+CONFIG.valueField+'). Sheets/columns:\n  '+diag.join('\n  '));
     return null;
   }
 
@@ -1868,12 +1890,14 @@ var DATA = (function(){
           quarterIdx=colIdx(CONFIG.quarterField),
           periodIdx=CONFIG.periodField ? colIdx(CONFIG.periodField) : -1;
       if(brandIdx===-1||valueIdx===-1||indIdx===-1){
-        console.warn('[rawWorksheet] required columns missing.'); return;
+        console.warn('[rawWorksheet] required columns missing on "'+ws.name+'". brand='+brandIdx+
+          ' value='+valueIdx+' ind='+indIdx+' | Available: '+
+          cols.map(function(c){return c.fieldName;}).join(', ')); return;
       }
       _rawData = rows.map(function(row){
-        var rawVal=row[valueIdx].value;
-        var isVNull = !rawVal||rawVal==='%null%'||rawVal==='Null';
-        var val = isVNull ? null : parseFloat(rawVal);
+        // donor parity: parseFloat handles %null%/Null (→ NaN → null); a real 0 is kept.
+        var val = parseFloat(row[valueIdx].value);
+        if(isNaN(val)) val = null;
         var rawBrand=String(row[brandIdx].formattedValue||row[brandIdx].value||'').trim().toUpperCase();
         var cat = catIdx!==-1 ? (row[catIdx].value||'') : '';
         var rawY = yearIdx!==-1 ? row[yearIdx].value : null;
@@ -1895,12 +1919,18 @@ var DATA = (function(){
         }
         return {
           brand: BRAND_ALIASES[rawBrand]||rawBrand,
-          value: (isVNull||isNaN(val)) ? null : val,
+          value: val,
           indicator: row[indIdx].value||'',
           category: cat,
           period: period
         };
       }).filter(function(r){ return r.value!==null&&r.category!=='coffee_general'; });
+      // coverage summary — instantly shows whether raw landed, and for which indicators/brands
+      var _inds={}, _brs={};
+      _rawData.forEach(function(r){ _inds[r.indicator]=(_inds[r.indicator]||0)+1; _brs[r.brand]=true; });
+      console.log('[rawWorksheet] sheet="'+ws.name+'" rows='+rows.length+' kept='+_rawData.length+
+        '\n  indicators: '+(Object.keys(_inds).join(', ')||'(none)')+
+        '\n  brands: '+(Object.keys(_brs).join(', ')||'(none)'));
     }catch(e){ console.error('[rawWorksheet] read failed:', e); }
   }
 
@@ -1963,6 +1993,10 @@ var DATA = (function(){
           scores:r.scores, metric:{unit:'', vals:aggVals, series:ser}
         };
       }
+      // raw rejected — name the brands with no usable raw points so the gap is visible
+      var _miss = ser ? model.brands.filter(function(b){ return aggregate(ser[b]||[], r.id)===null; }) : null;
+      console.log('[rawWorksheet] '+r.id+': /5 score-mirror ('+
+        (ser ? 'no raw for: '+(_miss.join(', ')||'none') : 'no raw series')+')');
       return {
         id:r.id, name:r.name, src:(r.source?('+'+r.source):''),
         cls:'', chart:resolveChart(r.id), kind:'brand',
