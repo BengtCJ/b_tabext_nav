@@ -30,13 +30,13 @@
   #ex-root { width:100%; height:100%; background:transparent; overflow:hidden; position:relative; }
   html.demo-mode, body.demo-mode { overflow:auto; height:auto; }
   body.demo-mode { background:#050505; }
-  body.demo-mode #ex-root { height:684px; border:1px solid var(--frame-border); border-radius:16px; }
+  body.demo-mode #ex-root { height:684px; border:1px solid var(--frame-border); border-radius:16px; overflow:hidden; transform:translateZ(0); }
   .stage { height:100%; overflow-y:auto; padding:0; }
   .stage::-webkit-scrollbar { width:10px; } .stage::-webkit-scrollbar-thumb { background:#222; border-radius:5px; border:2px solid var(--card); }
 
   .detail-header { overflow:hidden;
     transition:opacity var(--tx) var(--ease), transform var(--tx) var(--ease), max-height var(--tx) var(--ease), margin var(--tx) var(--ease);
-    max-height:240px; margin-bottom:24px; }
+    max-height:240px; margin-bottom:40px; }
   .stage.focus .detail-header { opacity:0; transform:translateY(-12px); max-height:0; margin-bottom:0; pointer-events:none; }
   .dh-title { font-family:var(--f-body); font-size:56px; line-height:1; text-transform:uppercase; letter-spacing:-.01em; }
   .dh-q { font-family:var(--f-light); font-size:19px; line-height:1.3; margin-top:10px; max-width:680px; }
@@ -105,7 +105,7 @@
   .drawer.open { opacity:1; }
   .drawer-inner { background:#0c0c0c; border:1px solid var(--divider); border-radius:10px; margin-top:2px; overflow:hidden; }
 
-  .drawer-tb { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:10px; padding:9px 12px; background:#0c0c0c; border-bottom:1px solid var(--divider); }
+  .drawer-tb { display:flex; align-items:center; gap:10px; padding:9px 12px; background:#0c0c0c; border-bottom:1px solid var(--divider); }
   .seg { display:flex; background:#111; border-radius:8px; padding:3px; gap:2px; }
   .seg button { appearance:none; border:none; height:26px; padding:0 12px; font-size:10px; font-family:var(--f-light); letter-spacing:.1em; text-transform:uppercase; cursor:pointer; background:transparent; color:#555; border-radius:6px; transition:background .14s, color .14s; }
   .seg button.active { background:#2e2e2e; color:var(--t1); box-shadow:0 1px 2px rgba(0,0,0,.5); }
@@ -284,7 +284,7 @@
   document.body.classList.add('demo-mode');
 })();
 
-var VERSION='2026-06-16.18';
+var VERSION='2026-06-16.19';
 var CLIENT="ILLY";
 var BRANDS=["ILLY","NESPRESSO","STARBUCKS","PEETS","LAVAZZA"];
 var BNAME={ILLY:"Illycaffè",NESPRESSO:"Nespresso",STARBUCKS:"Starbucks",PEETS:"Peet's",LAVAZZA:"Lavazza"};
@@ -708,6 +708,235 @@ var INDICATOR_DECIMALS = {
 };
 function indDec(id){ return INDICATOR_DECIMALS[id] !== undefined ? INDICATOR_DECIMALS[id] : 1; }
 
+// ─── BAN SHELL (market indicators: tam / cagr / mcon) ─────────────────────
+// Ported from index.html — DOM-based renderers with three direction options.
+var BAN_DIRS = {
+  tam:  ['ban_editorial', 'ban_ledger'],
+  cagr: ['ban_editorial', 'ban_radial', 'ban_ledger'],
+  mcon: ['ban_editorial', 'ban_ledger'],
+};
+var INDICATOR_DEFINITION = {
+  mcon: 'Market concentration measured by the Herfindahl-Hirschman Index (HHI). Higher values indicate greater concentration among competitors.',
+  cagr: 'Compound annual growth rate of the total addressable market over the measurement period.',
+  tam:  'Total addressable market size in USD billions at the time of measurement.',
+};
+var INDICATOR_BAN_CONTEXT = {
+  mcon: {
+    type:'threshold', prefix:'', suffix:' HHI',
+    cells:[
+      { label:'Unconcentrated',      range:'< 1,500',       note:'DOJ/FTC 2023' },
+      { label:'Moderate',            range:'1,500 - 1,800', note:'DOJ/FTC 2023' },
+      { label:'Highly concentrated', range:'> 1,800',       note:'DOJ/FTC 2023' },
+    ],
+    thresholds:[1500,1800],
+    caveat:'Bands follow US merger guidelines (2023). Other vintages and jurisdictions differ.',
+  },
+  cagr: {
+    type:'illustrative', prefix:'', suffix:'%',
+    cells:[
+      { label:'Low / declining', range:'< 3%',   note:'e.g. legacy retail' },
+      { label:'Mature / steady', range:'3 - 8%', note:'e.g. packaged goods' },
+      { label:'High growth',     range:'> 8%',   note:'e.g. emerging category' },
+    ],
+    thresholds:[3,8],
+    caveat:'Ranges are illustrative sector examples, not a benchmark standard.',
+  },
+  tam: { type:'none', prefix:'$', suffix:'B' },
+};
+var _banDir = {};
+
+function banNumVal(ind){
+  if(ind.metric && ind.metric.banVal !== undefined) return ind.metric.banVal;
+  var h = ind.metric && ind.metric.headline;
+  if(h && h[0] && h[0].n){
+    var ctx = INDICATOR_BAN_CONTEXT[ind.id] || {};
+    var pfx = ctx.prefix || '';
+    var raw = pfx ? String(h[0].n).replace(pfx,'') : String(h[0].n);
+    var v = parseFloat(raw);
+    return isNaN(v) ? null : v;
+  }
+  return null;
+}
+
+function getBanShellContent(metricId, numVal){
+  var decs = INDICATOR_DECIMALS[metricId] !== undefined ? INDICATOR_DECIMALS[metricId] : 2;
+  var ctx = INDICATOR_BAN_CONTEXT[metricId] || {};
+  var brandName = BNAME[CLIENT] || CLIENT || 'the market leader';
+  var UNITS = { cagr:'%', tam:'$B', mcon:'index' };
+  var isBandMetric = (metricId === 'cagr');
+  var activeIdx = -1, bands = [];
+  if(isBandMetric && ctx.cells && ctx.thresholds && ctx.thresholds.length === 2){
+    activeIdx = (numVal !== null && numVal !== undefined)
+      ? (numVal < ctx.thresholds[0] ? 0 : (numVal <= ctx.thresholds[1] ? 1 : 2))
+      : -1;
+    bands = ctx.cells.map(function(cell,i){ return { label:cell.label, range:cell.range, example:cell.note, active:(i===activeIdx) }; });
+  }
+  var verdictMap = {
+    cagr: 'Growth is within the historical range — the kind of pace '+brandName+' has learned to navigate.',
+    tam:  'The market size sets the ceiling '+brandName+' is operating within.',
+    mcon: 'Concentration at this level shapes how '+brandName+' competes for attention and shelf.',
+  };
+  var readingMap = {
+    cagr: 'At this rate the market is expanding without the disruption of a high-growth surge, which means '+brandName+"'s positioning remains relevant.",
+    tam:  'At scale the addressable opportunity is large enough that even a small share shift translates to meaningful volume for '+brandName+'.',
+    mcon: 'A market at this concentration level is competitive but not locked — '+brandName+' has room to manoeuvre without triggering a structural response.',
+  };
+  var dispVal = (numVal !== null && numVal !== undefined) ? numVal.toFixed(decs) : '--';
+  return {
+    code:metricId.toUpperCase(), unit:UNITS[metricId]||'', scope:'Global coffee market',
+    dispVal:dispVal, prefix:ctx.prefix||'', unitSuffix:ctx.suffix||'',
+    def:INDICATOR_DEFINITION[metricId]||'', disclaimer:isBandMetric?(ctx.caveat||''):'',
+    bands:bands, isBandMetric:isBandMetric,
+    verdict:verdictMap[metricId]||'', reading:readingMap[metricId]||'',
+  };
+}
+
+function _be(tag){ return document.createElement(tag); }
+
+function renderBanShell(el, content){
+  var GUTTER=2, CELL_R=8, isBand=content.isBandMetric && content.bands.length>0;
+  el.innerHTML='';
+  el.style.cssText='display:grid;'+(isBand?'grid-template-columns:repeat(3,1fr);':'grid-template-columns:minmax(0,5fr) minmax(0,7fr);')+
+    'grid-template-rows:auto'+(isBand?' 1fr 1fr 1fr':' 1fr')+';gap:'+GUTTER+'px;background:transparent;width:100%;height:100%;box-sizing:border-box;overflow:hidden;';
+  var tc=_be('div'); tc.style.cssText='grid-column:1/-1;padding:12px 16px 8px;display:flex;flex-direction:column;gap:4px;';
+  var cp=_be('div'); cp.style.cssText='font-family:'+SANS+';font-size:11px;color:#777;';
+  cp.textContent=content.code+' \xb7 '+content.unit+' \xb7 '+content.scope; tc.appendChild(cp); el.appendChild(tc);
+  var hz=_be('div');
+  hz.style.cssText=(isBand?'grid-column:1/3;grid-row:2/4;':'grid-column:1;grid-row:2;')+
+    'padding:8px 16px 16px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;overflow:hidden;min-width:0;';
+  var hs=(content.prefix||'')+content.dispVal, hp=Math.max(100,160-Math.max(0,hs.length-4)*12);
+  var he=_be('div');
+  he.style.cssText='font-family:'+SERIF+';font-style:italic;font-weight:400;font-size:'+hp+'px;line-height:1;color:#ededed;white-space:nowrap;';
+  if(content.unitSuffix){ he.appendChild(document.createTextNode(hs)); var sf=_be('span'); sf.style.cssText='font-size:'+Math.round(hp*0.43)+'px;color:#6f6f6f;margin-left:0.15em;'; sf.textContent=content.unitSuffix; he.appendChild(sf); }
+  else { he.textContent=hs; }
+  hz.appendChild(he);
+  var rl=_be('div'); rl.style.cssText='background:'+ROSE+';width:120px;height:1px;flex-shrink:0;';
+  if(!isBand) hz.appendChild(rl);
+  el.appendChild(hz);
+  if(isBand){
+    var vz=_be('div'); vz.style.cssText='grid-column:1;grid-row:4;padding:8px 16px 8px;display:flex;flex-direction:column;justify-content:center;gap:4px;overflow:hidden;min-width:0;';
+    rl.style.marginBottom='8px'; vz.appendChild(rl);
+    var ve=_be('div'); ve.style.cssText='font-family:'+SERIF+';font-style:italic;font-weight:400;font-size:24px;color:#b0b0b0;line-height:1.3;'; ve.textContent=content.verdict; vz.appendChild(ve); el.appendChild(vz);
+    var rz=_be('div'); rz.style.cssText='grid-column:2;grid-row:4;padding:8px 16px 8px;display:flex;flex-direction:column;justify-content:center;gap:4px;overflow:hidden;min-width:0;';
+    var re=_be('div'); re.style.cssText='font-family:'+SANS+';font-size:14px;color:#9a9a9a;line-height:1.5;'; re.textContent=content.reading; rz.appendChild(re);
+    if(content.disclaimer){ var dc=_be('div'); dc.style.cssText='font-family:'+SANS+';font-style:italic;font-size:11px;color:#555;margin-top:4px;'; dc.textContent=content.disclaimer; rz.appendChild(dc); }
+    el.appendChild(rz);
+    content.bands.forEach(function(band,i){
+      var cell=_be('div'); cell.style.cssText='grid-column:3;grid-row:'+(i+2)+';background:'+(band.active?'#3a3a3a':'#242424')+';border-radius:'+CELL_R+'px;padding:16px;display:flex;flex-direction:column;justify-content:center;gap:4px;overflow:hidden;';
+      var lr=_be('div'); lr.style.cssText='display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
+      var lb=_be('div'); lb.style.cssText='font-family:'+SANS+';font-size:14px;color:'+(band.active?'#ededed':'#555')+';text-transform:uppercase;letter-spacing:0.06em;'; lb.textContent=band.label; lr.appendChild(lb);
+      if(band.active){ var mk=_be('div'); mk.style.cssText='width:7px;height:7px;border-radius:50%;background:'+ROSE+';flex-shrink:0;'; lr.appendChild(mk); }
+      cell.appendChild(lr);
+      var rn=_be('div'); rn.style.cssText='font-family:'+SERIF+';font-style:italic;font-size:40px;color:'+(band.active?'#ededed':'#555')+';line-height:1;'; rn.textContent=band.range; cell.appendChild(rn);
+      if(band.example){ var ex=_be('div'); ex.style.cssText='font-family:'+SANS+';font-style:italic;font-size:11px;color:#555;'; ex.textContent=band.example; cell.appendChild(ex); }
+      el.appendChild(cell);
+    });
+  } else {
+    var tz=_be('div'); tz.style.cssText='grid-column:2;grid-row:2;padding:8px 16px 16px;display:flex;flex-direction:column;justify-content:center;gap:16px;overflow:hidden;min-width:0;';
+    if(content.def){ var df=_be('div'); df.style.cssText='font-family:'+SANS+';font-size:14px;color:#a4a4a4;line-height:1.4;'; df.textContent=content.def; tz.appendChild(df); }
+    var ve2=_be('div'); ve2.style.cssText='font-family:'+SERIF+';font-style:italic;font-weight:400;font-size:24px;color:#b0b0b0;line-height:1.3;'; ve2.textContent=content.verdict; tz.appendChild(ve2);
+    var re2=_be('div'); re2.style.cssText='font-family:'+SANS+';font-size:14px;color:#9a9a9a;line-height:1.5;'; re2.textContent=content.reading; tz.appendChild(re2);
+    el.appendChild(tz);
+  }
+}
+
+function renderBanRadial(el, content){
+  if(!content.isBandMetric || !content.bands || !content.bands.length){ renderBanShell(el,content); return; }
+  var GUTTER=2, ns='http://www.w3.org/2000/svg';
+  el.innerHTML='';
+  el.style.cssText='display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr 1fr;gap:'+GUTTER+'px;background:transparent;width:100%;height:100%;box-sizing:border-box;overflow:hidden;';
+  var tc=_be('div'); tc.style.cssText='grid-column:1/-1;padding:12px 16px 8px;display:flex;flex-direction:column;gap:4px;';
+  var cp=_be('div'); cp.style.cssText='font-family:'+SANS+';font-size:11px;color:#777;'; cp.textContent=content.code+' \xb7 '+content.unit+' \xb7 '+content.scope; tc.appendChild(cp); el.appendChild(tc);
+  var rz=_be('div'); rz.style.cssText='grid-row:2/4;display:flex;align-items:center;justify-content:center;overflow:hidden;';
+  var svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('width','100%'); svg.setAttribute('height','100%'); svg.setAttribute('viewBox','0 0 200 200'); svg.setAttribute('preserveAspectRatio','xMidYMid meet'); svg.style.cssText='display:block;overflow:visible;';
+  var CX=100,CY=100,RADII=[36,60,84],HSZ=32;
+  content.bands.forEach(function(band,i){
+    var ring=document.createElementNS(ns,'circle'); ring.setAttribute('cx',CX); ring.setAttribute('cy',CY); ring.setAttribute('r',RADII[i]); ring.setAttribute('fill','none'); ring.setAttribute('stroke',band.active?ROSE:'#222'); ring.setAttribute('stroke-width',band.active?'2':'1'); svg.appendChild(ring);
+    if(band.active){ var dot=document.createElementNS(ns,'circle'); dot.setAttribute('cx',CX); dot.setAttribute('cy',String(CY-RADII[i])); dot.setAttribute('r','5'); dot.setAttribute('fill',ROSE); svg.appendChild(dot); }
+  });
+  var ht=document.createElementNS(ns,'text'); ht.setAttribute('x',CX); ht.setAttribute('y',CY); ht.setAttribute('text-anchor','middle'); ht.setAttribute('dominant-baseline','central'); ht.style.cssText='font-family:'+SERIF+';font-style:italic;font-weight:400;font-size:'+HSZ+'px;fill:#ededed;'; ht.textContent=(content.prefix||'')+content.dispVal; svg.appendChild(ht);
+  if(!content.bands.some(function(b){ return b.active; })){ var prl=document.createElementNS(ns,'rect'); prl.setAttribute('x',CX-20); prl.setAttribute('y',CY+HSZ/2+8); prl.setAttribute('width','40'); prl.setAttribute('height','2'); prl.setAttribute('fill',ROSE); svg.appendChild(prl); }
+  rz.appendChild(svg); el.appendChild(rz);
+  var lz=_be('div'); lz.style.cssText='grid-column:2;grid-row:2;display:flex;flex-direction:column;justify-content:center;padding:8px 16px 8px;gap:0;overflow:hidden;min-width:0;';
+  content.bands.forEach(function(band,i){
+    if(i>0){ var dv=_be('div'); dv.style.cssText='height:1px;background:#1e1e1e;margin:8px 0;'; lz.appendChild(dv); }
+    var row=_be('div'); row.style.cssText='display:flex;flex-direction:row;align-items:flex-start;gap:8px;';
+    var bul=_be('div'); bul.style.cssText='width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0;background:'+(band.active?ROSE:'#2a2a2a')+';'; row.appendChild(bul);
+    var info=_be('div'); info.style.cssText='display:flex;flex-direction:column;gap:2px;';
+    var bn=_be('div'); bn.style.cssText='font-family:'+SANS+';font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:'+(band.active?'#ededed':'#555')+';'; bn.textContent=band.label;
+    var rn=_be('div'); rn.style.cssText='font-family:'+SERIF+';font-style:italic;font-size:40px;color:'+(band.active?'#ededed':'#555')+';'; rn.textContent=band.range;
+    info.appendChild(bn); info.appendChild(rn);
+    if(band.example){ var eg=_be('div'); eg.style.cssText='font-family:'+SANS+';font-style:italic;font-size:11px;color:#555;'; eg.textContent=band.example; info.appendChild(eg); }
+    row.appendChild(info); lz.appendChild(row);
+  });
+  el.appendChild(lz);
+  var cz=_be('div'); cz.style.cssText='grid-column:2;grid-row:3;display:flex;flex-direction:column;padding:8px 16px 16px;gap:4px;justify-content:center;overflow:hidden;min-width:0;';
+  var sep=_be('div'); sep.style.cssText='height:1px;background:#1e1e1e;margin-bottom:8px;flex-shrink:0;'; cz.appendChild(sep);
+  var vd=_be('div'); vd.style.cssText='font-family:'+SERIF+';font-style:italic;font-weight:400;font-size:24px;color:#b0b0b0;line-height:1.3;'; vd.textContent=content.verdict; cz.appendChild(vd);
+  var rd=_be('div'); rd.style.cssText='font-family:'+SANS+';font-size:14px;color:#9a9a9a;line-height:1.5;margin-top:4px;'; rd.textContent=content.reading; cz.appendChild(rd);
+  el.appendChild(cz);
+}
+
+function renderBanLedger(el, content){
+  var GUTTER=2, CELL_R=8, isBand=content.isBandMetric && content.bands.length>0;
+  el.innerHTML='';
+  el.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto 1fr'+(isBand?' 1fr':'')+';gap:'+GUTTER+'px;background:transparent;width:100%;height:100%;box-sizing:border-box;overflow:hidden;';
+  var tc=_be('div'); tc.style.cssText='grid-column:1/-1;padding:12px 16px 8px;display:flex;flex-direction:column;gap:4px;';
+  var cp=_be('div'); cp.style.cssText='font-family:'+SANS+';font-size:11px;color:#777;'; cp.textContent=content.code+' \xb7 '+content.unit+' \xb7 '+content.scope; tc.appendChild(cp); el.appendChild(tc);
+  var hc=_be('div'); hc.style.cssText='background:#181818;border-radius:'+CELL_R+'px;padding:16px 20px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;overflow:hidden;min-width:0;';
+  var hs=(content.prefix||'')+content.dispVal, hp=Math.max(100,120-Math.max(0,hs.length-4)*10);
+  var he=_be('div'); he.style.cssText='font-family:'+SERIF+';font-style:italic;font-weight:400;font-size:'+hp+'px;line-height:1;color:#ededed;white-space:nowrap;';
+  if(content.unitSuffix){ he.appendChild(document.createTextNode(hs)); var sf=_be('span'); sf.style.cssText='font-size:'+Math.round(hp*0.43)+'px;color:#6f6f6f;margin-left:0.15em;'; sf.textContent=content.unitSuffix; he.appendChild(sf); }
+  else { he.textContent=hs; }
+  hc.appendChild(he); el.appendChild(hc);
+  var vc=_be('div'); vc.style.cssText='background:#181818;border-radius:'+CELL_R+'px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;justify-content:center;';
+  var pr=_be('div'); pr.style.cssText='background:'+ROSE+';width:120px;height:1px;flex-shrink:0;'; vc.appendChild(pr);
+  var vd=_be('div'); vd.style.cssText='font-family:'+SERIF+';font-style:italic;font-weight:400;font-size:24px;color:#b0b0b0;line-height:1.3;'; vd.textContent=content.verdict; vc.appendChild(vd); el.appendChild(vc);
+  var rc=_be('div'); rc.style.cssText='background:#181818;border-radius:'+CELL_R+'px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;justify-content:center;';
+  if(!isBand && content.def){ var df=_be('div'); df.style.cssText='font-family:'+SANS+';font-size:14px;color:#a4a4a4;line-height:1.4;'; df.textContent=content.def; rc.appendChild(df); }
+  var rd=_be('div'); rd.style.cssText='font-family:'+SANS+';font-size:14px;color:#9a9a9a;line-height:1.5;'; rd.textContent=content.reading; rc.appendChild(rd);
+  if(isBand && content.disclaimer){ var di=_be('div'); di.style.cssText='font-family:'+SANS+';font-style:italic;font-size:11px;color:#555;'; di.textContent=content.disclaimer; rc.appendChild(di); }
+  el.appendChild(rc);
+  if(isBand){
+    content.bands.forEach(function(band){
+      var bc=_be('div'); bc.style.cssText='background:'+(band.active?'#3a3a3a':'#242424')+';border-radius:'+CELL_R+'px;padding:16px;display:flex;flex-direction:column;justify-content:center;gap:4px;overflow:hidden;';
+      var lr=_be('div'); lr.style.cssText='display:flex;flex-direction:row;justify-content:space-between;align-items:center;';
+      var lb=_be('div'); lb.style.cssText='font-family:'+SANS+';font-size:14px;color:'+(band.active?'#ededed':'#555')+';text-transform:uppercase;letter-spacing:0.06em;'; lb.textContent=band.label; lr.appendChild(lb);
+      if(band.active){ var mk=_be('div'); mk.style.cssText='width:7px;height:7px;border-radius:50%;background:'+ROSE+';flex-shrink:0;'; lr.appendChild(mk); }
+      bc.appendChild(lr);
+      var rn=_be('div'); rn.style.cssText='font-family:'+SERIF+';font-style:italic;font-size:40px;color:'+(band.active?'#ededed':'#555')+';line-height:1;'; rn.textContent=band.range; bc.appendChild(rn);
+      if(band.example){ var eg=_be('div'); eg.style.cssText='font-family:'+SANS+';font-style:italic;font-size:11px;color:#555;'; eg.textContent=band.example; bc.appendChild(eg); }
+      el.appendChild(bc);
+    });
+  }
+}
+
+function wireBan(ind, body){
+  if(ind.chart !== 'ban_editorial') return;
+  var pane = body.querySelector('.pane-chart'); if(!pane) return;
+  var plotEl = pane.querySelector('.plot'); if(!plotEl) return;
+  var dirs = BAN_DIRS[ind.id] || ['ban_editorial'];
+  if(!_banDir[ind.id]) _banDir[ind.id] = dirs[0];
+  var curDir = _banDir[ind.id];
+  var old = pane.querySelector('.ban-dir-sw'); if(old) pane.removeChild(old);
+  if(dirs.length > 1){
+    var sw = _be('div'); sw.className = 'ban-dir-sw seg'; sw.style.cssText = 'flex-shrink:0;margin-bottom:8px;width:fit-content;';
+    var DIR_LABELS = { ban_editorial:'Editorial', ban_radial:'Radial', ban_ledger:'Ledger' };
+    dirs.forEach(function(dir){
+      var btn = _be('button'); btn.textContent = DIR_LABELS[dir] || dir;
+      btn.className = curDir === dir ? 'active' : '';
+      btn.onclick = function(){ _banDir[ind.id]=dir; wireBan(ind,body); };
+      sw.appendChild(btn);
+    });
+    pane.insertBefore(sw, plotEl);
+  }
+  var content = getBanShellContent(ind.id, banNumVal(ind));
+  if(curDir === 'ban_radial') renderBanRadial(plotEl, content);
+  else if(curDir === 'ban_ledger') renderBanLedger(plotEl, content);
+  else renderBanShell(plotEl, content);
+}
+
 // merge the examples layer onto the score/chart layer (joined by id)
 var RUN_ID = "POC_RUN", BUSINESS_ID = CLIENT;
 var _examplesMap = loadExamples(RUN_ID, BUSINESS_ID);
@@ -838,12 +1067,12 @@ function renderBody(ind){
     +'<div class="sub">the raw metric · '+esc(ind.chart.replace("_","-"))+'</div><div class="plot">'+chartForm(ind, mode==="chart")+'</div></div>';
   var exHTML='<div class="pane-ex">'+examplesPane(ind)+'</div>';
   if(mode==="chart") body.innerHTML=chartHTML; else if(mode==="examples") body.innerHTML=exHTML; else body.innerHTML=chartHTML+exHTML;
-  wireChart(ind,body); wireExamples(ind,body); hydrateTrends(body);
+  wireChart(ind,body); wireBan(ind,body); wireExamples(ind,body); hydrateTrends(body);
 }
 
 /* ── per-class chart forms (big = chart-only mode → fill the whole drawer) ── */
 function chartForm(ind, big){
-  if(ind.chart==="ban_editorial") return banEditorial(ind, big);
+  if(ind.chart==="ban_editorial") return '';  // wireBan renders directly into .plot
   if(ind.chart==="scale-figma")   return scaleFigma(ind, big);
   if(ind.chart==="treemap")       return treemap(ind, big);
   if(ind.chart==="line-straight") return lineStraight(ind, big);
@@ -1424,7 +1653,7 @@ var DATA = (function(){
         return {
           id:r.id, name:r.name, src:(r.source?('+'+r.source):''),
           cls:'', chart:resolveChart(r.id), kind:'market',
-          scores:r.scores, metric:{unit:'',market:true,headline:mheadline}
+          scores:r.scores, metric:{unit:'',market:true,headline:mheadline,banVal:mval}
         };
       }
       var ser = rawByIndicator && rawByIndicator[r.id];
