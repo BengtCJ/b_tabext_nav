@@ -28,11 +28,10 @@
   .demo-note b { color:var(--t3); font-weight:400; }
 
   #ex-root { width:100%; height:100%; background:transparent; overflow:hidden; position:relative; }
-  #tv-inner { position:relative; background:var(--card); border-radius:10px; }
+  #tv-inner { position:relative; }
   html.demo-mode, body.demo-mode { overflow:auto; height:auto; }
   body.demo-mode { background:#050505; }
   body.demo-mode #ex-root { height:684px; }
-  body.demo-mode #tv-inner { border:1px solid var(--frame-border); }
   .stage { height:100%; overflow-y:auto; padding:0; }
   .stage::-webkit-scrollbar { width:10px; } .stage::-webkit-scrollbar-thumb { background:#222; border-radius:5px; border:2px solid var(--card); }
 
@@ -43,7 +42,7 @@
   .dh-title { font-family:var(--f-body); font-size:56px; line-height:1; text-transform:uppercase; letter-spacing:-.01em; }
   .dh-q { font-family:var(--f-light); font-size:19px; line-height:1.3; margin-top:10px; max-width:680px; }
 
-  .scorecard { display:flex; flex-direction:column; gap:2px; }
+  .scorecard { display:flex; flex-direction:column; gap:2px; background:var(--card); border-radius:10px; }
   .sc-row { display:grid; gap:2px; align-items:stretch; cursor:pointer;
             transition:max-height var(--tx) var(--ease), opacity var(--tx) var(--ease), margin var(--tx) var(--ease); max-height:120px; }
   .sc-row.header { cursor:default; }
@@ -261,289 +260,106 @@
 
 <script>
 // EXAMPLES_DATA — flat row array. Schema: EXAMPLES_CONTRACT.md.
-// Covered batches (verified): cmoaf_authority (tam/cagr/mcon/svt) + ba_brand_affinity (ba).
-// Uncovered indicators keep seed rows until their batch lands.
-// loadExamples() is the swap seam — groups by indicator_id, no run_id filter.
+// Verified batches only: cmoaf_authority (tam/cagr/mcon category + svt compare) + ba_brand_affinity (ba ×5).
+// Each curated row carries ready:true EXCEPT svt (ready:false — multi-series Trends render dep, EX-W6).
+// The readiness gate in mergeExamples drops ready!==true rows; an indicator/brand with no ready
+// row falls to the EX-W8 no-data state. loadExamples groups by indicator_id — NEVER run_id-filtered.
 var EXAMPLES_DATA=[
 
-// ── TAM (scope='category', verified link card) ────────────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"tam",brand:null,scope:"category",
- example_id:"tam_mordor_size",role:"category",source:"Mordor Intelligence",
- embed:{platform:"link",url:"https://www.mordorintelligence.com/industry-reports/coffee-market",
-        source:"Mordor Intelligence",title:"Coffee Market — Size & Share Analysis",
-        desc:"Global coffee market valued at USD 176.55B in 2025, projected to USD 238.99B by 2031."},
- own_stats:[{k:"market size",v:"$176.55B"},{k:"year",v:"2025"}],
- summary_text:"Category sizing — the global coffee market Illycaff\xe8 plays into. Illustrative context, not a brand result.",
- comment_digest:null,market_note:"Category-level headroom — the addressable market, not an Illycaff\xe8-specific reading.",layout_hint:"source-strip"},
-
-// ── CAGR (scope='category', verified link card) ───────────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"cagr",brand:null,scope:"category",
- example_id:"cagr_gvr_growth",role:"category",source:"Grand View Research",
- embed:{platform:"link",url:"https://www.grandviewresearch.com/industry-analysis/coffee-market",
-        source:"Grand View Research",title:"Coffee Market Size, Share & Trends Report, 2033",
-        desc:"Global coffee market projected to grow at a 5.4% CAGR (2026–2033), USD 249.34B to 380.28B."},
- own_stats:[{k:"CAGR",v:"5.4%"},{k:"to",v:"2033"}],
- summary_text:"Category growth — the tailwind Illycaff\xe8 rides. Illustrative rate, not a brand-specific figure.",
- comment_digest:null,market_note:"Category growth (CAGR), not an Illycaff\xe8-specific result.",layout_hint:"source-strip"},
-
-// ── MCON (scope='category', verified link card) ───────────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"mcon",brand:null,scope:"category",
- example_id:"mcon_precedence_landscape",role:"category",source:"Precedence Research",
- embed:{platform:"link",url:"https://www.precedenceresearch.com/coffee-market",
-        source:"Precedence Research",title:"Coffee Market — Competitive Landscape & Leading Companies",
-        desc:"Category led by a handful of multinationals — Nestl\xe9, JDE Peet's, Starbucks, Lavazza, J.M. Smucker."},
- own_stats:[{k:"top players",v:"Nestl\xe9 \xb7 JDE Peet's"},{k:"structure",v:"concentrated"}],
- summary_text:"Category concentration — how the market splits across the majors. Illustrative, not an Illycaff\xe8 reading.",
- comment_digest:null,market_note:"Competitive concentration of the category, not an Illycaff\xe8-specific result.",layout_hint:"source-strip"},
-
-// ── SVT (scope='category', 5-brand compare; renders in EX-W6) ────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"svt",brand:null,scope:"category",
- example_id:"svt_compare_v2",role:"category",source:"Google Trends",
- embed:{platform:"placeholder",note:"5-brand search interest comparison (Google Trends) — multi-series render lands in EX-W6"},
- own_stats:[{k:"brands",v:"5-brand"},{k:"signal",v:"search interest"}],
- summary_text:"Relative branded search demand across the 5 competitive brands over 12 months. Category comparison context — the demand signal behind the SVT score.",
+// ── TAM — Total Addressable Market (scope='category', verified link card) ──
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"tam",brand:null,scope:"category",ready:true,
+ example_id:"tam_allegra_us",role:"category",source:"Allegra World Coffee Portal",
+ embed:{platform:"link",
+        url:"https://www.worldcoffeeportal.com/news/growth-slows-in-58-5bn-us-branded-coffee-shop-market-amid-unprecedented-cost-pressures/",
+        source:"Allegra World Coffee Portal · Project Café USA",
+        title:"US branded coffee shop market reaches $58.5bn",
+        desc:"45,200+ outlets across 588 brands, +4.2% over the year — the addressable out-of-home arena."},
+ own_stats:[{k:"market",v:"$58.5B"},{k:"outlets",v:"45,200+"}],
+ summary_text:"The size of the prize — the US branded coffee-shop market Illycaffè competes into, from the category's definitive sizing authority. Illustrative context, not a brand score.",
  comment_digest:null,
- market_note:"Branded search share across Illy, Nespresso, Starbucks, Lavazza, Peet’s — 12-month Google Trends comparison. Category context, not a brand-specific result."},
+ market_note:"Category sizing (Allegra Project Café) — the out-of-home arena, not an Illycaffè-specific figure. Total global coffee category is ~$400B.",
+ layout_hint:"source-strip"},
 
-// ── BA — Brand Affinity (scope='brand', verified YouTube IDs) ─────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ba",brand:"ILLY",scope:"brand",
- example_id:"ba_illy_v2",role:"client",source:"YouTube",
+// ── CAGR — Compound Annual Growth (scope='category', verified link card) ──
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"cagr",brand:null,scope:"category",ready:true,
+ example_id:"cagr_nca_demand",role:"category",source:"National Coffee Association",
+ embed:{platform:"link",
+        url:"https://www.ncausa.org/Newsroom/More-Americans-Drink-Coffee-Each-Day-Than-Any-Other-Beverage-Bottled-Water-Back-in-Second-Place",
+        source:"National Coffee Association · NCDT 2025",
+        title:"Coffee demand at a 20-year high — 66% of US adults drink it daily",
+        desc:"Daily consumption up nearly 7% since 2020; coffee is the #1 beverage after bottled water."},
+ own_stats:[{k:"daily drinkers",v:"66%"},{k:"since 2020",v:"+7%"}],
+ summary_text:"The category tailwind — US coffee demand at a two-decade high and still climbing, from the category trade authority. Illustrative growth context, not a brand-specific rate.",
+ comment_digest:null,
+ market_note:"Category demand momentum (NCA) — a penetration trend, not an Illycaffè-specific CAGR.",
+ layout_hint:"source-strip"},
+
+// ── MCON — Market Concentration (scope='category', verified link card) ──
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"mcon",brand:null,scope:"category",ready:true,
+ example_id:"mcon_kdp_jdepeets",role:"category",source:"Reuters",
+ embed:{platform:"link",
+        url:"https://www.reuters.com/business/keurig-dr-pepper-brews-coffee-challenge-nestle-with-18-billion-jde-peets-2025-08-25/",
+        source:"Reuters",
+        title:"Keurig Dr Pepper to buy JDE Peet's for $18bn, challenging Nestlé",
+        desc:"Creates a ~$16bn 'Global Coffee Co.' — 2025's defining consolidation. Nestlé still leads with 20%+ of packaged coffee."},
+ own_stats:[{k:"deal",v:"$18B"},{k:"Nestlé share",v:"20%+"}],
+ summary_text:"How concentrated the field is — a single $18bn deal reshaping the top of the market, set against Nestlé's standing lead. Illustrative structure, not a brand score.",
+ comment_digest:null,
+ market_note:"Category concentration (Reuters) — market structure, not an Illycaffè-specific reading.",
+ layout_hint:"source-strip"},
+
+// ── SVT — Search Volume & Trends (scope='category', 5-brand compare) ──
+//     ready:false — multi-series Trends render lands in EX-W6; gated out (no-data) until then.
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"svt",brand:null,scope:"category",ready:false,
+ example_id:"svt_trends_compare",role:"organic",source:"Google Trends",
+ embed:{platform:"trends",
+        compare:["Illy coffee","Nespresso","Starbucks","Peet's Coffee","Lavazza"],
+        query:"Illy coffee",geo:"",time:"today 12-m",sparkline:[]},
+ own_stats:[{k:"signal",v:"search interest"},{k:"vs",v:"5 brands"}],
+ summary_text:"Worldwide search interest for Illycaffè against Nespresso, Starbucks, Peet's and Lavazza on one axis — the competitive demand gap, not five isolated lines. Illustrative.",
+ comment_digest:null,
+ market_note:"Relative search interest (Google Trends), not absolute volume; one comparison across the full set.",
+ layout_hint:"strip"},
+
+// ── BA — Brand Affinity (scope='brand', verified YouTube / link) ──
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ba",brand:"ILLY",scope:"brand",ready:true,
+ example_id:"ba_illy_world",role:"owned",source:"illy · YouTube",
  embed:{platform:"youtube",id:"Zr14oI1mGyM"},
- own_stats:[{k:"views",v:"318K"},{k:"likes",v:"12K"}],
- summary_text:"illy's brand film — heritage and craft as an unprompted cultural artefact. Affinity in motion.",
- comment_digest:null},
+ own_stats:[{k:"brand",v:"since 1933"},{k:"control",v:"family-run"}],
+ summary_text:"Illycaffè's brand film — passion, quality and the family story since 1933. The kind of identity content that builds affinity, not the score itself. Illustrative.",
+ comment_digest:null,market_note:null,layout_hint:"strip"},
 
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ba",brand:"NESPRESSO",scope:"brand",
- example_id:"ba_nespresso_v2",role:"exemplar",source:"YouTube",
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ba",brand:"NESPRESSO",scope:"brand",ready:true,
+ example_id:"ba_nespresso_whatelse",role:"owned",source:"Nespresso · YouTube",
  embed:{platform:"youtube",id:"DfyeXrdZZ1o"},
- own_stats:[{k:"note",v:"Clooney creative"}],
- summary_text:"Nespresso's signature Clooney creative — the archetype for premium coffee affinity at scale. Illustrative, not the score.",
- comment_digest:null},
+ own_stats:[{k:"campaign",v:"What Else?"},{k:"running since",v:"2006"}],
+ summary_text:"Nespresso's George Clooney 'What Else?' — the cinematic, celebrity-led campaign that anchors its luxury affinity. Illustrative brand expression, not the score.",
+ comment_digest:null,market_note:null,layout_hint:"strip"},
 
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ba",brand:"LAVAZZA",scope:"brand",
- example_id:"ba_lavazza_v2",role:"competitor",source:"YouTube",
- embed:{platform:"youtube",id:"O0T4M2FnhXM"},
- own_stats:[{k:"signal",v:"brand affinity"}],
- summary_text:"Lavazza brand creative — Italian heritage positioning. Illustrative of affinity, not the score.",
- comment_digest:null},
-
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ba",brand:"STARBUCKS",scope:"brand",
- example_id:"ba_starbucks_v2",role:"competitor",source:"YouTube",
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ba",brand:"STARBUCKS",scope:"brand",ready:true,
+ example_id:"ba_starbucks_everyname",role:"owned",source:"Starbucks · YouTube",
  embed:{platform:"youtube",id:"7TEg6q1a3DE"},
- own_stats:[{k:"signal",v:"brand affinity"}],
- summary_text:"Starbucks brand affinity creative. Illustrative of affinity at scale, not the score.",
- comment_digest:null},
+ own_stats:[{k:"campaign",v:"Every Name's a Story"},{k:"award",v:"C4 Diversity"}],
+ summary_text:"Starbucks' 'Every Name's a Story' — the award-winning inclusion film that drove affinity and conversation. Illustrative brand expression, not the score.",
+ comment_digest:null,market_note:null,layout_hint:"strip"},
 
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ba",brand:"PEETS",scope:"brand",
- example_id:"ba_peets_v2",role:"competitor",source:"Social",
- embed:{platform:"placeholder",note:"Peet's heritage brand card"},
- own_stats:[{k:"signal",v:"brand affinity"}],
- summary_text:"Peet's heritage-roaster positioning — regional loyalty artefact. Illustrative, not the score.",
- comment_digest:null},
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ba",brand:"PEETS",scope:"brand",ready:true,
+ example_id:"ba_peets_heritage",role:"earned",source:"The San Francisco Standard",
+ embed:{platform:"link",
+        url:"https://sfstandard.com/2023/04/07/peets-is-now-the-worlds-largest-coffee-company-would-its-notriously-exacting-founder-approve/",
+        source:"The San Francisco Standard",
+        title:"Peet's, 'The Original Craft Coffee', and the founder who taught Starbucks",
+        desc:"The 1966 Berkeley pioneer credited with starting US specialty coffee — heritage that drives its brand affinity."},
+ own_stats:[{k:"since",v:"1966"},{k:"claim",v:"Original Craft"}],
+ summary_text:"Peet's affinity runs on heritage, not a flagship film — the original craft-coffee pioneer that taught Starbucks' founders. Illustrative brand context, not the score.",
+ comment_digest:null,market_note:null,layout_hint:"strip"},
 
-// ── SOP — Share of Preference (scope='brand') ────────────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sop",brand:"ILLY",scope:"brand",
- example_id:"sop_1",role:"client",source:"YouTube",
- embed:{platform:"youtube",id:"Ym1xYASwZS0"},own_stats:[{k:"views",v:"220K"}],
- summary_text:"illy vs the field on roast depth — a comparison clip; choice content, not the preference score.",
- comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sop",brand:"NESPRESSO",scope:"brand",
- example_id:"sop_2",role:"exemplar",source:"Social",
- embed:{platform:"placeholder",note:"preference survey reveal"},own_stats:[{k:"views",v:"1.2M"}],
- summary_text:"A Nespresso preference reveal — voted top in blind tasting. Illustrative, not the survey score.",
- comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sop",brand:"STARBUCKS",scope:"brand",
- example_id:"sop_3",role:"competitor",source:"Social",
- embed:{platform:"placeholder",note:"taste test"},own_stats:[{k:"views",v:"840K"}],
- summary_text:"A Starbucks taste test clip — broad reach, mixed preference signals.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sop",brand:"PEETS",scope:"brand",
- example_id:"sop_4",role:"competitor",source:"Social",
- embed:{platform:"placeholder",note:"preference clip"},own_stats:[{k:"views",v:"96K"}],
- summary_text:"A Peet's preference clip — regional loyalty, limited national reach.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sop",brand:"LAVAZZA",scope:"brand",
- example_id:"sop_5",role:"competitor",source:"Social",
- embed:{platform:"placeholder",note:"choice content"},own_stats:[{k:"views",v:"210K"}],
- summary_text:"A Lavazza preference piece — European positioning resonates with niche audience.",comment_digest:null},
-
-// ── CRA — Conversion Rate Analysis (scope='brand') ───────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"cra",brand:"ILLY",scope:"brand",
- example_id:"cra_1",role:"client",source:"Press",
- embed:{platform:"placeholder",note:"funnel write-up"},own_stats:[{k:"source",v:"analytics"}],
- summary_text:"A conversion-funnel write-up vs competitors — thin on social artifact; link-card floor.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"cra",brand:"NESPRESSO",scope:"brand",
- example_id:"cra_2",role:"exemplar",source:"Social",
- embed:{platform:"placeholder",note:"DTC funnel"},own_stats:[{k:"source",v:"case study"}],
- summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"cra",brand:"STARBUCKS",scope:"brand",
- example_id:"cra_3",role:"competitor",source:"Social",
- embed:{platform:"placeholder",note:"app funnel"},own_stats:[{k:"source",v:"report"}],
- summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"cra",brand:"PEETS",scope:"brand",
- example_id:"cra_4",role:"competitor",source:"Social",
- embed:{platform:"placeholder",note:"store funnel"},own_stats:[{k:"source",v:"note"}],
- summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"cra",brand:"LAVAZZA",scope:"brand",
- example_id:"cra_5",role:"competitor",source:"Social",
- embed:{platform:"placeholder",note:"retail funnel"},own_stats:[{k:"source",v:"note"}],
- summary_text:"A representative artifact in the wild.",comment_digest:null},
-
-// ── BSS — Branded Search Share (scope='brand') ───────────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"ILLY",scope:"brand",
- example_id:"bss_1",role:"client",source:"Social",embed:{platform:"placeholder",note:"search result 1"},own_stats:[{k:"impressions",v:"40K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"ILLY",scope:"brand",
- example_id:"bss_2",role:"client",source:"Social",embed:{platform:"placeholder",note:"search result 2"},own_stats:[{k:"impressions",v:"55K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"ILLY",scope:"brand",
- example_id:"bss_3",role:"client",source:"Social",embed:{platform:"placeholder",note:"search result 3"},own_stats:[{k:"impressions",v:"70K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"NESPRESSO",scope:"brand",
- example_id:"bss_4",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"search result 1"},own_stats:[{k:"impressions",v:"40K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"NESPRESSO",scope:"brand",
- example_id:"bss_5",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"search result 2"},own_stats:[{k:"impressions",v:"55K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"NESPRESSO",scope:"brand",
- example_id:"bss_6",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"search result 3"},own_stats:[{k:"impressions",v:"70K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"NESPRESSO",scope:"brand",
- example_id:"bss_7",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"search result 4"},own_stats:[{k:"impressions",v:"85K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"NESPRESSO",scope:"brand",
- example_id:"bss_8",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"search result 5"},own_stats:[{k:"impressions",v:"100K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"STARBUCKS",scope:"brand",
- example_id:"bss_9",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"search result 1"},own_stats:[{k:"impressions",v:"40K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"STARBUCKS",scope:"brand",
- example_id:"bss_10",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"search result 2"},own_stats:[{k:"impressions",v:"55K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"STARBUCKS",scope:"brand",
- example_id:"bss_11",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"search result 3"},own_stats:[{k:"impressions",v:"70K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"STARBUCKS",scope:"brand",
- example_id:"bss_12",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"search result 4"},own_stats:[{k:"impressions",v:"85K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"PEETS",scope:"brand",
- example_id:"bss_13",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"search result 1"},own_stats:[{k:"impressions",v:"40K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"PEETS",scope:"brand",
- example_id:"bss_14",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"search result 2"},own_stats:[{k:"impressions",v:"55K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"LAVAZZA",scope:"brand",
- example_id:"bss_15",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"search result 1"},own_stats:[{k:"impressions",v:"40K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bss",brand:"LAVAZZA",scope:"brand",
- example_id:"bss_16",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"search result 2"},own_stats:[{k:"impressions",v:"55K"}],summary_text:"A branded-search result in the set.",comment_digest:null},
-
-// ── DVTR — Distinctive Verbal Tone Recognition (scope='brand') ───────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"dvtr",brand:"ILLY",scope:"brand",
- example_id:"dvtr_1",role:"client",source:"YouTube",embed:{platform:"youtube",id:"j3GAuYfQSSA"},own_stats:[{k:"shares",v:"3.4K"}],summary_text:"illy’s own voice on screen — the tone carries it; the stat is incidental (showcase).",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"dvtr",brand:"NESPRESSO",scope:"brand",
- example_id:"dvtr_2",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"caption post"},own_stats:[{k:"shares",v:"9K"}],summary_text:"A recognisable house voice.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"dvtr",brand:"STARBUCKS",scope:"brand",
- example_id:"dvtr_3",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"brand reply"},own_stats:[{k:"shares",v:"6K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"dvtr",brand:"PEETS",scope:"brand",
- example_id:"dvtr_4",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"caption"},own_stats:[{k:"shares",v:"1K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"dvtr",brand:"LAVAZZA",scope:"brand",
- example_id:"dvtr_5",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"ad voiceover"},own_stats:[{k:"shares",v:"2K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-
-// ── SSTSR — Scroll-stop / Thumb-stop Ratio (scope='brand') ───────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sstsr",brand:"ILLY",scope:"brand",
- example_id:"sstsr_1",role:"client",source:"Social",embed:{platform:"placeholder",note:"hook short"},own_stats:[{k:"3s view",v:"62%"}],summary_text:"The scroll-stopper — a hooky first-3-seconds short.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sstsr",brand:"NESPRESSO",scope:"brand",
- example_id:"sstsr_2",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"hook reel"},own_stats:[{k:"3s view",v:"78%"}],summary_text:"Nespresso’s best-performing scroll-stopper — high 3s view rate. Illustrative, not the score.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sstsr",brand:"STARBUCKS",scope:"brand",
- example_id:"sstsr_3",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"seasonal hook"},own_stats:[{k:"3s view",v:"71%"}],summary_text:"A Starbucks seasonal hook — high thumb-stop rate around product launch.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sstsr",brand:"PEETS",scope:"brand",
- example_id:"sstsr_4",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"brew short"},own_stats:[{k:"3s view",v:"44%"}],summary_text:"A Peet’s brew short — moderate thumb-stop; regional appeal limits scale.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sstsr",brand:"LAVAZZA",scope:"brand",
- example_id:"sstsr_5",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"lifestyle short"},own_stats:[{k:"3s view",v:"51%"}],summary_text:"A Lavazza lifestyle short — European aesthetic, moderate engagement.",comment_digest:null},
-
-// ── EQR — Engagement Quality Ratio (scope='brand') ───────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"eqr",brand:"NESPRESSO",scope:"brand",
- example_id:"eqr_1",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"saves-heavy reel"},own_stats:[{k:"saves",v:"31K"}],summary_text:"Saves and shares beat likes — quality over volume.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"eqr",brand:"NESPRESSO",scope:"brand",
- example_id:"eqr_2",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"tutorial"},own_stats:[{k:"shares",v:"18K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"eqr",brand:"ILLY",scope:"brand",
- example_id:"eqr_3",role:"client",source:"Social",embed:{platform:"placeholder",note:"client reel"},own_stats:[{k:"saves",v:"2.4K"}],summary_text:"Some saves, lighter sharing.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"eqr",brand:"ILLY",scope:"brand",
- example_id:"eqr_4",role:"client",source:"Social",embed:{platform:"placeholder",note:"recipe post"},own_stats:[{k:"shares",v:"1.1K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"eqr",brand:"STARBUCKS",scope:"brand",
- example_id:"eqr_5",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"clip"},own_stats:[{k:"shares",v:"12K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"eqr",brand:"STARBUCKS",scope:"brand",
- example_id:"eqr_6",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"poll"},own_stats:[{k:"saves",v:"6K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"eqr",brand:"LAVAZZA",scope:"brand",
- example_id:"eqr_7",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"reel"},own_stats:[{k:"saves",v:"4K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"eqr",brand:"PEETS",scope:"brand",
- example_id:"eqr_8",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"post"},own_stats:[{k:"shares",v:"800"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-
-// ── SOV — Share of Voice (scope='brand') ─────────────────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"ILLY",scope:"brand",example_id:"sov_1",role:"client",source:"Social",embed:{platform:"placeholder",note:"mention 1"},own_stats:[{k:"reach",v:"300K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"ILLY",scope:"brand",example_id:"sov_2",role:"client",source:"Social",embed:{platform:"placeholder",note:"mention 2"},own_stats:[{k:"reach",v:"500K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"ILLY",scope:"brand",example_id:"sov_3",role:"client",source:"Social",embed:{platform:"placeholder",note:"mention 3"},own_stats:[{k:"reach",v:"700K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"NESPRESSO",scope:"brand",example_id:"sov_4",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 1"},own_stats:[{k:"reach",v:"300K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"NESPRESSO",scope:"brand",example_id:"sov_5",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 2"},own_stats:[{k:"reach",v:"500K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"NESPRESSO",scope:"brand",example_id:"sov_6",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 3"},own_stats:[{k:"reach",v:"700K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"NESPRESSO",scope:"brand",example_id:"sov_7",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 4"},own_stats:[{k:"reach",v:"900K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"NESPRESSO",scope:"brand",example_id:"sov_8",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 5"},own_stats:[{k:"reach",v:"1100K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"STARBUCKS",scope:"brand",example_id:"sov_9",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 1"},own_stats:[{k:"reach",v:"300K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"STARBUCKS",scope:"brand",example_id:"sov_10",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 2"},own_stats:[{k:"reach",v:"500K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"STARBUCKS",scope:"brand",example_id:"sov_11",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 3"},own_stats:[{k:"reach",v:"700K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"STARBUCKS",scope:"brand",example_id:"sov_12",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 4"},own_stats:[{k:"reach",v:"900K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"PEETS",scope:"brand",example_id:"sov_13",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"mention 1"},own_stats:[{k:"reach",v:"300K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"PEETS",scope:"brand",example_id:"sov_14",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"mention 2"},own_stats:[{k:"reach",v:"500K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"LAVAZZA",scope:"brand",example_id:"sov_15",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"mention 1"},own_stats:[{k:"reach",v:"300K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"sov",brand:"LAVAZZA",scope:"brand",example_id:"sov_16",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"mention 2"},own_stats:[{k:"reach",v:"500K"}],summary_text:"A mention in the conversation.",comment_digest:null},
-
-// ── VOM — Velocity of Mentions (scope='brand') ───────────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"ILLY",scope:"brand",example_id:"vom_1",role:"client",source:"Social",embed:{platform:"placeholder",note:"mention 1"},own_stats:[{k:"reach",v:"2K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"ILLY",scope:"brand",example_id:"vom_2",role:"client",source:"Social",embed:{platform:"placeholder",note:"mention 2"},own_stats:[{k:"reach",v:"3K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"ILLY",scope:"brand",example_id:"vom_3",role:"client",source:"Social",embed:{platform:"placeholder",note:"mention 3"},own_stats:[{k:"reach",v:"4K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"NESPRESSO",scope:"brand",example_id:"vom_4",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 1"},own_stats:[{k:"reach",v:"2K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"NESPRESSO",scope:"brand",example_id:"vom_5",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 2"},own_stats:[{k:"reach",v:"3K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"NESPRESSO",scope:"brand",example_id:"vom_6",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 3"},own_stats:[{k:"reach",v:"4K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"NESPRESSO",scope:"brand",example_id:"vom_7",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 4"},own_stats:[{k:"reach",v:"5K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"NESPRESSO",scope:"brand",example_id:"vom_8",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 5"},own_stats:[{k:"reach",v:"6K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"STARBUCKS",scope:"brand",example_id:"vom_9",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 1"},own_stats:[{k:"reach",v:"2K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"STARBUCKS",scope:"brand",example_id:"vom_10",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 2"},own_stats:[{k:"reach",v:"3K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"STARBUCKS",scope:"brand",example_id:"vom_11",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 3"},own_stats:[{k:"reach",v:"4K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"STARBUCKS",scope:"brand",example_id:"vom_12",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 4"},own_stats:[{k:"reach",v:"5K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"STARBUCKS",scope:"brand",example_id:"vom_13",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"mention 5"},own_stats:[{k:"reach",v:"6K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"PEETS",scope:"brand",example_id:"vom_14",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"mention 1"},own_stats:[{k:"reach",v:"2K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"PEETS",scope:"brand",example_id:"vom_15",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"mention 2"},own_stats:[{k:"reach",v:"3K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"LAVAZZA",scope:"brand",example_id:"vom_16",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"mention 1"},own_stats:[{k:"reach",v:"2K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"LAVAZZA",scope:"brand",example_id:"vom_17",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"mention 2"},own_stats:[{k:"reach",v:"3K"}],summary_text:"A mention in the spike.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"vom",brand:"LAVAZZA",scope:"brand",example_id:"vom_18",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"mention 3"},own_stats:[{k:"reach",v:"4K"}],summary_text:"A mention in the spike.",comment_digest:null},
-
-// ── NPS — Brand Loyalty / NPS (scope='brand') ────────────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"nps",brand:"ILLY",scope:"brand",
- example_id:"nps_1",role:"client",source:"YouTube",embed:{platform:"youtube",id:"Zr14oI1mGyM"},own_stats:[{k:"views",v:"318K"},{k:"likes",v:"12K"}],summary_text:"A 'why I recommend illy' advocacy review — illustrative of loyalty, not a measure of it.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"nps",brand:"NESPRESSO",scope:"brand",
- example_id:"nps_2",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"switch story"},own_stats:[{k:"views",v:"1.1M"}],summary_text:"A high-reach 'why I switched' video.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"nps",brand:"STARBUCKS",scope:"brand",
- example_id:"nps_3",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"loyalty vlog"},own_stats:[{k:"views",v:"540K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"nps",brand:"PEETS",scope:"brand",
- example_id:"nps_4",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"recommend"},own_stats:[{k:"views",v:"96K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"nps",brand:"LAVAZZA",scope:"brand",
- example_id:"nps_5",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"review"},own_stats:[{k:"views",v:"210K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-
-// ── EBL — Brand Engagement (scope='brand') ───────────────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ebl",brand:"NESPRESSO",scope:"brand",
- example_id:"ebl_1",role:"exemplar",source:"YouTube",embed:{platform:"youtube",id:null},own_stats:[{k:"comments",v:"9.7K"}],summary_text:"Comments run long and conversational — viewers debate technique and tag friends.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ebl",brand:"NESPRESSO",scope:"brand",
- example_id:"ebl_2",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"reel thread"},own_stats:[{k:"comments",v:"6.1K"}],summary_text:"Strong reply threads carry the conversation.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ebl",brand:"ILLY",scope:"brand",
- example_id:"ebl_3",role:"client",source:"YouTube",embed:{platform:"youtube",id:"j3GAuYfQSSA"},own_stats:[{k:"comments",v:"1.1K"}],summary_text:"An illy coffee-shops clip — a real comment thread to abstract in Phase B.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ebl",brand:"ILLY",scope:"brand",
- example_id:"ebl_4",role:"client",source:"Social",embed:{platform:"placeholder",note:"client post"},own_stats:[{k:"saves",v:"820"}],summary_text:"Some saves, little discussion.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ebl",brand:"STARBUCKS",scope:"brand",
- example_id:"ebl_5",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"clip"},own_stats:[{k:"comments",v:"4.0K"}],summary_text:"High views, lighter discussion.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ebl",brand:"STARBUCKS",scope:"brand",
- example_id:"ebl_6",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"poll post"},own_stats:[{k:"replies",v:"3.2K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ebl",brand:"LAVAZZA",scope:"brand",
- example_id:"ebl_7",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"reel"},own_stats:[{k:"comments",v:"2.2K"}],summary_text:"Steady engagement.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ebl",brand:"LAVAZZA",scope:"brand",
- example_id:"ebl_8",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"story set"},own_stats:[{k:"replies",v:"1.4K"}],summary_text:"A representative artifact in the wild.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ebl",brand:"PEETS",scope:"brand",
- example_id:"ebl_9",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"post"},own_stats:[{k:"comments",v:"410"}],summary_text:"Limited reach.",comment_digest:null},
-
-// ── BT — Brand Trust (scope='brand') ─────────────────────────────────────
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bt",brand:"ILLY",scope:"brand",
- example_id:"bt_1",role:"client",source:"YouTube",embed:{platform:"youtube",id:"Zr14oI1mGyM"},own_stats:[{k:"views",v:"318K"},{k:"likes",v:"12K"}],summary_text:"illy’s own brand film — heritage and craft. Illustrative of the trust the survey captures, not a measure of it.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bt",brand:"NESPRESSO",scope:"brand",
- example_id:"bt_2",role:"exemplar",source:"Social",embed:{platform:"placeholder",note:"sustainability explainer"},own_stats:[{k:"views",v:"1.1M"}],summary_text:"Widely-shared explainer; reach reflects spread, not the trust score.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bt",brand:"PEETS",scope:"brand",
- example_id:"bt_3",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"founder story"},own_stats:[{k:"views",v:"96K"}],summary_text:"Founder-story piece; modest reach.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bt",brand:"STARBUCKS",scope:"brand",
- example_id:"bt_4",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"news segment"},own_stats:[{k:"views",v:"540K"}],summary_text:"Mixed-sentiment news segment.",comment_digest:null},
-{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"bt",brand:"LAVAZZA",scope:"brand",
- example_id:"bt_5",role:"competitor",source:"Social",embed:{platform:"placeholder",note:"heritage film"},own_stats:[{k:"views",v:"210K"}],summary_text:"Heritage brand film.",comment_digest:null}
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"ba",brand:"LAVAZZA",scope:"brand",ready:true,
+ example_id:"ba_lavazza_humanity",role:"owned",source:"Lavazza · YouTube",
+ embed:{platform:"youtube",id:"O0T4M2FnhXM"},
+ own_stats:[{k:"campaign",v:"Good Morning Humanity"},{k:"voice",v:"Chaplin"}],
+ summary_text:"Lavazza's 'Good Morning Humanity' — Chaplin's Great Dictator speech over a hopeful film, the purpose-led work behind its affinity. Illustrative brand expression, not the score.",
+ comment_digest:null,market_note:null,layout_hint:"strip"}
 
 ]; // end EXAMPLES_DATA
 </script>
@@ -573,7 +389,7 @@ var EXAMPLES_DATA=[
   document.body.classList.add('demo-mode');
 })();
 
-var VERSION='2026-06-16.25';
+var VERSION='2026-06-16.26';
 var CLIENT="ILLY";
 var BRANDS=["ILLY","NESPRESSO","STARBUCKS","PEETS","LAVAZZA"];
 var BNAME={ILLY:"Illycaffè",NESPRESSO:"Nespresso",STARBUCKS:"Starbucks",PEETS:"Peet's",LAVAZZA:"Lavazza"};
@@ -1628,7 +1444,11 @@ function loadExamples(runId, businessId){
 function mergeExamples(indicators){
   var m=loadExamples(RUN_ID, BUSINESS_ID);
   indicators.forEach(function(ind){
-    var rows=m[ind.id]||[], catRows=[], brandRows=[];
+    // READINESS GATE (EXAMPLES_TRACKER.md): only ready===true rows render. A weak/placeholder
+    // example is worse than none, so gated-out rows are treated as absent and the indicator/brand
+    // falls to the EX-W8 no-data state. Drop BEFORE scope routing; never a run_id filter — a row
+    // "switches on" the moment its ready flag flips, with no other code change.
+    var rows=(m[ind.id]||[]).filter(function(r){ return r.ready===true; }), catRows=[], brandRows=[];
     rows.forEach(function(r){ if(r.scope==='category') catRows.push(r); else brandRows.push(r); });
     ind.sources=catRows.map(rowToExample);
     ind.note=(catRows[0]&&catRows[0].market_note)||'';
