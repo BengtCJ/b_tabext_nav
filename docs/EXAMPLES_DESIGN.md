@@ -1,5 +1,13 @@
 # Examples Extension — Design Notes
 
+## Scorecard typography + header wordmark (EX-W9)
+
+- **Indicator row names** (`.ind-name`) — Tableau Light, `font-style:normal`, `14px`, colour `--t1`
+  (`#ededed`), `line-height:1.15`, wraps to 2 lines. (Not Baskerville italic.)
+- **Header label cell** — `.wm` contains the BULLETPROOF SVG wordmark (ported verbatim from
+  `index.html`'s `BULLETPROOF_SVG`, `height:20px`, `fill="white"`); `.wm` has `line-height:0` so
+  the vector sits flush. Subtitle `.stype` reads `Score`, normal case (no `text-transform:uppercase`).
+
 ## Zone-fit model (EX-W7)
 
 The extension fills its Tableau iframe exactly, with no outer/page scrollbar.

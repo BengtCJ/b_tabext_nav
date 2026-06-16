@@ -51,8 +51,8 @@
   .hc.lab { background:transparent; }
   .hc.comp { background:#161616; }
   .hc.client { background:var(--client); }
-  .hc .wm { font-family:var(--f-title); font-style:italic; font-size:19px; color:var(--t2); }
-  .hc .stype { font-family:var(--f-light); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--t5); }
+  .hc .wm { line-height:0; }
+  .hc .stype { font-family:var(--f-light); font-size:10px; letter-spacing:.14em; color:var(--t5); }
   .hc .bn { font-family:var(--f-body); font-size:13px; color:var(--t2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .hc.client .bn { color:#000; }
   .hc .hs { font-family:var(--f-title); font-style:italic; font-size:22px; color:var(--t2); }
@@ -65,7 +65,7 @@
   .sc-row:not(.header):hover .score-cell.comp   { background:#222; }
   .sc-row:not(.header):hover .score-cell.client { background:#232820; }
   .lab-in { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
-  .ind-name { font-family:var(--f-title); font-style:italic; font-size:18px; color:var(--t1); line-height:1.15; }
+  .ind-name { font-family:var(--f-light); font-style:normal; font-size:14px; color:var(--t1); line-height:1.15; }
   .ind-src  { font-family:var(--f-light); font-size:11px; color:var(--t4); }
 
   /* more-info / less-info pill with arrow */
@@ -3031,7 +3031,7 @@ function brandMean(b){ var v=INDICATORS.map(function(i){return i.scores[b];}); r
 function buildScorecard(){
   var sc=document.getElementById("scorecard"), html="";
   html+='<div class="sc-row header" style="grid-template-columns:'+gridCols()+'">';
-  html+='<div class="hc lab"><div class="wm">illy bp · nav</div><div class="stype">Indicator score</div></div>';
+  html+='<div class="hc lab"><div class="wm"><svg style="height:20px;width:auto;display:block;" viewBox="0 0 478 38" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M313.09 36.9728H320.867V22.4493H330.769L333.116 16.7268H320.864V6.60378L334.36 6.52934L335.092 0.806863L313.084 0.881297V36.9728H313.09ZM277.731 17.0186C277.731 9.39058 281.765 5.9428 287.488 5.9428C294.749 5.9428 300.838 12.9843 300.838 20.9814C300.838 27.2904 297.465 32.352 291.081 32.352C283.745 32.352 277.731 25.1616 277.731 17.0215V17.0186ZM269.367 20.1001C269.367 29.4907 277.365 38 287.779 38C298.194 38 308.978 30.2976 308.978 17.5337C308.978 8.2175 301.055 0 290.932 0C279.708 0 269.364 8.14307 269.364 20.1001H269.367ZM235.184 17.0186C235.184 9.39058 239.219 5.9428 244.941 5.9428C252.203 5.9428 258.292 12.9843 258.292 20.9814C258.292 27.2904 254.918 32.352 248.535 32.352C241.199 32.352 235.184 25.1616 235.184 17.0215V17.0186ZM226.821 20.1001C226.821 29.4907 234.818 38 245.233 38C255.648 38 266.432 30.2976 266.432 17.5337C266.432 8.2175 258.509 0 248.386 0C237.161 0 226.818 8.14307 226.818 20.1001H226.821ZM205.84 17.8999V6.67523H210.094C213.908 6.67523 216.478 9.68236 216.478 12.8384C216.478 15.0386 215.817 16.6524 214.131 17.8999H205.842H205.84ZM198.137 36.9728H205.84V23.1073H207.748L219.193 36.9728H228.068L215.745 21.8598C217.359 21.1988 218.973 20.1716 220.295 19.0729C222.641 17.093 224.183 15.1845 224.183 11.8826C224.183 4.91264 218.606 0.87832 211.785 0.87832H198.14V36.9698L198.137 36.9728ZM177.084 18.5608V6.67821H180.752C184.566 6.67821 187.061 9.53945 187.061 13.2076C187.061 15.7026 186.4 17.3163 184.715 18.5638H177.087L177.084 18.5608ZM169.382 36.9728H177.084V24.3548H180.678C183.539 24.3548 187.94 22.4463 190.801 20.1746C193.221 18.2661 194.835 15.4078 194.835 12.2518C194.835 4.76973 188.892 0.881297 183.685 0.881297H169.382 V36.9728ZM139.671 6.45491H148.621V36.9728H156.398V6.45491H165.273V0.87832H139.671V6.45491ZM114.658 36.9728H135.199L135.931 31.2503H122.435V21.2732H131.897L134.243 15.5507H122.432V6.6008H135.196L135.928 0.87832H114.655V36.9698L114.658 36.9728ZM89.7167 36.9728H110.037L110.77 31.1789H97.4906V0.881297H89.7137V36.9728H89.7167ZM64.9213 36.9728H85.2417L85.9741 31.1789H72.6951V0.881297H64.9183V36.9728H64.9213ZM7.62799 15.5507V6.67523H11.2961C16.2117 6.67523 18.5579 12.9098 14.4491 15.5507H7.62799ZM7.62799 31.2503V21.3476H12.1774C15.9914 21.3476 18.4864 23.9886 18.4864 26.9242C18.4864 28.3921 17.8254 30.0058 16.1402 31.2533H7.63096L7.62799 31.2503ZM0 36.9728H11.9571C15.4793 36.9728 20.3919 34.6981 22.3748 33.1588C24.5751 31.4707 26.2633 28.8297 26.2633 25.897C26.2633 21.4221 23.2561 18.3405 19.8084 16.8012C27.9514 11.7397 24.2833 0.881297 13.94 0.881297H0V36.9728ZM43.2074 37.9256C47.462 37.9256 52.2318 35.7253 58.0257 31.6165V0.881297H50.3977V30.7382C44.1631 33.8198 37.8541 31.1789 37.8541 22.8155V0.881297H30.2261L30.1517 24.6495C30.1517 32.8641 34.7011 37.9285 43.2104 37.9285L43.2074 37.9256Z" fill="white"/></svg></div><div class="stype">Score</div></div>';
   BRANDS.forEach(function(b,i){ var isC=i===0; html+='<div class="hc '+(isC?"client":"comp")+'"><div class="bn">'+esc(BNAME[b])+'</div><div class="hs">'+brandMean(b).toFixed(1)+(isC?'<span class="suf">/5</span>':'')+'</div></div>'; });
   html+='</div>';
   INDICATORS.forEach(function(ind){

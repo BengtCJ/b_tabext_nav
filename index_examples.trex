@@ -21,6 +21,7 @@
     <source-location>
       <url>https://YOUR-USER.github.io/YOUR-REPO/index_examples.html</url>
     </source-location>
+    <icon>iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAF0lEQVQ4y2NgYGBg+E8GPgwMBBIHAAAkAAQAkJbGpQAAAABJRU5ErkJggg==</icon>
 
     <!-- REQUIRED: the extension reads worksheet summary data
          (getSummaryDataAsync). Without this permission Tableau blocks the
