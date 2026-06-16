@@ -284,7 +284,7 @@
   document.body.classList.add('demo-mode');
 })();
 
-var VERSION='2026-06-16.19';
+var VERSION='2026-06-16.20';
 var CLIENT="ILLY";
 var BRANDS=["ILLY","NESPRESSO","STARBUCKS","PEETS","LAVAZZA"];
 var BNAME={ILLY:"Illycaffè",NESPRESSO:"Nespresso",STARBUCKS:"Starbucks",PEETS:"Peet's",LAVAZZA:"Lavazza"};
@@ -303,7 +303,7 @@ function embedToMedia(e){
   return {type:"placeholder", note:""};
 }
 function rowToExample(r){
-  return {brand:r.brand, role:r.role, source:r.source, media:embedToMedia(r.embed), own:r.own_stats||[], react:r.summary_text||""};
+  return {brand:(r.brand||r.business_id), role:r.role, source:r.source, media:embedToMedia(r.embed), own:r.own_stats||[], react:r.summary_text||""};
 }
 
 var INDICATORS=[
@@ -939,12 +939,7 @@ function wireBan(ind, body){
 
 // merge the examples layer onto the score/chart layer (joined by id)
 var RUN_ID = "POC_RUN", BUSINESS_ID = CLIENT;
-var _examplesMap = loadExamples(RUN_ID, BUSINESS_ID);
-INDICATORS.forEach(function(ind){
-  var rows = _examplesMap[ind.id] || [];
-  if(ind.kind==="market"){ ind.sources = rows.map(rowToExample); ind.note = (rows[0]&&rows[0].market_note)||""; ind.examples=[]; }
-  else { ind.examples = rows.map(rowToExample); }
-});
+mergeExamples(INDICATORS);
 
 var openId=null, viewMode={}, selectedBrand=CLIENT, _promotedCellsH=0;
 
@@ -1239,8 +1234,11 @@ function laySource(ind){
 
 function layStrip(ind){
   var hero=pickExample(ind);
-  if(!hero) return frameRow("—")+'<div class="lay"><div class="no-art"><div class="h">No example for '+esc(BNAME[selectedBrand])+' yet</div>'
-    +'<div class="d">The chart still scores this brand. Example artifacts are collected per brand and can be sparse — select another, or this lands in a later pass.</div></div>'+brandStrip(ind)+'</div>';
+  if(!hero){
+    if(ind.sources && ind.sources[0]) return laySource(ind);
+    return frameRow("—")+'<div class="lay"><div class="no-art"><div class="h">No example for '+esc(BNAME[selectedBrand])+' yet</div>'
+      +'<div class="d">The chart still scores this brand. Example artifacts are collected per brand and can be sparse — select another, or this lands in a later pass.</div></div>'+brandStrip(ind)+'</div>';
+  }
   return frameRow(hero.source)+'<div class="lay"><div class="hline"><span class="hbrand">'+esc(BNAME[hero.brand])+'</span><span class="role-tag '+esc(hero.role)+'">'+esc(hero.role)+'</span></div>'
     +'<div class="media hero">'+mediaFill(hero.media,BNAME[hero.brand])+'</div>'+ownChips(hero.own)
     +'<div class="react"><span class="l">Characterised · illustrative</span>'+esc(hero.react)+'</div>'+brandStrip(ind)+'</div>';
@@ -1306,21 +1304,17 @@ function wireExamples(ind,body){
       filter/group/latest-wins logic below is unchanged.
    ─────────────────────────────────────────────────────────────────────────── */
 function loadExamples(runId, businessId){
-  // PHASE A: flat EXAMPLES_DATA array (examples_data.js).
-  // PHASE B: replace this body with getSummaryDataAsync(SCORER_EXAMPLES_VIEW) → map to same row shape.
+  // PHASE A: group ALL rows from EXAMPLES_DATA by indicator_id, latest-wins per (brand, example_id).
+  // NOT filtered by run_id or business_id — scoping is upstream (the view). A stale active
+  // run_id must not blank the seeded examples.
+  // PHASE B: replace this body with getSummaryDataAsync(SCORER_EXAMPLES_VIEW) → same row shape.
   var rows = EXAMPLES_DATA;
-  var filtered = [];
-  for(var i=0; i<rows.length; i++){
-    if(rows[i].run_id===runId && rows[i].business_id===businessId) filtered.push(rows[i]);
-  }
-  // group by indicator_id; latest-wins per (indicator_id, brand, example_id)
   var grouped = {};
-  for(var j=0; j<filtered.length; j++){
-    var r=filtered[j];
-    var indId=r.indicator_id;
-    if(!grouped[indId]) grouped[indId]={};
+  for(var i=0; i<rows.length; i++){
+    var r=rows[i];
+    if(!grouped[r.indicator_id]) grouped[r.indicator_id]={};
     var key=(r.brand||'')+'\x7c'+r.example_id;
-    grouped[indId][key]=r;
+    grouped[r.indicator_id][key]=r;
   }
   var result={}, ids=Object.keys(grouped);
   for(var k=0; k<ids.length; k++){
@@ -1329,6 +1323,16 @@ function loadExamples(runId, businessId){
     result[id]=arr;
   }
   return result;
+}
+function mergeExamples(indicators){
+  var m=loadExamples(RUN_ID, BUSINESS_ID);
+  indicators.forEach(function(ind){
+    var rows=m[ind.id]||[], catRows=[], brandRows=[];
+    rows.forEach(function(r){ if(r.scope==='category') catRows.push(r); else brandRows.push(r); });
+    ind.sources=catRows.map(rowToExample);
+    ind.note=(catRows[0]&&catRows[0].market_note)||'';
+    ind.examples=brandRows.map(rowToExample);
+  });
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -1711,10 +1715,7 @@ function boot(){
           INDICATORS = DATA.buildIndicatorsFromModel(model, rawByIndicator);
           BRANDS = model.brands;
           CLIENT = (DATA.CONFIG.clientBrand||model.brands[0]||'').toUpperCase();
-          var _exMap=loadExamples(RUN_ID,BUSINESS_ID);
-          INDICATORS.forEach(function(ind){ var rows=_exMap[ind.id]||[];
-            if(ind.kind==='market'){ ind.sources=rows.map(rowToExample); ind.note=(rows[0]&&rows[0].market_note)||''; ind.examples=[]; }
-            else { ind.examples=rows.map(rowToExample); } });
+          mergeExamples(INDICATORS);
           var subgroupName = DATA.getSubcategoryName();
           if(DATA.getSubgroup() && subgroupName){
             document.getElementById('dhTitle').innerHTML = subgroupName.trim().toUpperCase().split(/\s+/).join('<br>');
