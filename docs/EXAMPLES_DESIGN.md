@@ -25,6 +25,27 @@ The extension fills its Tableau iframe exactly, with no outer/page scrollbar.
   in `.demo-wrap` and adds `demo-mode` to both `<html>` and `<body>`, unlocking page scroll
   for the standalone preview. No demo chrome is present in the DOM in the Tableau path.
 
+## Examples data layer (EX-W4)
+
+Examples live in `examples_data.js` as a **flat row array** (`EXAMPLES_DATA`). Loaded via
+`<script src="examples_data.js">` before the main script. Schema: `EXAMPLES_CONTRACT.md`.
+
+Key schema changes from the Phase-2A seed:
+- `business_id` = the **client** (always `"ILLY"` for this POC). Previously overloaded as the brand — split.
+- `brand` = the brand **illustrated** by the example (one of the 5). `null` for `scope='category'`.
+- `indicator_id` — now explicit in every row (was only the object key).
+- `scope` — `'brand'` | `'category'`. Governs coverage rule and drawer layout dispatch.
+- `example_id` — unique per row (NOT equal to `indicator_id`); enables latest-wins dedup.
+
+**Coverage rule (scope-aware):**
+- Per-brand indicators: ≥1 row per brand (5 brands) → `detectLayout` → `"strip"` at base coverage.
+- Market indicators (`tam`, `cagr`, `mcon`): exactly 1 `scope='category'` row each.
+
+**`loadExamples(runId, businessId)`** filters the flat array by `run_id` + `business_id`, groups by
+`indicator_id`, deduplicates latest-wins per `(indicator_id, brand, example_id)`, and returns the
+`indicator_id → [rows]` map the drawer consumes. Real-view swap = replace only its body.
+See `EXAMPLES_CONTRACT.md` for the full field list and swap notes.
+
 ## Data layer
 
 ### Subgroup scoping + live header

@@ -259,7 +259,7 @@
   var root = document.getElementById('ex-root');
   var cap = document.createElement('div');
   cap.className = 'demo-cap';
-  cap.innerHTML = '<b>OPPORTUNITY PATHWAY scorecard</b> \xb7 examples drawer v0.13';
+  cap.innerHTML = '<b>OPPORTUNITY PATHWAY scorecard</b> \xb7 examples drawer v0.14';
   var note = document.createElement('div');
   note.className = 'demo-note';
   note.innerHTML = 'Click <b>anywhere in a row</b> to open its drawer; click the row again to close it (the pill shows'
@@ -700,6 +700,7 @@ var INDICATOR_DECIMALS = {
 function indDec(id){ return INDICATOR_DECIMALS[id] !== undefined ? INDICATOR_DECIMALS[id] : 1; }
 
 // merge the examples layer onto the score/chart layer (joined by id)
+var RUN_ID = "POC_RUN", BUSINESS_ID = CLIENT;
 var _examplesMap = loadExamples(RUN_ID, BUSINESS_ID);
 INDICATORS.forEach(function(ind){
   var rows = _examplesMap[ind.id] || [];
@@ -1045,7 +1046,6 @@ function wireExamples(ind,body){
       getSummaryDataAsync read of SCORER_EXAMPLES_VIEW mapping columns → the same flat row;
       filter/group/latest-wins logic below is unchanged.
    ─────────────────────────────────────────────────────────────────────────── */
-var RUN_ID = "POC_RUN", BUSINESS_ID = CLIENT;
 function loadExamples(runId, businessId){
   // PHASE A: flat EXAMPLES_DATA array (examples_data.js).
   // PHASE B: replace this body with getSummaryDataAsync(SCORER_EXAMPLES_VIEW) → map to same row shape.
