@@ -19,7 +19,7 @@
          Exact HTTPS URL of the hosted file on GitHub Pages.
          If you replaced the old extension, this is …/index.html instead. -->
     <source-location>
-      <url>https://YOUR-USER.github.io/YOUR-REPO/index_examples.html</url>
+      <url>https://bengtcj.github.io/b_tabext_nav/index_examples.html</url>
     </source-location>
     <icon>iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAF0lEQVQ4y2NgYGBg+E8GPgwMBBIHAAAkAAQAkJbGpQAAAABJRU5ErkJggg==</icon>
 

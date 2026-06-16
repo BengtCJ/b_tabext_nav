@@ -144,22 +144,35 @@
       overflow: hidden;
     }
 
-    /* ── Solution pill — outlined, no fill, no red (STYLE_SPEC § Pill) ──── */
+    /* ── Solution pill — PILL_STYLE 'filled' default; 'outlined' retained ── */
+    /* Shared base */
     .sol-pill {
       display: inline-flex;
       align-items: center;
-      border-radius: 4px;
-      border: 1px solid;
       padding: 2px 8px;
       font-size: 11px;   /* Caption */
       font-family: 'Tableau Light', 'Helvetica Neue', Arial, sans-serif;
       letter-spacing: 0.05em;
-      background: transparent;
       text-transform: uppercase;
     }
-    .sol-pill-t1 { border-color: var(--pill-t1); color: var(--pill-t1); }
-    .sol-pill-t2 { border-color: var(--pill-t2); color: var(--pill-t2); }
-    .sol-pill-t3 { border-color: var(--pill-t3); color: var(--pill-t3); }
+    /* Filled capsule style (PILL_STYLE 'filled') — tier fill, black text, capsule radius */
+    .sol-pill-filled {
+      border-radius: 999px;
+      border: none;
+      color: #000000;
+    }
+    .sol-pill-filled.sol-pill-t1 { background: var(--pill-t1); }
+    .sol-pill-filled.sol-pill-t2 { background: var(--pill-t2); }
+    .sol-pill-filled.sol-pill-t3 { background: #DCDFE3; }
+    /* Outlined style (PILL_STYLE 'outlined') — transparent fill, coloured border + text */
+    .sol-pill-outlined {
+      border-radius: 8px;
+      border: 1px solid;
+      background: transparent;
+    }
+    .sol-pill-outlined.sol-pill-t1 { border-color: var(--pill-t1); color: var(--pill-t1); }
+    .sol-pill-outlined.sol-pill-t2 { border-color: var(--pill-t2); color: var(--pill-t2); }
+    .sol-pill-outlined.sol-pill-t3 { border-color: var(--pill-t3); color: var(--pill-t3); }
 
     /* ── In Practice anchor — col 5, spans both rows (STYLE_SPEC § Card-frame) ── */
     .in-practice-anchor {
@@ -242,7 +255,12 @@
   <script src="https://cdn.jsdelivr.net/gh/tableau/extensions-api/lib/tableau.extensions.1.latest.js"></script>
   <script>
   // ─── VERSION ──────────────────────────────────────────────────────────────
-  var VERSION = '2026-06-16.2';
+  var VERSION = '2026-06-16.3';
+
+  // ─── PILL_STYLE — 'filled' (default) | 'outlined' (one-line switchable) ──
+  // 'filled': capsule (border-radius 999px), tier-coloured fill, black text.
+  // 'outlined': transparent fill, coloured border + matching text, 8px radius.
+  var PILL_STYLE = 'filled';
 
   // ─── FONTS ────────────────────────────────────────────────────────────────
   var FONT_TITLE = "'Baskerville', 'Libre Baskerville', Georgia, serif";
@@ -702,9 +720,10 @@
         // Pill only when severity not null — null = standard card, never coerced
         var pillHtml = '';
         if (sol.severity !== null && sol.severity !== undefined) {
-          var pillCls   = sol.severity === 1 ? 'sol-pill-t1' : sol.severity === 2 ? 'sol-pill-t2' : 'sol-pill-t3';
+          var tierCls   = sol.severity === 1 ? 'sol-pill-t1' : sol.severity === 2 ? 'sol-pill-t2' : 'sol-pill-t3';
+          var styleCls  = PILL_STYLE === 'outlined' ? 'sol-pill-outlined' : 'sol-pill-filled';
           var pillLabel = sol.severity === 1 ? 'Essential' : sol.severity === 2 ? 'Important' : 'Optional';
-          pillHtml = '<span class="sol-pill ' + pillCls + '" style="flex-shrink:0">' + escHtml(pillLabel) + '</span>';
+          pillHtml = '<span class="sol-pill ' + styleCls + ' ' + tierCls + '" style="flex-shrink:0">' + escHtml(pillLabel) + '</span>';
         }
         html +=
           '<div class="sol-card" data-grouped-cell>' +

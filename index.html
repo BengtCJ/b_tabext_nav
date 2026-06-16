@@ -5016,10 +5016,14 @@
 
   // ─── PREVIEW-MODE SAMPLE INDICATORS ───────────────────────────────────────
   const SAMPLE_INDICATORS = [
-    { id: 'cagr', name: 'Compound Annual Growth Rate (CAGR)', source: '+snowflake', subcategory_id: 'cmoaf' },
-    { id: 'mcon', name: 'Market Concentration',               source: '+snowflake', subcategory_id: 'cmoaf' },
-    { id: 'svt',  name: 'Search Volume and Trends',           source: '+snowflake', subcategory_id: 'sbr'   },
-    { id: 'tam',  name: 'Total Addressable Market (TAM)',     source: '+snowflake', subcategory_id: 'sbr'   },
+    { id: 'cagr', name: 'Compound Annual Growth Rate (CAGR)',          source: '+snowflake', subcategory_id: 'cmoaf' },
+    { id: 'mcon', name: 'Market Concentration',                        source: '+snowflake', subcategory_id: 'cmoaf' },
+    { id: 'svt',  name: 'Search Volume and Trends',                    source: '+snowflake', subcategory_id: 'sbr'   },
+    { id: 'tam',  name: 'Total Addressable Market (TAM)',              source: '+snowflake', subcategory_id: 'sbr'   },
+    { id: 'ic',   name: 'Innovation Contribution',                     source: 'survey',     subcategory_id: 'ct'    },
+    { id: 'enps', name: 'Employer Net Promoter Score (ENPS)',          source: 'survey',     subcategory_id: 'ct'    },
+    { id: 'eas',  name: 'Employer Brand Attractiveness Score',         source: 'survey',     subcategory_id: 'ct'    },
+    { id: 'cpil', name: 'Company Perceived Innovation & Leadership',   source: 'survey',     subcategory_id: 'ct'    },
   ];
 
   // ─── SCORECARD CONSTANTS ──────────────────────────────────────────────────
@@ -5057,6 +5061,7 @@
       questionTemplate: 'Is there a clear market opportunity for {{client}} and a clear demand for the product/service?',
       scoreType:        'Survey Score',
     },
+    'ct':   { title: 'TALENT MAGNETISM' },
     'qa':   { title: 'ATTENTION VALUE' },
     'cs':   { title: 'CULTURAL CUT-THROUGH' },
     'maar': { title: 'INSTANT RECALL' },

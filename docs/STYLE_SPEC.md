@@ -481,17 +481,20 @@ Figma cross-check.
 
 ### Solution-pill component
 
-Pill style: **outlined** (transparent fill, coloured border + text). **No red pill.** No filled
-pill. Text colour follows the border colour — the "black text on coloured fill" rule does
-**not** apply here (the pill has no fill).
+Pill style: **filled capsule** (tier-coloured fill, fully-rounded `border-radius:999px`,
+**black text**), set by the `PILL_STYLE` flag (`'filled'` default; `'outlined'` retained,
+one-line switchable). **No red pill** (tier 3 is grey). On the filled style the
+black-text-on-coloured-fill WCAG rule **applies** — black is required because white fails
+contrast on the light green and grey fills. The outlined variant (transparent fill,
+coloured border + matching text, 8px radius) stays in the file as the alternate.
 
-Tier-to-colour mapping:
+Tier-to-colour mapping (light hexes are **fills** under PILL_STYLE 'filled' — text black):
 
 | Tier | Light hex | Dark hex | Colour name | Pill label text |
 |---|---|---|---|---|
 | 1 (best) | `#4ADE80` | `#57bf6a` | green | ESSENTIAL |
 | 2 | `#F5AF00` | `#e0992e` | amber | IMPORTANT |
-| 3 | neutral grey | neutral grey | grey-outline | OPTIONAL |
+| 3 | `#DCDFE3` | neutral grey | grey | OPTIONAL |
 
 Full light RAG palette (for reference): `#E42F4D` / `#F5AF00` / `#4ADE80`. Red (`#E42F4D`) is
 defined for completeness but **not used on this surface** — see pink-accent exemption below.
@@ -510,7 +513,7 @@ Cards are tiled cells in one hugging frame: frame carries the light-grey backgro
 frame radius (= cell radius + 2px gutter); cells are white at the cell radius with NO
 own border; a uniform 2px hairline gutter shows cell↔cell and cell↔frame (per § Spacing
 override). Free-floating cards with off-token gaps are non-conformant.
-Status pill (ESSENTIAL/IMPORTANT/OPTIONAL, outlined, no fill) sits top-right of each solution card.
+Status pill (ESSENTIAL/IMPORTANT/OPTIONAL, filled capsule by default — see PILL_STYLE) sits top-right of each solution card.
 Solution name: Heading 18px, uppercase. Solution description: bottom-pinned (`margin-top: auto`)
 and clamped (`-webkit-line-clamp`) — never overspills the cell.
 Forward navigation is a native Navigation object — no CTA rendered inside the card.

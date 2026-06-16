@@ -93,11 +93,13 @@ Render contract:
 - rationale NOT rendered (hidden from users).
 
 Status semantics (solutions — deliberately distinct from problems):
-- Pills are OUTLINED, never filled. No red on this surface.
-- tier 1 = green outline  ·  tier 2 = amber outline  ·  tier 3 = grey outline.
-- Light per-theme RAG: green #4ADE80 · amber #F5AF00 (red #E42F4D is NOT used here).
-  grey-outline neutral defined in STYLE_SPEC.
-- Tier shown as the word ESSENTIAL / IMPORTANT / OPTIONAL (tier 1/2/3), outlined pill, no fill, no red.
+- Pills are **filled capsules with black text** (PILL_STYLE 'filled', current default);
+  the outlined variant is retained and switchable. No red on this surface.
+- tier 1 = green fill · tier 2 = amber fill · tier 3 = grey fill — all with black text,
+  fully rounded.
+- Light per-theme RAG: green #4ADE80 · amber #F5AF00 · tier-3 grey #DCDFE3
+  (red #E42F4D is NOT used here).
+- Tier shown as the word ESSENTIAL / IMPORTANT / OPTIONAL (tier 1/2/3), no red.
 
 Data sanity (verify, don't eyeball):
 - Membership = **all** of the construct's `item_type='solution'` rows the view returns for this
@@ -119,18 +121,16 @@ States:
   graceful neutral state (no guess).
 
 Looks wrong if:
-- a solution pill is FILLED or shows red (that's the problems treatment — wrong surface).
+- a solution pill shows **red**, or uses **white text on the fill** (fails contrast), or a
+  tier-3 pill is anything but the quiet grey.
 - cards reorder between views, or are sorted by tier.
-- a tier-3 renders as anything but grey outline.
 - pink (#e994a2) appears (this surface is the explicit pink EXEMPTION).
 - a filled-slot count mismatches the construct's solutions, or an empty holding cell renders as anything other than the faint `--empty` slot.
 - rationale text is visible anywhere.
 
-PROTO DIVERGENCE (decide before build-final): the Figma proto draws
-ESSENTIAL/IMPORTANT as FILLED green/amber pills and uses the words
-ESSENTIAL/IMPORTANT/OPTIONAL. The locked decision OVERRIDES the proto:
-outlined pills, no fills, no red; tier shown as the words ESSENTIAL/IMPORTANT/OPTIONAL. Build to the locked decision
-unless re-decided here.
+PROTO RE-ALIGNED: the surface now uses FILLED pills (capsule, black text), re-aligning with
+the Figma proto; the earlier outlined-only override is retired (kept switchable via
+PILL_STYLE). Tier still shown as the words ESSENTIAL/IMPORTANT/OPTIONAL; still no red.
 
 Surface composition (TO CONFIRM — extension vs native scope, NOT specced here):
 the fuller proto shows the grid inside a larger surface — serif headline
