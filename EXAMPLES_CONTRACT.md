@@ -48,17 +48,20 @@ Add new platform cases **only in `embedToMedia`** — never in the renderers.
 
 ---
 
-## `loadExamples(runId, businessId)` — filter / group / latest-wins
+## `loadExamples(runId, businessId)` — group / latest-wins
+
+The `runId` / `businessId` params are retained for signature stability at the real-view swap, but
+the static body **does not filter on them** (see **run_id scoping rule** below).
 
 ```
 loadExamples(runId, businessId)
-  → filter EXAMPLES_DATA where run_id === runId AND business_id === businessId
-  → group by indicator_id
-  → within each group, deduplicate by key = brand + '|' + example_id (latest row wins)
+  → group ALL of EXAMPLES_DATA by indicator_id          (no run_id / business_id filter)
+  → within each group, deduplicate by key = (brand||'') + '|' + example_id (latest row wins)
   → return { indicator_id: [rows] }  ← same shape the drawer consumes
 ```
 
-`rowToExample(r)` maps each row to the drawer's example object: `{brand, role, source, media, own, react}`.
+`rowToExample(r)` maps each row to the drawer's example object: `{brand, role, source, media, own, react}`,
+with `brand` falling back to `r.business_id` for legacy rows.
 
 ---
 
