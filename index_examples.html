@@ -1327,7 +1327,8 @@ function drawerToolbar(ind){
   var m=viewMode[ind.id];
   function b(id,l){ return '<button data-mode="'+id+'"'+(m===id?' class="active"':'')+'>'+l+'</button>'; }
   var sel = ind.kind!=="market" ? '<div class="sel-pill"><span class="sw" style="background:'+(selectedBrand===CLIENT?"var(--client)":"#bbb")+'"></span>selected · <b>'+esc(BNAME[selectedBrand])+'</b></div>' : '';
-  return '<div class="drawer-tb"><div class="seg">'+b("chart","Chart")+b("split","Split")+b("examples","Examples")+'</div>'
+  var splitBtn = ind.chart==="ban_editorial" ? '' : b("split","Split");
+  return '<div class="drawer-tb"><div class="seg">'+b("chart","Chart")+splitBtn+b("examples","Examples")+'</div>'
     +'<div class="tb-meta">'+sel+'<span class="chart-chip">examples · <b style="color:var(--client)">'+detectLayout(ind)+'</b></span><span class="chart-chip">chart · <b>'+ind.chart.replace("_","-")+'</b></span></div></div>';
 }
 function wireToolbar(ind,drawer){ drawer.querySelectorAll('[data-mode]').forEach(function(btn){ btn.addEventListener("click",function(){ viewMode[ind.id]=btn.getAttribute("data-mode"); drawer.querySelectorAll('[data-mode]').forEach(function(x){ x.classList.toggle("active",x===btn); }); renderBody(ind); paintSelection(ind); drawer.style.maxHeight="none"; }); }); }
