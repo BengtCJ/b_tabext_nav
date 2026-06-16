@@ -234,6 +234,11 @@
   .mtile.hit { border-color:var(--client); box-shadow:0 0 0 1px var(--client) inset; opacity:1; }
   .mtile .mt-lab { position:absolute; left:0; right:0; bottom:0; padding:2px 5px; font-family:var(--f-light); font-size:8px; color:var(--t3); background:linear-gradient(transparent,rgba(0,0,0,.75)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mtile.client .mt-lab { color:var(--client); }
+
+  /* 16:9 video wrapper — youtube iframes sit inside this; aspect locked by padding-top */
+  .yt-wrap { position:relative; width:100%; padding-top:56.25%; }
+  /* video media box must not flex-stretch — intrinsic 16:9 from .yt-wrap determines height */
+  .lay .media.video, .lay-car .media.video { flex:none; }
 </style>
 </head>
 <body>
@@ -708,7 +713,7 @@ INDICATORS.forEach(function(ind){
   else { ind.examples = rows.map(rowToExample); }
 });
 
-var openId=null, viewMode={}, selectedBrand=CLIENT;
+var openId=null, viewMode={}, selectedBrand=CLIENT, _promotedCellsH=0;
 
 function detectLayout(ind){
   if(ind.kind==="market") return "source-strip";
@@ -754,6 +759,17 @@ function buildScorecard(){
 
 function toggle(ind){ if(openId===ind.id) closeFocus(); else openFocus(ind); }
 
+/* ── drawer height fill (focus mode) ── */
+function sizeDrawerBody(){
+  if(!openId) return;
+  var stage=document.getElementById("stage");
+  var tb=document.querySelector('.drawer[data-drawer="'+openId+'"] .drawer-tb');
+  var body=document.querySelector('.drawer-body[data-body="'+openId+'"]');
+  if(!stage||!tb||!body) return;
+  var h=stage.offsetHeight - _promotedCellsH - tb.offsetHeight - 24;
+  body.style.height=Math.max(356,h)+"px";
+}
+
 /* ── focus ── */
 function openFocus(ind){
   if(openId) closeFocus(true);
@@ -769,12 +785,15 @@ function openFocus(ind){
     if(ind.kind==="market" && (!ind.sources || !ind.sources.length)) viewMode[ind.id]="chart";
     else viewMode[ind.id]=defaultMode(layout);
   }
+  var promotedRow=sc.querySelector('.sc-row.promoted');
+  _promotedCellsH=promotedRow.offsetHeight; /* measure cells-only height BEFORE drawer is appended */
   var drawer=document.createElement("div"); drawer.className="drawer"; drawer.setAttribute("data-drawer",ind.id);
   drawer.innerHTML='<div class="drawer-inner">'+drawerToolbar(ind)+'<div class="drawer-body" data-body="'+ind.id+'"></div></div>';
-  sc.querySelector('.sc-row.promoted').appendChild(drawer);
+  promotedRow.appendChild(drawer);
   renderBody(ind); wireToolbar(ind,drawer); paintSelection(ind);
   requestAnimationFrame(function(){ drawer.classList.add("open"); drawer.style.maxHeight=drawer.scrollHeight+"px"; setTimeout(function(){ if(drawer.classList.contains("open")) drawer.style.maxHeight="none"; },260); });
   setTimeout(function(){ document.getElementById("stage").scrollTo({top:0,behavior:"smooth"}); },60);
+  setTimeout(sizeDrawerBody, 280);
 }
 function closeFocus(){
   var stage=document.getElementById("stage"), sc=document.getElementById("scorecard");
@@ -910,12 +929,19 @@ function wireChart(ind,body){ body.querySelectorAll('[data-brand]').forEach(func
 
 /* ── media ── */
 function mediaFill(m,name){
-  if(m.type==="youtube"&&m.id&&m.id!=="REPLACE_ID") return '<iframe src="https://www.youtube-nocookie.com/embed/'+encodeURIComponent(m.id)+'" title="'+esc(name)+'" allow="encrypted-media;picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>';
+  if(m.type==="youtube"&&m.id&&m.id!=="REPLACE_ID") return '<div class="yt-wrap"><iframe src="https://www.youtube-nocookie.com/embed/'+encodeURIComponent(m.id)+'" title="'+esc(name)+'" allow="encrypted-media;picture-in-picture" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></div>';
   if(m.type==="youtube") return thumbPh(name,"video",m.note||"video");
   if(m.type==="webpage"){ var w=m.web; return '<a class="web" href="'+esc(w.url)+'" target="_blank" rel="noopener noreferrer"><div class="thumb"><span>og:image</span></div><div class="meta"><div class="src">'+esc(w.source)+'</div><div class="t">'+esc(w.title)+'</div><div class="d">'+esc(w.desc)+'</div></div></a>'; }
   if(m.type==="trends"&&m.live) return '<div class="trends" data-trends-live data-q="'+esc(m.query)+'" data-geo="'+esc(m.geo||"")+'" data-time="'+esc(m.time||"today 12-m")+'"><span class="tbadge">Google Trends · live</span>'+trendsInner(m.data)+'</div>';
   if(m.type==="trends") return trendsSVG(m.data);
   return thumbPh(name, /search|impression/i.test(m.note||"")?"search":/funnel|source|report|case/i.test(m.note||"")?"link":"post", m.note||"post");
+}
+/* media div wrapper — adds "video" class when the content is a live youtube embed so flex
+   sizing can be suppressed and the 16:9 .yt-wrap determines the height */
+function mediaWrap(m, name, cls){
+  var isVid=m.type==="youtube"&&m.id&&m.id!=="REPLACE_ID";
+  return '<div class="media'+(cls?" "+cls:"")+(isVid?" video":"")+'">'
+    + mediaFill(m,name) + '</div>';
 }
 /* placeholder content thumbnail — reads as a real (illustrative) artifact, client-tinted */
 function thumbPh(name, kind, label){
@@ -974,7 +1000,7 @@ function laySource(ind){
   }
   var s=ind.sources[0];
   return frameRow(s.source)+'<div class="lay"><div class="hline"><span class="hbrand">Category</span><span class="role-tag">market</span></div>'
-    +'<div class="media hero">'+mediaFill(s.media,"category")+'</div>'+ownChips(s.own)
+    +mediaWrap(s.media,"category","hero")+ownChips(s.own)
     +'<div class="market-note">'+esc(ind.note||"")+'</div></div>';
 }
 
@@ -1126,7 +1152,7 @@ var DATA = (function(){
   var BRAND_ALIASES = { "PEET'S COFFEE":'PEETS', "PEET'S":'PEETS' };
   var COMPETITOR_ORDER = ['NESPRESSO','STARBUCKS','PEETS','LAVAZZA'];
   var METRIC_LABELS = {
-    tam:'Total Addressable Market (TAM)', cagr:'Compound Annual Growth Rate (CAGR)',
+    tam:'Total Addressable Market (TAM)', cagr:'Compound Annual Growth Rate (CAGR)', mcon:'Market Concentration',
     svt:'Search Volume and Trends', sop:'Share of Preference', cra:'Conversion Rate Analysis',
     bss:'Branded Search Share', dvtr:'Distinctive Verbal Tone Recognition',
     sstsr:'Scroll-stop / Thumb-stop Ratio', eqr:'Engagement Quality Ratio',
@@ -1173,7 +1199,7 @@ var DATA = (function(){
     var indMap={}, indOrder=[];
     rows.forEach(function(r){
       if(!indMap[r.indicator_id]){
-        indMap[r.indicator_id]={ id:r.indicator_id, name:r.name||METRIC_LABELS[r.indicator_id]||r.indicator_id, source:r.source, scores:{} };
+        indMap[r.indicator_id]={ id:r.indicator_id, name:METRIC_LABELS[r.indicator_id]||r.name||r.indicator_id, source:r.source, scores:{} };
         indOrder.push(r.indicator_id);
       }
       indMap[r.indicator_id].scores[r.brand]=r.score;
@@ -1403,6 +1429,8 @@ var DATA = (function(){
            getSubgroup:function(){ return _subgroup; },
            getSubcategoryName:function(){ return _subcategoryName; } };
 })();
+
+window.addEventListener("resize", function(){ sizeDrawerBody(); });
 
 /* ── boot: real data in Tableau, sample data in standalone preview ──────────── */
 function boot(){

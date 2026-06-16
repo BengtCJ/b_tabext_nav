@@ -5016,14 +5016,75 @@
 
   // ─── PREVIEW-MODE SAMPLE INDICATORS ───────────────────────────────────────
   const SAMPLE_INDICATORS = [
-    { id: 'cagr', name: 'Compound Annual Growth Rate (CAGR)',          source: '+snowflake', subcategory_id: 'cmoaf' },
-    { id: 'mcon', name: 'Market Concentration',                        source: '+snowflake', subcategory_id: 'cmoaf' },
-    { id: 'svt',  name: 'Search Volume and Trends',                    source: '+snowflake', subcategory_id: 'sbr'   },
-    { id: 'tam',  name: 'Total Addressable Market (TAM)',              source: '+snowflake', subcategory_id: 'sbr'   },
-    { id: 'ic',   name: 'Innovation Contribution',                     source: 'survey',     subcategory_id: 'ct'    },
-    { id: 'enps', name: 'Employer Net Promoter Score (ENPS)',          source: 'survey',     subcategory_id: 'ct'    },
-    { id: 'eas',  name: 'Employer Brand Attractiveness Score',         source: 'survey',     subcategory_id: 'ct'    },
-    { id: 'cpil', name: 'Company Perceived Innovation & Leadership',   source: 'survey',     subcategory_id: 'ct'    },
+    // cmoaf — Opportunity Pathway
+    { id: 'tam',     name: 'Total Addressable Market (TAM)',                source: '+snowflake', subcategory_id: 'cmoaf' },
+    { id: 'cagr',    name: 'Compound Annual Growth Rate (CAGR)',            source: '+snowflake', subcategory_id: 'cmoaf' },
+    { id: 'svt',     name: 'Search Volume and Trends',                     source: '+snowflake', subcategory_id: 'cmoaf' },
+    { id: 'cat_pen', name: 'Category Penetration',                         source: 'survey',     subcategory_id: 'cmoaf' },
+    { id: 'mcon',    name: 'Market Concentration',                         source: '+snowflake', subcategory_id: 'cmoaf' },
+    { id: 'cg_bg',   name: 'Category Growth vs Brand Growth',              source: '+snowflake', subcategory_id: 'cmoaf' },
+    { id: 'asp_cat', name: 'Average Selling Price vs Category Average',    source: '+snowflake', subcategory_id: 'cmoaf' },
+    { id: 'sam',     name: 'Serviceable Available Market (SAM)',           source: '+snowflake', subcategory_id: 'cmoaf' },
+    { id: 'som',     name: 'Serviceable Obtainable Market (SOM)',          source: '+snowflake', subcategory_id: 'cmoaf' },
+    // sbr — Strategic Strength
+    { id: 'lpa',     name: 'Lifestyle & Psychographic Alignment',          source: 'survey',     subcategory_id: 'sbr'   },
+    { id: 'pmf',     name: 'Product / Market Fit (PMF)',                   source: 'survey',     subcategory_id: 'sbr'   },
+    { id: 'sop',     name: 'Share of Preference',                          source: 'survey',     subcategory_id: 'sbr'   },
+    { id: 'str',     name: 'Sell-Through Rate',                            source: '+snowflake', subcategory_id: 'sbr'   },
+    { id: 'cra',     name: 'Conversion Rate Analysis',                     source: '+snowflake', subcategory_id: 'sbr'   },
+    // hp — Portfolio Power
+    { id: 'pgc',     name: 'Portfolio Growth Contribution',                source: '+snowflake', subcategory_id: 'hp'    },
+    { id: 'pcr',     name: 'Portfolio Cannibalization Rate',               source: '+snowflake', subcategory_id: 'hp'    },
+    { id: 'clv',     name: 'Customer Lifetime Value (CLV)',                source: '+snowflake', subcategory_id: 'hp'    },
+    { id: 'pcws',    name: 'Portfolio Coverage & White Space',             source: 'survey',     subcategory_id: 'hp'    },
+    // ct — Talent Magnetism
+    { id: 'ic',      name: 'Innovation Contribution',                      source: 'survey',     subcategory_id: 'ct'    },
+    { id: 'enps',    name: 'Employer Net Promoter Score (ENPS)',           source: 'survey',     subcategory_id: 'ct'    },
+    { id: 'eas',     name: 'Employer Brand Attractiveness Score',          source: 'survey',     subcategory_id: 'ct'    },
+    { id: 'cpil',    name: 'Company Perceived Innovation & Leadership',    source: 'survey',     subcategory_id: 'ct'    },
+    // maar — Instant Recall
+    { id: 'aa',      name: 'Aided Awareness',                              source: 'survey',     subcategory_id: 'maar'  },
+    { id: 'ua',      name: 'Unaided Awareness',                            source: 'survey',     subcategory_id: 'maar'  },
+    { id: 'bss',     name: 'Branded Search Share',                         source: '+snowflake', subcategory_id: 'maar'  },
+    { id: 'onssp',   name: 'Occasion / Need-State Search Presence',        source: '+snowflake', subcategory_id: 'maar'  },
+    // dba — Symbol Strength
+    { id: 'cava',    name: 'Correct Attribution of Visual & Verbal Assets',source: 'survey',     subcategory_id: 'dba'   },
+    { id: 'aus',     name: 'Asset Uniqueness Score',                       source: 'survey',     subcategory_id: 'dba'   },
+    { id: 'dvtr',    name: 'Distinctive Verbal Tone Recognition',          source: 'survey',     subcategory_id: 'dba'   },
+    { id: 'esc',     name: 'Emergent Semiotic Codes',                      source: 'survey',     subcategory_id: 'dba'   },
+    // qa — Attention Value
+    { id: 'aabc',    name: 'Avg. Attention on Brand Content',              source: '+snowflake', subcategory_id: 'qa'    },
+    { id: 'sstsr',   name: 'Scroll-Stop / Thumb-Stop Ratio',               source: '+snowflake', subcategory_id: 'qa'    },
+    { id: 'eqr',     name: 'Engagement Quality Ratio',                     source: '+snowflake', subcategory_id: 'qa'    },
+    { id: 'bslpc',   name: 'Branded Search Lift Post-Campaign',            source: '+snowflake', subcategory_id: 'qa'    },
+    { id: 'arl',     name: 'Ad Recall Uplift',                             source: 'survey',     subcategory_id: 'qa'    },
+    { id: 'sv',      name: 'Shelf Velocity',                               source: '+snowflake', subcategory_id: 'qa'    },
+    // ce — Experience Unity
+    { id: 'cauat',   name: 'Consistency of Asset Usage Across Touchpoints',source: 'survey',     subcategory_id: 'ce'    },
+    { id: 'pcr_st',  name: 'Perceived Consistency Rate',                   source: 'survey',     subcategory_id: 'ce'    },
+    { id: 'ema',     name: 'Earned Message Alignment',                     source: '+snowflake', subcategory_id: 'ce'    },
+    // cs — Cultural Cut-Through
+    { id: 'sov',     name: 'Share of Voice (SOV)',                         source: '+snowflake', subcategory_id: 'cs'    },
+    { id: 'vom',     name: 'Velocity of Mentions',                         source: '+snowflake', subcategory_id: 'cs'    },
+    { id: 'pr',      name: 'Pickup Rate',                                  source: '+snowflake', subcategory_id: 'cs'    },
+    // crabh — Brand Heat
+    { id: 'aot',     name: 'Audience Overlap with Tastemakers',            source: '+snowflake', subcategory_id: 'crabh' },
+    { id: 'cvm',     name: 'Campaign Virality / Meme-ability',             source: '+snowflake', subcategory_id: 'crabh' },
+    { id: 'bpbc',    name: 'Brand Presence Beyond Core Category',          source: '+snowflake', subcategory_id: 'crabh' },
+    // daiae — Audience Affinity
+    { id: 'irer',    name: 'Identity-Reinforcing Engagement Ratio',        source: '+snowflake', subcategory_id: 'daiae' },
+    { id: 'cbr',     name: 'Cultural Badging Rate',                        source: 'survey',     subcategory_id: 'daiae' },
+    { id: 'abc',     name: 'Active Brand Communities',                     source: '+snowflake', subcategory_id: 'daiae' },
+    { id: 'fcc',     name: 'Fan Co-Creation',                              source: '+snowflake', subcategory_id: 'daiae' },
+    { id: 'rr',      name: 'Ritualization Rate',                           source: 'survey',     subcategory_id: 'daiae' },
+    { id: 'rsb',     name: 'Resistance to Switching Brands',               source: 'survey',     subcategory_id: 'daiae' },
+    { id: 'bt',      name: 'Brand Trust',                                  source: 'survey',     subcategory_id: 'daiae' },
+    // ps — Narrative Power
+    { id: 'consid',  name: 'Consideration',                                source: 'survey',     subcategory_id: 'ps'    },
+    { id: 'nps',     name: 'Net Promoter Score',                           source: 'survey',     subcategory_id: 'ps'    },
+    { id: 'ba',      name: 'Brand Affinity',                               source: 'survey',     subcategory_id: 'ps'    },
+    { id: 'ebl',     name: 'Engagements Beyond Likes',                     source: '+snowflake', subcategory_id: 'ps'    },
+    { id: 'csl',     name: 'Campaign Sales Lift',                          source: '+snowflake', subcategory_id: 'ps'    },
   ];
 
   // ─── SCORECARD CONSTANTS ──────────────────────────────────────────────────
@@ -5061,13 +5122,17 @@
       questionTemplate: 'Is there a clear market opportunity for {{client}} and a clear demand for the product/service?',
       scoreType:        'Survey Score',
     },
-    'ct':   { title: 'TALENT MAGNETISM' },
-    'qa':   { title: 'ATTENTION VALUE' },
-    'cs':   { title: 'CULTURAL CUT-THROUGH' },
-    'maar': { title: 'INSTANT RECALL' },
-    'ps':   { title: 'NARRATIVE POWER' },
-    'sbr':  { title: 'STRATEGIC STRENGTH' },
-    'dba':  { title: 'SYMBOL STRENGTH' },
+    'ct':    { title: 'TALENT MAGNETISM' },
+    'hp':    { title: 'PORTFOLIO POWER' },
+    'qa':    { title: 'ATTENTION VALUE' },
+    'ce':    { title: 'EXPERIENCE UNITY' },
+    'cs':    { title: 'CULTURAL CUT-THROUGH' },
+    'crabh': { title: 'BRAND HEAT' },
+    'daiae': { title: 'AUDIENCE AFFINITY' },
+    'maar':  { title: 'INSTANT RECALL' },
+    'ps':    { title: 'NARRATIVE POWER' },
+    'sbr':   { title: 'STRATEGIC STRENGTH' },
+    'dba':   { title: 'SYMBOL STRENGTH' },
   };
 
   // Long-format score rows for offline preview (?subgroup=cmoaf).

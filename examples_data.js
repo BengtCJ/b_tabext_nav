@@ -641,4 +641,72 @@ var EXAMPLES_DATA = [
  embed:{platform:"placeholder",note:"heritage film"},own_stats:[{k:"views",v:"210K"}],
  summary_text:"Heritage brand film.",comment_digest:null}
 
+,
+
+// ── POC_RUN v2 — real links replacing placeholder scaffolds ───────────────────────────
+
+// MARKET INDICATORS — link embeds with real sources
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"tam",brand:null,
+ example_id:"tam_mordor_size",scope:"category",role:"category",source:"Mordor Intelligence",
+ embed:{platform:"link",url:"https://www.mordorintelligence.com/industry-reports/coffee-market",
+        source:"Mordor Intelligence",title:"Coffee Market — Size & Share Analysis",
+        desc:"Global coffee market valued at USD 176.55B in 2025, projected to USD 238.99B by 2031."},
+ own_stats:[{k:"market size",v:"$176.55B"},{k:"year",v:"2025"}],
+ summary_text:"Category sizing — the global coffee market Illycaffè plays into. Illustrative context, not a brand result.",
+ comment_digest:null,market_note:"Category-level headroom — the addressable market, not an Illycaffè-specific reading.",layout_hint:"source-strip"},
+
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"cagr",brand:null,
+ example_id:"cagr_gvr_growth",scope:"category",role:"category",source:"Grand View Research",
+ embed:{platform:"link",url:"https://www.grandviewresearch.com/industry-analysis/coffee-market",
+        source:"Grand View Research",title:"Coffee Market Size, Share & Trends Report, 2033",
+        desc:"Global coffee market projected to grow at a 5.4% CAGR (2026–2033), USD 249.34B to 380.28B."},
+ own_stats:[{k:"CAGR",v:"5.4%"},{k:"to",v:"2033"}],
+ summary_text:"Category growth — the tailwind Illycaffè rides. Illustrative rate, not a brand-specific figure.",
+ comment_digest:null,market_note:"Category growth (CAGR), not an Illycaffè-specific result.",layout_hint:"source-strip"},
+
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"mcon",brand:null,
+ example_id:"mcon_precedence_landscape",scope:"category",role:"category",source:"Precedence Research",
+ embed:{platform:"link",url:"https://www.precedenceresearch.com/coffee-market",
+        source:"Precedence Research",title:"Coffee Market — Competitive Landscape & Leading Companies",
+        desc:"Category led by a handful of multinationals — Nestlé, JDE Peet's, Starbucks, Lavazza, J.M. Smucker."},
+ own_stats:[{k:"top players",v:"Nestlé · JDE Peet's"},{k:"structure",v:"concentrated"}],
+ summary_text:"Category concentration — how the market splits across the majors. Illustrative, not an Illycaffè reading.",
+ comment_digest:null,market_note:"Competitive concentration of the category, not an Illycaffè-specific result.",layout_hint:"source-strip"},
+
+// SVT — worldwide Trends embeds (no sparkline, geo='')
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"svt",brand:"ILLY",
+ example_id:"svt_trends_illy",scope:"brand",role:"organic",source:"Google Trends",
+ embed:{platform:"trends",query:"Illy coffee",geo:"",time:"today 12-m",sparkline:[]},
+ own_stats:[{k:"signal",v:"search interest"},{k:"window",v:"12 mo"}],
+ summary_text:"Worldwide search interest for Illycaffè over the last 12 months — the demand signal behind the metric. Illustrative.",
+ comment_digest:null,market_note:null,layout_hint:"strip"},
+
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"svt",brand:"NESPRESSO",
+ example_id:"svt_trends_nespresso",scope:"brand",role:"organic",source:"Google Trends",
+ embed:{platform:"trends",query:"Nespresso",geo:"",time:"today 12-m",sparkline:[]},
+ own_stats:[{k:"signal",v:"search interest"},{k:"window",v:"12 mo"}],
+ summary_text:"Worldwide search interest for Nespresso over the last 12 months — its demand signal. Illustrative.",
+ comment_digest:null,market_note:null,layout_hint:"strip"},
+
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"svt",brand:"STARBUCKS",
+ example_id:"svt_trends_starbucks",scope:"brand",role:"organic",source:"Google Trends",
+ embed:{platform:"trends",query:"Starbucks",geo:"",time:"today 12-m",sparkline:[]},
+ own_stats:[{k:"signal",v:"search interest"},{k:"window",v:"12 mo"}],
+ summary_text:"Worldwide search interest for Starbucks over the last 12 months — its demand signal. Illustrative.",
+ comment_digest:null,market_note:null,layout_hint:"strip"},
+
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"svt",brand:"PEETS",
+ example_id:"svt_trends_peets",scope:"brand",role:"organic",source:"Google Trends",
+ embed:{platform:"trends",query:"Peet's Coffee",geo:"",time:"today 12-m",sparkline:[]},
+ own_stats:[{k:"signal",v:"search interest"},{k:"window",v:"12 mo"}],
+ summary_text:"Worldwide search interest for Peet's Coffee over the last 12 months — its demand signal. Illustrative.",
+ comment_digest:null,market_note:null,layout_hint:"strip"},
+
+{run_id:"POC_RUN",business_id:"ILLY",indicator_id:"svt",brand:"LAVAZZA",
+ example_id:"svt_trends_lavazza",scope:"brand",role:"organic",source:"Google Trends",
+ embed:{platform:"trends",query:"Lavazza",geo:"",time:"today 12-m",sparkline:[]},
+ own_stats:[{k:"signal",v:"search interest"},{k:"window",v:"12 mo"}],
+ summary_text:"Worldwide search interest for Lavazza over the last 12 months — its demand signal. Illustrative.",
+ comment_digest:null,market_note:null,layout_hint:"strip"}
+
 ]; // end EXAMPLES_DATA
