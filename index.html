@@ -5448,7 +5448,7 @@
             var sc = d.subcategory_id ? d.subcategory_id.trim().toLowerCase() : '';
             return sc === _subgroup;
           })
-        : [];
+        : _indicators;
 
       // Fetch scores before rendering (rule 6: probe runs inside fetchScoreData)
       _scoreModel = null;
